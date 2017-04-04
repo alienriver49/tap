@@ -2,10 +2,18 @@
     "version": "0.1.0",
     "tasks": [
         {
-            "taskName": "build",
+            "taskName": "build: TapFx",
             "command": "gulp",
             "args": [
-                "build"
+                "build-tap-fx"
+            ],
+            "isShellCommand": true
+        },
+        {
+            "taskName": "build: Extension-1",
+            "command": "gulp",
+            "args": [
+                "build-extension-1"
             ],
             "isShellCommand": true
         }

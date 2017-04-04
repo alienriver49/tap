@@ -1,18 +1,47 @@
 'use strict';
 
-// var gulp = require('gulp'),
-//     tsc = require('gulp-typescript');
+const gulp = require('gulp');
+const ts = require('gulp-typescript');
+const del = require('del');
 
-// gulp.task('compile-ts', function () {
-//     var sourceTsFiles = [
-//         './src/tap-fx/tap-ux/controls/view-models/*.ts'
-//     ];
+function cleanTapFxDist() {
+    return del([
+        './src/tap-fx-dist/**',
+        '!./src/tap-fx-dist'
+    ]);
+}
 
-//     var tsResult = gulp
-//         .src(sourceTsFiles)
-//         .pipe(tsc(tsc.createProject('tsconfig.json')));
+function cleanExtension1Dist() {
+    return del([
+        './src-extensions/extension-1-dist/**',
+        '!./src-extensions/extension-1-dist'
+    ]);
+}
 
-//     tsResult.dts.pipe(gulp.dest('././src/tap-fx/tap-ux/controls/view-models/js/'));
+function compileTapFx() {
+    return gulp
+        .src('./src/tap-fx/**/*.ts')
+        .pipe(ts({
+            outDir: './src/tap-fx-dist',
+        }))
+        .pipe(gulp.dest('./src/tap-fx-dist'));
+}
 
-//     return tsResult.js.pipe(gulp.dest('././src/tap-fx/tap-ux/controls/view-models/js/'));
-// });
+function compileExtension1() {
+    return gulp
+        .src('./src-extensions/extension-1/**/*.ts')
+        .pipe(ts({
+            outDir: './src-extensions/extension-1-dist',
+        }))
+        .pipe(gulp.dest('./src-extensions/extension-1-dist'));
+}
+
+gulp.task('build-tap-fx', gulp.series([
+    cleanTapFxDist,
+    compileTapFx
+]));
+
+gulp.task('build-extension-1', gulp.series([
+    cleanExtension1Dist,
+    compileExtension1
+]));

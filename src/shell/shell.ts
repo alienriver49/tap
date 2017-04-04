@@ -1,10 +1,10 @@
-import { IExtensionLoadingInfo } from './../models/IExtensionLoadingInfo'
-import { EventBus } from './../tap-fx/tap-rpc/event-bus'
+interface IExtensionLoadingInfo {
+    id: string;
+    files: string[];
+}
 
 export class Shell {
     constructor() { }
-
-    private readonly BASE_URL = 'src/'
 
     private _subscriptions: any = [];
 
@@ -12,11 +12,12 @@ export class Shell {
         let extensionLoadingInfo = {
             id: 'extension-1',
             files: [
-                `${this.BASE_URL}/extensions/extension-1/event-bus.js`,
-                `${this.BASE_URL}/extensions/extension-1/main.js`,
+                './src/tap-fx-dist/tap-rpc/event-bus.js',
+                './src/tap-fx-dist/tap-ux/view-models/view-models.blade.js',
+
+                './src-extensions/extension-1-dist/main.js',
             ]
         }
-
         return extensionLoadingInfo;
     }
 
@@ -73,7 +74,7 @@ export class Shell {
     }
 
     registerEventBus(): void {
-        this._subscriptions.push(EventBus.getDefault().subscribe('extension.new-blade', this.handleNewBladeMessage));
+        this._subscriptions.push(TapFx.Rpc.EventBus.getDefault().subscribe('extension.new-blade', this.handleNewBladeMessage));
     }
 
     unregisterEventBus(): void {

@@ -1,4 +1,4 @@
-module TapUx.ViewModels {
+module TapFx.Ux.ViewModels {
     export class Blade {
         constructor() { }
 

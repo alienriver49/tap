@@ -1,5 +1,5 @@
 import { IExtensionLoadingInfo } from './../models/IExtensionLoadingInfo'
-import { EventBus } from './../tap-fx/event-bus'
+import { EventBus } from './../tap-fx/tap-rpc/event-bus'
 
 export class Shell {
     constructor() { }

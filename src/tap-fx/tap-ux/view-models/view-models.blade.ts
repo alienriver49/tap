@@ -3,6 +3,6 @@ module TapFx.Ux.ViewModels {
         constructor() { }
 
         title: string;
-        description: string;
+        subtitle: string;
     }
 }

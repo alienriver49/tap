@@ -7,7 +7,8 @@
             "args": [
                 "build-tap-fx"
             ],
-            "isShellCommand": true
+            "isShellCommand": true,
+            "isBuildCommand": false
         },
         {
             "taskName": "build: Extension-1",
@@ -15,7 +16,8 @@
             "args": [
                 "build-extension-1"
             ],
-            "isShellCommand": true
+            "isShellCommand": true,
+            "isBuildCommand": false
         }
     ]
 }

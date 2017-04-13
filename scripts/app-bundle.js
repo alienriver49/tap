@@ -52,7 +52,8 @@ define('shell/shell',["require", "exports"], function (require, exports) {
                 files: [
                     './src/tap-fx-dist/tap-rpc/event-bus.js',
                     './src/tap-fx-dist/tap-ux/view-models/view-models.blade.js',
-                    './src-extensions/extension-1-dist/main.js',
+                    './src-extensions/extension-1-dist/main-blade.js',
+                    './src-extensions/extension-1-dist/app.js',
                 ]
             };
             return extensionLoadingInfo;
@@ -77,8 +78,6 @@ define('shell/shell',["require", "exports"], function (require, exports) {
                 default: throw new Error('Unknow extension ID specified.');
             }
             var iFrame = document.createElement('iframe');
-            iFrame.setAttribute('id', extensionLoadingInfo.id);
-            iFrame.setAttribute('src', 'about:blank');
             document.querySelector('#extension-iframes').appendChild(iFrame);
             extensionLoadingInfo.files.forEach(function (filePath) {
                 var scriptTag = iFrame.contentWindow.document.createElement('script');
@@ -86,7 +85,15 @@ define('shell/shell',["require", "exports"], function (require, exports) {
                 scriptTag.setAttribute('src', filePath);
                 iFrame.contentWindow.document.body.appendChild(scriptTag);
             });
+            iFrame.setAttribute('id', extensionLoadingInfo.id);
+            iFrame.setAttribute('src', 'about:blank');
+            iFrame.setAttribute('sandbox', '');
             this.extensions.push(extensionLoadingInfo.id);
+            setTimeout(function () {
+                var vm = iFrame.contentWindow.create();
+                console.log('...and the VM is: ', vm);
+                vm.onInitialize();
+            }, 1000);
         };
         Shell.prototype.unloadExtension = function (id) {
         };
@@ -247,5 +254,5 @@ var TapFx;
 define("tap-fx/tap-ux/view-models/view-models.blade", [],function(){});
 
 define('text!shell/shell.html', ['module'], function(module) { module.exports = "<template><require from=\"resources/binding-behaviors/intercept\"></require><h1>Shell</h1><div><button type=\"button\" click.delegate=\"loadExtension('1')\">Load Extension 1</button> <button type=\"button\" click.delegate=\"unloadExtension('1')\">Unload Extension 1</button></div><br><div><button type=\"button\" click.delegate=\"registerEventBus()\">Register Event Bus</button> <button type=\"button\" click.delegate=\"unregisterEventBus()\">Unregister Event Bus</button></div><h1>Extension iFrames: ${extensions.length}</h1><div repeat.for=\"extensionId of extension\">${extensionId}</div><div id=\"extension-iframes\"></div><h1>Extension UIs</h1><div id=\"extensions\"></div></template>"; });
-define('text!tap-fx/tap-ux/controls/blade.html', ['module'], function(module) { module.exports = "<template><div>I am a Blade!</div><input type=\"text\" bind.value=\"title\"></template>"; });
+define('text!tap-fx/tap-ux/view-models/view-models.blade.html', ['module'], function(module) { module.exports = "<template><div>I am a Blade!</div><input type=\"text\" bind.value=\"title\"></template>"; });
 //# sourceMappingURL=app-bundle.js.map

@@ -1,3 +1,5 @@
+declare var TapFx;
+
 interface IExtensionLoadingInfo {
     id: string;
     files: string[];
@@ -12,10 +14,13 @@ export class Shell {
         let extensionLoadingInfo = {
             id: 'extension-1',
             files: [
+                // load TapFx scripts
                 './src/tap-fx-dist/tap-rpc/event-bus.js',
                 './src/tap-fx-dist/tap-ux/view-models/view-models.blade.js',
 
-                './src-extensions/extension-1-dist/main.js',
+                // load extension scripts
+                './src-extensions/extension-1-dist/main-blade.js',
+                './src-extensions/extension-1-dist/app.js',
             ]
         }
         return extensionLoadingInfo;
@@ -54,8 +59,6 @@ export class Shell {
         }
 
         let iFrame = document.createElement('iframe');
-        iFrame.setAttribute('id', extensionLoadingInfo.id);
-        iFrame.setAttribute('src', 'about:blank');
 
         document.querySelector('#extension-iframes').appendChild(iFrame);
 
@@ -67,7 +70,17 @@ export class Shell {
             iFrame.contentWindow.document.body.appendChild(scriptTag);
         });
 
+        iFrame.setAttribute('id', extensionLoadingInfo.id);
+        iFrame.setAttribute('src', 'about:blank');
+        iFrame.setAttribute('sandbox', '');
+
         this.extensions.push(extensionLoadingInfo.id);
+
+        setTimeout(() => {
+            var vm = (iFrame.contentWindow as any).create();
+            console.log('...and the VM is: ', vm);
+            vm.onInitialize();
+        }, 1000);
     }
 
     unloadExtension(id: string): void {

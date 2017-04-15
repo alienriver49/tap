@@ -91,7 +91,8 @@ function bundleExtension1() {
     return gulp
         .src('./dist-tap-extensions/extension-1/**/*.js')
         .pipe(rollup({
-            entry: './dist-tap-extensions/extension-1/index.js'
+            entry: './dist-tap-extensions/extension-1/index.js',
+            format: 'es'
         }))
         .pipe(rename('extension-1-bundle.js'))
         .pipe(gulp.dest('./dist-tap-extensions/extension-1'));
@@ -114,3 +115,11 @@ gulp.task('build-extension-1', gulp.series([
     compileExtension1,
     bundleExtension1
 ]));
+
+gulp.task('build', gulp.series([
+    'build-tap-fx',
+    gulp.parallel([
+        'build-tap-shell',
+        'build-extension-1'
+    ])
+]))

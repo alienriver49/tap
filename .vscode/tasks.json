@@ -11,6 +11,15 @@
             "isBuildCommand": false
         },
         {
+            "taskName": "build: TapShell",
+            "command": "gulp",
+            "args": [
+                "build-tap-shell"
+            ],
+            "isShellCommand": true,
+            "isBuildCommand": false
+        },
+        {
             "taskName": "build: Extension-1",
             "command": "gulp",
             "args": [

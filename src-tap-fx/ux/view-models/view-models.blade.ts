@@ -1,5 +1,7 @@
 export default class Blade {
-    constructor() { }
+    constructor() {
+        this.title = 'hello';
+    }
 
     title: string;
     subtitle: string;

@@ -1,9 +1,7 @@
-var ExtensionLoaderEngine = (function () {
-    function ExtensionLoaderEngine() {
+export default class ExtensionLoaderEngine {
+    constructor() {
     }
-    ExtensionLoaderEngine.prototype.loadExtension = function () {
+    loadExtension() {
         console.log('load extension');
-    };
-    return ExtensionLoaderEngine;
-}());
-exports.default = ExtensionLoaderEngine;
+    }
+}

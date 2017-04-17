@@ -1,14 +1,12 @@
 import Extension from './extension';
-var ExtensionManager = (function () {
-    function ExtensionManager() {
+export default class ExtensionManager {
+    constructor() {
         this._extensions = {};
     }
-    ExtensionManager.prototype.getExtension = function (id) {
+    getExtension(id) {
         return this._extensions[id];
-    };
-    ExtensionManager.prototype.newExtension = function () {
+    }
+    newExtension() {
         return new Extension();
-    };
-    return ExtensionManager;
-}());
-exports.default = ExtensionManager;
+    }
+}

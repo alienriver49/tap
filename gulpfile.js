@@ -6,7 +6,7 @@ const ts = require('gulp-typescript');
 const rollup = require('gulp-rollup');
 const rename = require('gulp-rename');
 
-const TS_TARGET = 'es5';
+const TS_TARGET = 'es2015';
 const TS_MODULE = 'es2015';
 
 function cleanTapFxDist() {

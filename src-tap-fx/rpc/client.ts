@@ -2,14 +2,14 @@ interface Subscription {
     unsubscribe: () => void;
 }
 
-class Rpc {
+class RpcClient {
     constructor() {
-        window.addEventListener('message', this.onWindowMessage, false);
+        window.addEventListener('message', this._onWindowMessage, false);
     }
 
     private _subscriptionLookup: { [eventId: string]: Function[] } = {};
 
-    private inIFrame(): boolean {
+    private _inIFrame(): boolean {
         try {
             return window.self !== window.top;
         } catch (e) {
@@ -17,13 +17,13 @@ class Rpc {
         }
     }
 
-    private onWindowMessage = ((message: any): void => {
+    private _onWindowMessage = ((message: any): void => {
         if (message && message.data) {
-            this.notifySubscriber(message.data.eventId, message.data.eventData);
+            this._notifySubscriber(message.data.eventId, message.data.eventData);
         }
     }).bind(this);
 
-    private notifySubscriber(eventId: string, data?: any) {
+    private _notifySubscriber(eventId: string, data?: any) {
         let subscriptions = this._subscriptionLookup[eventId];
         if (subscriptions) {
             subscriptions = subscriptions.slice();
@@ -61,7 +61,7 @@ class Rpc {
             throw new Error('Event type was invalid.');
         }
 
-        this.notifySubscriber(eventId, data);
+        this._notifySubscriber(eventId, data);
 
         let message = {
             eventId: eventId,
@@ -69,7 +69,7 @@ class Rpc {
         };
 
         // publish to parent iFrame
-        if (this.inIFrame()) {
+        if (this._inIFrame()) {
             window.parent.postMessage(message, '*');
         }
 
@@ -81,4 +81,4 @@ class Rpc {
     }
 }
 
-export default new Rpc();
+export default new RpcClient();

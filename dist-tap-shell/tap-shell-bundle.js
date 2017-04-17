@@ -1,14 +1,13 @@
 var TapShell = (function () {
 'use strict';
 
-var ExtensionManager = (function () {
-    function ExtensionManager() {
+class ExtensionManager {
+    constructor() {
     }
-    ExtensionManager.prototype.doSomething = function () {
+    doSomething() {
         console.log('do something');
-    };
-    return ExtensionManager;
-}());
+    }
+}
 var ExtensionManager$1 = new ExtensionManager();
 
 var index = {

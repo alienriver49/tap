@@ -1,9 +1,8 @@
-var ExtensionManager = (function () {
-    function ExtensionManager() {
+class ExtensionManager {
+    constructor() {
     }
-    ExtensionManager.prototype.doSomething = function () {
+    doSomething() {
         console.log('do something');
-    };
-    return ExtensionManager;
-}());
+    }
+}
 export default new ExtensionManager();

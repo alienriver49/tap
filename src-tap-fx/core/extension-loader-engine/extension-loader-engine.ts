@@ -1,7 +1,11 @@
-export default class ExtensionLoaderEngine {
+import Blade from './../../ux/view-models/view-models.blade' // type only
+
+class ExtensionLoaderEngine {
     constructor() { }
 
-    loadExtension(): void {
-        console.log('load extension');
+    addBlade(blade: Blade): void {
+        console.log('now i have to add a blade', blade);
     }
 }
+
+export default new ExtensionLoaderEngine();

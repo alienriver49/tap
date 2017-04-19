@@ -1,7 +1,8 @@
-export default class ExtensionLoaderEngine {
+class ExtensionLoaderEngine {
     constructor() {
     }
-    loadExtension() {
-        console.log('load extension');
+    addBlade(blade) {
+        console.log('now i have to add a blade', blade);
     }
 }
+export default new ExtensionLoaderEngine();

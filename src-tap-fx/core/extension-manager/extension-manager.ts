@@ -1,15 +1,13 @@
-import Extension from './extension';
+//import Extension from './extension';
+import ExtensionLoaderEngine from './../extension-loader-engine/extension-loader-engine'
+import Blade from './../../ux/view-models/view-models.blade' // type only
 
-export default class ExtensionManager {
+class ExtensionManager {
     constructor() { }
 
-    private _extensions: { [id: string]: Extension } = {};
-
-    getExtension(id: string): Extension {
-        return this._extensions[id];
-    }
-
-    newExtension(): Extension {
-        return new Extension();
+    addBlade(blade: Blade) {
+        ExtensionLoaderEngine.addBlade(blade);
     }
 }
+
+export default new ExtensionManager();

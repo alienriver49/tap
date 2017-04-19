@@ -56,8 +56,8 @@ function compileExtension1() {
     return gulp
         .src('./src-tap-extensions/extension-1/**/*.ts')
         .pipe(ts({
-            target: 'es5',
-            module: "commonjs",
+            target: TS_TARGET,
+            module: TS_MODULE,
             outDir: './dist-tap-extensions/extension-1',
         }))
         .pipe(gulp.dest('./dist-tap-extensions/extension-1'));

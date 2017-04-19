@@ -89,20 +89,23 @@ class Blade {
     }
 }
 
-class Extension {
+class ExtensionLoaderEngine {
+    constructor() {
+    }
+    addBlade(blade) {
+        console.log('now i have to add a blade', blade);
+    }
 }
+var ExtensionLoaderEngine$1 = new ExtensionLoaderEngine();
 
 class ExtensionManager {
     constructor() {
-        this._extensions = {};
     }
-    getExtension(id) {
-        return this._extensions[id];
-    }
-    newExtension() {
-        return new Extension();
+    addBlade(blade) {
+        ExtensionLoaderEngine$1.addBlade(blade);
     }
 }
+var ExtensionManager$1 = new ExtensionManager();
 
 var index = {
     Utilities: Utilities,
@@ -110,7 +113,7 @@ var index = {
     ViewModels: {
         Blade: Blade
     },
-    ExtensionManager: ExtensionManager
+    ExtensionManager: ExtensionManager$1
 };
 
 return index;

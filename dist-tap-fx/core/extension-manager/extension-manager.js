@@ -1,12 +1,9 @@
-import Extension from './extension';
-export default class ExtensionManager {
+import ExtensionLoaderEngine from './../extension-loader-engine/extension-loader-engine';
+class ExtensionManager {
     constructor() {
-        this._extensions = {};
     }
-    getExtension(id) {
-        return this._extensions[id];
-    }
-    newExtension() {
-        return new Extension();
+    addBlade(blade) {
+        ExtensionLoaderEngine.addBlade(blade);
     }
 }
+export default new ExtensionManager();

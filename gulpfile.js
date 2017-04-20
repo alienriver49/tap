@@ -3,8 +3,7 @@
 const gulp = require('gulp');
 const del = require('del');
 const ts = require('gulp-typescript');
-const rollup = require('gulp-rollup');
-const rename = require('gulp-rename');
+const rollup = require('rollup');
 
 const TS_TARGET = 'es2015';
 const TS_MODULE = 'es2015';
@@ -34,6 +33,7 @@ function compileTapFx() {
     return gulp
         .src('./src-tap-fx/**/*.ts')
         .pipe(ts({
+            allowJs: true,
             target: TS_TARGET,
             module: TS_MODULE,
             outDir: './dist-tap-fx',
@@ -64,38 +64,38 @@ function compileExtension1() {
 }
 
 function bundleTapFx() {
-    return gulp
-        .src('./dist-tap-fx/**/*.js')
-        .pipe(rollup({
-            entry: './dist-tap-fx/index.js',
+    return rollup.rollup({
+        entry: './dist-tap-fx/index.js'
+    }).then(function (bundle) {
+        return bundle.write({
             format: 'iife',
             moduleName: 'TapFx',
-        }))
-        .pipe(rename('tap-fx-bundle.js'))
-        .pipe(gulp.dest('./dist-tap-fx/'));
+            dest: './dist-tap-fx/tap-fx-bundle.js'
+        });
+    });
 }
 
 function bundleTapShell() {
-    return gulp
-        .src('./dist-tap-shell/**/*.js')
-        .pipe(rollup({
-            entry: './dist-tap-shell/index.js',
+    return rollup.rollup({
+        entry: './dist-tap-shell/index.js'
+    }).then(function (bundle) {
+        return bundle.write({
             format: 'iife',
-            moduleName: 'TapShell'
-        }))
-        .pipe(rename('tap-shell-bundle.js'))
-        .pipe(gulp.dest('./dist-tap-shell'));
+            moduleName: 'TapShell',
+            dest: './dist-tap-shell/tap-shell-bundle.js'
+        });
+    });
 }
 
 function bundleExtension1() {
-    return gulp
-        .src('./dist-tap-extensions/extension-1/**/*.js')
-        .pipe(rollup({
-            entry: './dist-tap-extensions/extension-1/index.js',
-            format: 'es'
-        }))
-        .pipe(rename('extension-1-bundle.js'))
-        .pipe(gulp.dest('./dist-tap-extensions/extension-1'));
+    return rollup.rollup({
+        entry: './dist-tap-extensions/extension-1/index.js'
+    }).then(function (bundle) {
+        return bundle.write({
+            format: 'es',
+            dest: './dist-tap-extensions/extension-1/extension-1-bundle.js'
+        });
+    });
 }
 
 gulp.task('build-tap-fx', gulp.series([

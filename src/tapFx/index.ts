@@ -1,8 +1,8 @@
 import * as Utilities from './utilities/utilities'
 import RpcClient from './rpc/client'
-import Blade from './ux/view-models/view-models.blade'
+import Blade from './ux/view-models/viewModels.blade'
 
-import ExtensionManager from './core/extension-manager/extension-manager'
+import ExtensionManager from './core/extension-manager/extensionManager'
 
 var tapFx = {
     Utilities: Utilities,

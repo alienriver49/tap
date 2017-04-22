@@ -1,4 +1,4 @@
-import ExtensionManager from './extension-manager'
+import ExtensionManager from './extensionManager'
 
 var tapShell = {
     ExtensionManager: ExtensionManager

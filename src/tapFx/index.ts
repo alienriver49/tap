@@ -4,7 +4,7 @@ import Blade from './ux/view-models/view-models.blade'
 
 import ExtensionManager from './core/extension-manager/extension-manager'
 
-export default {
+var tapFx = {
     Utilities: Utilities,
     Rpc: RpcClient,
     ViewModels: {
@@ -12,3 +12,7 @@ export default {
     },
     ExtensionManager: ExtensionManager
 };
+
+window['TapFx'] = tapFx;
+
+export default tapFx;

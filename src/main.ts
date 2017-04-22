@@ -1,25 +1,6 @@
-import { Aurelia } from 'aurelia-framework'
-import environment from './environment';
+import { Aurelia } from 'aurelia-framework';
 
-//Configure Bluebird Promises.
-(<any>Promise).config({
-  warnings: {
-    wForgottenReturn: false
-  }
-});
-
-export function configure(aurelia: Aurelia) {
-  aurelia.use
-    .standardConfiguration()
-    .feature('resources');
-
-  if (environment.debug) {
-    aurelia.use.developmentLogging();
-  }
-
-  if (environment.testing) {
-    aurelia.use.plugin('aurelia-testing');
-  }
-
-  aurelia.start().then(() => aurelia.setRoot('app/app'));
+export function configure(aurelia: Aurelia): void {
+    aurelia.use.standardConfiguration();
+    aurelia.start().then(() => aurelia.setRoot('app/app'));
 }

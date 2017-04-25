@@ -1,7 +1,7 @@
 const path = require('path');
-const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const AureliaWebPackPlugin = require('aurelia-webpack-plugin');
+const { AureliaPlugin } = require('aurelia-webpack-plugin');
+const { optimize: { CommonsChunkPlugin }, ProvidePlugin } = require('webpack')
 const { TsConfigPathsPlugin, CheckerPlugin } = require('awesome-typescript-loader');
 
 const outDir = path.resolve(__dirname, 'dist');
@@ -17,54 +17,42 @@ const nodeModulesDir = path.resolve(__dirname, 'node_modules');
 const appUrlRoot = '';
 
 module.exports = {
-    entry: {
-        vendor: [
-            'aurelia-bootstrapper-webpack',
-            'aurelia-event-aggregator',
-            'aurelia-framework',
-            'aurelia-history-browser',
-            'aurelia-logging-console',
-            'aurelia-templating-binding',
-            'aurelia-templating-router',
-            'aurelia-templating-resources'
-        ],
-        app: [path.join(srcDir, 'main.ts')],
-        tapShell: [path.join(tapShellSrcDir, 'index.ts')],
-        tapFx: [path.join(tapFxSrcDir, 'index.ts')],
-        tapExt1: [path.join(tapExt1SrcDir, 'index.ts')]
-    },
-
-    output: {
-        path: outDir,
-        publicPath: appUrlRoot,
-        filename: '[name]-bundle.js',
-        chunkFilename: '[name]-bundle.[id].js',
-        sourceMapFilename: '[name]-bundle.js.map'
-    },
-
+    //devtool: 'source-map',
     resolve: {
         extensions: ['.ts', '.js'],
         modules: [srcDir, tapFxSrcDir, tapShellSrcDir, tapExt1SrcDir, nodeModulesDir].map(dir => path.resolve(dir))
     },
-
-    devtool: 'source-map',
-
+    entry: {
+        app: 'aurelia-bootstrapper',
+        tapShell: path.join(tapShellSrcDir, 'index.ts'),
+        tapFx: path.join(tapFxSrcDir, 'index.ts'),
+        tapExt1: path.join(tapExt1SrcDir, 'index.ts')
+    },
+    output: {
+        path: outDir,
+        publicPath: appUrlRoot,
+        filename: '[name]-bundle.js',
+        sourceMapFilename: '[name]-bundle.map',
+        chunkFilename: '[hash].chunk.js',
+    },
     module: {
         rules: [
-            { test: /\.ts$/, loader: 'awesome-typescript-loader' },
+            { test: /\.ts$/i, loader: 'awesome-typescript-loader', exclude: nodeModulesDir },
             { test: /\.html$/, loader: 'html-loader' }
         ]
     },
-
     plugins: [
-        new AureliaWebPackPlugin(),
+        new AureliaPlugin({
+            aureliaApp: undefined,
+            includeAll: 'src/app'
+        }),
         new TsConfigPathsPlugin(),
         new CheckerPlugin(),
-        new webpack.optimize.CommonsChunkPlugin('vendor'),
+        new CommonsChunkPlugin({ name: ['common'] }),
         new HtmlWebpackPlugin({
             template: 'index.html',
             chunks: [
-                'vendor',
+                'common',
                 'app',
                 'tapFx',
                 'tapShell'

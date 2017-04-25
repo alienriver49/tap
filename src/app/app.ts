@@ -7,7 +7,7 @@ export class App {
 
     loadExtension(id: string): void {
         let extensionScripts = [
-            'vendor-bundle.js',
+            'common-bundle.js',
             'tapFx-bundle.js'
         ];
 

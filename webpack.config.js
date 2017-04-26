@@ -17,7 +17,7 @@ const nodeModulesDir = path.resolve(__dirname, 'node_modules');
 const appUrlRoot = '';
 
 module.exports = {
-    devtool: 'source-map',
+    //devtool: 'source-map',
     resolve: {
         extensions: ['.ts', '.js'],
         modules: [srcDir, tapFxSrcDir, tapShellSrcDir, tapExt1SrcDir, nodeModulesDir].map(dir => path.resolve(dir))
@@ -25,7 +25,7 @@ module.exports = {
     entry: {
         app: 'aurelia-bootstrapper',
         tapShell: path.join(tapShellSrcDir, 'index.ts'),
-        tapFx: path.join(tapFxSrcDir, 'index.ts'),
+        tapFx: ['aurelia-polyfills', 'aurelia-loader-webpack', path.join(tapFxSrcDir, 'index.ts')],
         tapExt1: path.join(tapExt1SrcDir, 'index.ts')
     },
     output: {

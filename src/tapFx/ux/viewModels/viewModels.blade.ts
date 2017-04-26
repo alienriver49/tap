@@ -1,4 +1,4 @@
-export default class Blade {
+class Blade {
     constructor() {
         this.title = 'hello';
     }
@@ -6,3 +6,5 @@ export default class Blade {
     title: string;
     subtitle: string;
 }
+
+export default Blade

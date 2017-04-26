@@ -81,4 +81,4 @@ class RpcClient {
     }
 }
 
-export default new RpcClient();
+export default RpcClient;

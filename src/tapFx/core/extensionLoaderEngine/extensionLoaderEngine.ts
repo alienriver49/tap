@@ -1,4 +1,4 @@
-import Blade from './../../ux/view-models/viewModels.blade' // type only
+import Blade from './../../ux/viewModels/viewModels.blade' // type only
 import { inject } from 'aurelia-dependency-injection'
 import { BindingEngine } from 'aurelia-binding'
 
@@ -14,7 +14,7 @@ class ExtensionLoaderEngine {
         console.log('now i have to add a blade', blade);
         var propertyObserver = this._bindingEngine.propertyObserver(blade, 'title');
         var subscription = propertyObserver.subscribe((newValue, oldValue) => {
-            console.log('blade title has changed.... from:', oldValue, ' to:', newValue);
+            console.log('OMG....blade title has changed.... from:', oldValue, ' to:', newValue);
         });
     }
 }

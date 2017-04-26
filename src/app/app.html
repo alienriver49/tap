@@ -1,5 +1,5 @@
 <template>
-    <h1>TapFx POC</h1>
+    <h1>TapFx</h1>
 
     <div>
         <button type="button" click.delegate="loadExtension('1')">Load Extension 1</button>
@@ -7,12 +7,12 @@
 
     <br />
 
-    <h1>Extension iFrames: ${extensions.length}</h1>
+    <div>Extension iFrames: ${extensions.length}</div>
     <div repeat.for="extensionId of extension">
         ${extensionId}
     </div>
     <div id="extension-iframes"></div>
 
-    <h1>Extension UIs</h1>
+    <div>Extension UIs</div>
     <div id="extensions"></div>
 </template>

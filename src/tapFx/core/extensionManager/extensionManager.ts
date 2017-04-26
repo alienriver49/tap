@@ -1,6 +1,6 @@
 import { inject } from 'aurelia-dependency-injection'
-import ExtensionLoaderEngine from './../extension-loader-engine/extensionLoaderEngine'
-import Blade from './../../ux/view-models/viewModels.blade' // type only
+import ExtensionLoaderEngine from './../extensionLoaderEngine/extensionLoaderEngine'
+import Blade from './../../ux/viewModels/viewModels.blade' // type only
 
 @inject(ExtensionLoaderEngine)
 class ExtensionManager {

@@ -1,8 +1,6 @@
 import LandingBlade from './landingBlade'
 
-(() => {
-    var TapFx = window['TapFx'];
-
+((TapFx) => {
     console.log('The extension is loaded.');
     console.log('Attempting to add blade...');
 
@@ -16,4 +14,4 @@ import LandingBlade from './landingBlade'
         console.log('attempting to update title');
         landingBlade.title = 'I_HAVE_UDPATED_TITLE';
     }, 2500);
-})();
+})(window.TapFx);

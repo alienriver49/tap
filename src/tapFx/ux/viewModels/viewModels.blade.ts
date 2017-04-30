@@ -1,7 +1,5 @@
 class Blade {
-    constructor() {
-        this.title = 'hello';
-    }
+    constructor() { }
 
     title: string;
     subtitle: string;

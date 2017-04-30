@@ -1,3 +1,5 @@
+/// <reference path="./../typings.d.ts" />
+
 import Utilities from './utilities/utilities'
 import RpcClient from './rpc/client'
 import BindingEngine from './binding/bindingEngine'
@@ -26,6 +28,6 @@ bootstrap(aurelia => {
             },
             ExtensionManager: aurelia.container.get(ExtensionManager)
         };
-        window['TapFx'] = tapFx;
+        window.TapFx = tapFx;
     });
 });

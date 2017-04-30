@@ -1,37 +1,39 @@
 import { inject } from 'aurelia-dependency-injection'
+import Utilities from './../../utilities/utilities'
 import BindingEngine from './../../binding/bindingEngine'
 
-@inject(BindingEngine)
+@inject(Utilities, BindingEngine)
 class Extension {
-    constructor(private _bindingEngine: BindingEngine) { }
+    constructor(
+        private _utilities: Utilities,
+        private _bindingEngine: BindingEngine
+    ) { }
 
-    registerBladeBindings(blade: Object): void {
+    private _bladeIDs: string[] = [];
+
+    registerBladeBindings(blade: Object): any {
+        let serializedBlade = {};
+
+        let bladeID = this._utilities.newGuid();
+        this._bindingEngine.resolveId(blade, bladeID);
+
         for (let prop in blade) {
             // only register blade's own properties and not those on the prototype chain
             // anything starting with an underscore is treated as a private property and is not watched for changes
             // skip Functions
             if (blade.hasOwnProperty(prop) &&
                 prop.charAt(0) !== '_' &&
-                ({}).toString.call(blade[prop] !== '[object Function]')
+                this._utilities.classOf(blade[prop]) !== '[object Function]'
             ) {
                 this._bindingEngine.observe(blade, prop);
-            }
-        }
-    }
-
-    serializeBlade(blade: Object): { [property: string]: any } {
-        let serializedBlade = {};
-
-        for (let prop in blade) {
-            if (blade.hasOwnProperty(prop) &&
-                prop.charAt(0) !== '_' &&
-                ({}).toString.call(blade[prop] !== '[object Function]')
-            ) {
                 serializedBlade[prop] = blade[prop];
             }
         }
 
-        return serializedBlade;
+        return {
+            bladeId: bladeID,
+            serializedBlade: serializedBlade
+        }
     }
 }
 

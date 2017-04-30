@@ -1,17 +1,17 @@
 import LandingBlade from './landingBlade'
 
 ((TapFx) => {
-    console.log('The extension is loaded.');
-    console.log('Attempting to add blade...');
+    console.log('[EXT-1] Attempting to add blade.');
 
     var landingBlade = new LandingBlade();
-    landingBlade.title = 'My First Landing Blade';
-    landingBlade.subtitle = 'That is how you know that Extension-1 has made it';
+    landingBlade.title = 'Title';
+    landingBlade.subtitle = 'Subtitle';
+    landingBlade.display = 'Title - Subtitle';
 
     TapFx.ExtensionManager.addBlade(landingBlade);
 
-    setTimeout(() => {
-        console.log('attempting to update title');
-        landingBlade.title = 'I_HAVE_UDPATED_TITLE';
-    }, 2500);
+    // setTimeout(() => {
+    //     console.log('[EXT-1] Attempting to update title.');
+    //     landingBlade.title = 'I_HAVE_UDPATED_TITLE';
+    // }, 2500);
 })(window.TapFx);

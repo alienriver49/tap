@@ -1,12 +1,21 @@
-export default class LandingBlade {
+class LandingBlade extends window.TapFx.ViewModels.Blade {
     title: string;
     subtitle: string;
+    display: string;
+
+    private _updateDisplay() {
+        this.display = this.title === this.subtitle ? 'MATCHING' : `${this.title}-${this.subtitle}`
+    }
 
     titleChanged(newValue: string, oldValue: string): void {
-        console.log('Now...the Blade...knows that the title has changed.')
+        console.log('[EXT-1] Blade title has changed.');
+        this._updateDisplay();
     }
 
     subtitleChanged(newValue: string, oldValue: string): void {
-        console.log('Now...the Blade...knows that the subtitle has changed.')
+        console.log('[EXT-1] Blade subtitle has changed.')
+        this._updateDisplay();
     }
 }
+
+export default LandingBlade

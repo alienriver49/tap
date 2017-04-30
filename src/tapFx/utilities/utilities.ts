@@ -5,6 +5,10 @@ class Utilities {
             return v.toString(16);
         });
     }
+
+    classOf(object: any): string {
+        return ({}).toString.call(object);
+    }
 }
 
 export default Utilities;

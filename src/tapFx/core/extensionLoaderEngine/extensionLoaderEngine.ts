@@ -11,11 +11,8 @@ class ExtensionLoaderEngine {
     ) { }
 
     loadBlade(blade: Blade): void {
-        this._extension.registerBladeBindings(blade);
-
-        let serializedBlade = this._extension.serializeBlade(blade);
-
-        this._rpc.publish('tapfx.newBlade', serializedBlade);
+        let bladeInfo = this._extension.registerBladeBindings(blade);
+        this._rpc.publish('tapfx.newBlade', bladeInfo);
     }
 }
 

@@ -61,7 +61,8 @@ class RpcClient {
             throw new Error('Event type was invalid.');
         }
 
-        this._notifySubscriber(eventId, data);
+        // no need to notify local subscribers when publishing to RPC        
+        //this._notifySubscriber(eventId, data);
 
         let message = {
             eventId: eventId,
@@ -74,6 +75,7 @@ class RpcClient {
         }
 
         // publish to child iFrames
+        // TODO: modify to publish to a specific iFrame directly
         let i = window.frames.length;
         while (i--) {
             window.frames[i].postMessage(message, '*');

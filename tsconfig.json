@@ -1,7 +1,10 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "target": "es5",
+    //"target": "es5",
+    "target": "es6", // LG
+    "module": "es6", // LG
+    "moduleResolution": "node", // LG
     "sourceMap": true,
     "noImplicitAny": false,
     "removeComments": false,

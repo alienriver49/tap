@@ -15,5 +15,5 @@ import LandingBlade from './landingBlade'
     setTimeout(() => {
         console.log('attempting to update title');
         landingBlade.title = 'I_HAVE_UDPATED_TITLE';
-    }, 1000);
+    }, 2500);
 })();

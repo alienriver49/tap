@@ -11,7 +11,7 @@ class ExtensionManager {
     ) { }
 
     addBlade(blade: Blade) {
-        this._extensionLoaderEngine.addBlade(blade);
+        this._extensionLoaderEngine.loadBlade(blade);
     }
 }
 

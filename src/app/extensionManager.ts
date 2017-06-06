@@ -17,18 +17,18 @@ class ExtensionManager {
 
     extensions: Extension[] = [];
 
-    loadExtension(id: number): Promise<string> {
+    loadExtension(extensionName: string, ...params: any[]): Promise<string> {
         return new Promise<string>((resolve) => {
             let extensionScripts = [
                 'common-bundle.js',
                 'tapFx-bundle.js'
             ];
 
-            switch (id) {
-                case 1:
+            switch (extensionName) {
+                case 'ext1':
                     extensionScripts.push('tapExt1-bundle.js');
                     break;
-                default: throw new Error('Unknow extension ID specified.');
+                default: throw new Error('Unknown extension specified.');
             }
 
             let extensionID = window.TapFx.Utilities.newGuid();
@@ -59,6 +59,28 @@ class ExtensionManager {
                     }
                 }, 1000 * index);
             });
+        });
+    }
+
+    // TODO: Stubbed for now.
+    updateExtensionParams(extensionName: string, ...params: any[]): Promise<string> {
+        return new Promise<string>((resolve) => {
+            // Need to ensure passed extension is loaded
+
+            // Update params for that extension
+
+            resolve("extension params updated");
+        });
+    }
+
+    // TODO: Stubbed for now. Function params TBD, but probably just the extension name
+    unloadExtension(extensionName: string): Promise<string> {
+        return new Promise<string>((resolve) => {
+            // Need to ensure passed extension is loaded
+
+            // Upload the extension
+
+            resolve("extension unloaded");
         });
     }
 }

@@ -1,15 +1,18 @@
 import { inject } from 'aurelia-framework'
-import ExtensionManager from './extensionManager'
+import Router from './router'
+import ExtensionManager from './extensionManager' // imported and injected for use on the view
 
-@inject(ExtensionManager)
+@inject(Router, ExtensionManager)
 export class App {
-    constructor(public extensionManager: ExtensionManager) { }
-
-    loadExtension(id: number): void {
-        console.log('[SHELL] Start loading extension: ', id);
-        this.extensionManager.loadExtension(id).then((extensionID) => {
-            console.log('[SHELL] Finish loading extension: ', id, ' with (ID): ', extensionID);
-            console.log('');
-        });
+    constructor(
+        public router: Router,
+        public extensionManager: ExtensionManager
+    ) {
+        // Temporary, add a listener for when the page finishes loading to activate our router. Similar to how the router-view and configureRouter work with the aurelia-router.
+        // Currently done this way because of the adding of iframes to the extension-iframes div, we must have that div before loading extensions.
+        window.onload = () => {
+            console.log('[SHELL] Window onload triggered.')
+            this.router.activate();
+        }
     }
 }

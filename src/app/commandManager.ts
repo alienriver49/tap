@@ -9,8 +9,8 @@ class CommandManager {
     handleRouteChange(from: string, to: string): void {
         console.log('[SHELL] Handle route change from "' + from + '" to "' + to + '".');
 
-        var fromCommand = this.resolveUrlToCommand(from);
-        var toCommand = this.resolveUrlToCommand(to);
+        let fromCommand = this.resolveUrlToCommand(from);
+        let toCommand = this.resolveUrlToCommand(to);
 
         // Not sure we want the command manager to manage this case
         /*if (from === to) {
@@ -28,17 +28,17 @@ class CommandManager {
 
     resolveUrlToCommand(url: string): Command {
         // URL fragment parsing (may change this to use a regex in the future)
-        var fragment: string = url;
-        var queryString: string = '';
-        var queryIndex = fragment.indexOf('?');
+        let fragment: string = url;
+        let queryString: string = '';
+        let queryIndex = fragment.indexOf('?');
         if (queryIndex !== -1) {
             fragment = url.substr(0, queryIndex);
             queryString = url.substr(queryIndex + 1);
         }
-        var fragmentArr = fragment.slice(1).split('/');
+        let fragmentArr = fragment.slice(1).split('/');
         
         // form the command
-        var command = new Command();
+        let command = new Command();
         command.extensionName = fragmentArr[0];
         command.params = (fragmentArr.length > 1 ? fragmentArr.slice(1) : []);
         // TODO: Determine handling of query params

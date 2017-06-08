@@ -1,8 +1,12 @@
+
 class LandingBlade extends window.TapFx.ViewModels.Blade {
     title: string;
     subtitle: string;
     display: string;
 
+    constructor() { 
+        super();
+    }
     private _updateDisplay() {
         this.display = this.title === this.subtitle ? 'MATCHING' : `${this.title}-${this.subtitle}`
     }
@@ -18,4 +22,4 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
     }
 }
 
-export default LandingBlade
+export default LandingBlade 

@@ -49,6 +49,8 @@ module.exports = {
     },
     plugins: [
         new AureliaPlugin({
+            nameExternalModules: false, 
+            nameLocalModules: false, 
             aureliaApp: undefined,
             includeAll: 'src/app'
         }),

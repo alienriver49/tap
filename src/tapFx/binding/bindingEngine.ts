@@ -41,7 +41,7 @@ class BindingEngine {
         this._contextObserversMap.set(contextID, []);
     }
 
-    observe(context: Object, property: string): void {
+    observe(context: Object, property: string, extensionId: string = ""): void {
         // if it is the first property to be observerd on the context, keep track of the context as being observed
         let contextID = this._contextIDMap.get(context);
         if (!contextID) {
@@ -54,7 +54,7 @@ class BindingEngine {
         });
 
         if (existingObserverIndex === -1) {
-            let observer = this._proxiedObservableFactory(contextID, context, property);
+            let observer = this._proxiedObservableFactory(contextID, context, property, extensionId);
             observer.observe();
 
             // keep track of the current observer            

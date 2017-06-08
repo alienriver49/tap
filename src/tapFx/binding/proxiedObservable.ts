@@ -12,7 +12,8 @@ class ProxiedObservable {
         private _utilities: Utilities,
         private _contextID: string,
         private _context: Object,
-        private _property: string
+        private _property: string,
+        private _extensionId: string
     ) { }
 
     private _observer: InternalPropertyObserver;
@@ -21,7 +22,7 @@ class ProxiedObservable {
         if (newValue === oldValue) return;
 
         console.log('[TAP-FX] Property has changed from: "', oldValue, '" to: "', newValue, '"');
-        this._rpc.publish('tapfx.bindingSync', {
+        this._rpc.publish('tapfx.bindingSync', this._extensionId, {
             contextID: this._contextID,
             property: this._property,
             newValue: newValue,

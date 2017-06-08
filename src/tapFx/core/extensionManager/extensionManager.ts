@@ -1,4 +1,5 @@
 import { inject } from 'aurelia-dependency-injection'
+import { View} from 'aurelia-templating'
 import ExtensionLoaderEngine from './../extensionLoaderEngine/extensionLoaderEngine'
 import AuthorizationEngine from './../authorizationEngine/authorizationEngine'
 import Blade from './../../ux/viewModels/viewModels.blade' // type only
@@ -10,8 +11,11 @@ class ExtensionManager {
         private _authorizationEngine: AuthorizationEngine
     ) { }
 
-    addBlade(blade: Blade) {
-        this._extensionLoaderEngine.loadBlade(blade);
+    addBlade(blade: Blade, serializedView: string) {
+        // let div = document.createElement('div');
+        // div.appendChild(view.fragment.cloneNode(true));
+        // let serializedView = '<template>' + div.innerHTML + '</template>'; 
+        this._extensionLoaderEngine.loadBlade(blade, serializedView);
     }
 }
 

@@ -17,11 +17,12 @@
 
     <div id="extension-containers" class="extension-containers">
         <div repeat.for="extension of extensionManager.extensions">
-            <div>Extension ID: ${extension.id}</div>
+            <div id.one-way="'tap_ext:' + extension.id">Extension ID: ${extension.id}</div>
             <br />
+            <!--
             <div repeat.for="blade of extension.blades">
                 <div>
-                    <label for="title"><strong>Title:</strong></label>
+                    <label fr="title"><strong>Title:</strong></label>
                     <input type="text" value.bind="blade.title" />
                 </div>
                 <br />
@@ -35,6 +36,7 @@
                     <span>${blade.display}</span>
                 </div>
             </div>
+            -->
             <br />
         </div>
     </div>

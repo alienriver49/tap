@@ -1,4 +1,4 @@
-import { inject, Factory } from 'aurelia-framework'
+import { inject, Factory, computedFrom } from 'aurelia-framework'
 import Extension from './extension'
 
 @inject(Factory.of(Extension))
@@ -12,7 +12,11 @@ class ExtensionManager {
 
     private _onNewBlade(data: any): void {
         console.log('[SHELL] Received newBlade message: ', data);
-        this.extensions[0].addBlade(data.bladeId, data.serializedBlade);
+        let extension = this.extensions.find((ext) => {
+            return ext.id === data.extensionId;
+        }); 
+        if (extension)
+            extension.addBlade(data.bladeId, data.serializedBlade, data.view || '');
     }
 
     extensions: Extension[] = [];

@@ -1,5 +1,6 @@
 import { inject } from 'aurelia-framework'
 import Router from './router'
+import extension from './extension'
 import ExtensionManager from './extensionManager' // imported and injected for use on the view
 
 @inject(Router, ExtensionManager)
@@ -15,4 +16,9 @@ export class App {
             this.router.activate();
         }
     }
+
+    bind(appBindingContext: Object, appOverrideContext: Object) {
+        extension.bindingContext = appBindingContext;
+        extension.overrideContext = appOverrideContext;
+    }    
 }

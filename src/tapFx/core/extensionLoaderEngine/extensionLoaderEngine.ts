@@ -10,9 +10,12 @@ class ExtensionLoaderEngine {
         private _rpc: RpcClient
     ) { }
 
-    loadBlade(blade: Blade): void {
+    loadBlade(blade: Blade, serializedView: string): void {
         let bladeInfo = this._extension.registerBladeBindings(blade);
-        this._rpc.publish('tapfx.newBlade', bladeInfo);
+        // Get the extension Id from RPC and pass it to the shell
+        bladeInfo.extensionId = this._rpc.InstanceId;
+        bladeInfo.view = serializedView;
+        this._rpc.publish('tapfx.newBlade', "", bladeInfo);
     }
 }
 

@@ -1,0 +1,16 @@
+<template>
+    <div>
+        <label for="title"><strong>Title:</strong></label>
+        <input type="text" value.bind="title" />
+    </div>
+    <br />
+    <div>
+        <label for="subtitle"><strong>Subtitle:</strong></label>
+        <input type="text" value.bind="subtitle & updateTrigger:'blur'" />
+    </div>
+    <br />
+    <div>
+        <label for="subtitle"><strong>Display:</strong></label>
+        <span>${display}</span>
+    </div>
+</template>

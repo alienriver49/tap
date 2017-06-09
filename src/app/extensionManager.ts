@@ -1,27 +1,56 @@
 import { inject, Factory, computedFrom } from 'aurelia-framework'
 import Extension from './extension'
+import DeferredPromise from './deferredPromise'
 
 @inject(Factory.of(Extension))
 class ExtensionManager {
     constructor(private _extensionFactory: (...args: any[]) => Extension) {
         let subscription = window.TapFx.Rpc.subscribe('tapfx.newBlade', this._onNewBlade.bind(this));
         this._rpcSubscriptions.push(subscription);
+
+        subscription = window.TapFx.Rpc.subscribe('shell.removeExtension', this._onRemoveExtension.bind(this));
+        this._rpcSubscriptions.push(subscription);
     }
 
+    private _unloadExtensionPromise: DeferredPromise<string>;
     private _rpcSubscriptions: any[] = [];
 
     private _onNewBlade(data: any): void {
         console.log('[SHELL] Received newBlade message: ', data);
         let extension = this.extensions.find((ext) => {
             return ext.id === data.extensionId;
-        }); 
+        });
         if (extension)
             extension.addBlade(data.bladeId, data.serializedBlade, data.view || '');
     }
 
+    private _onRemoveExtension(data: any): void {
+        console.log('[SHELL] Received removeExtension message: ', data);
+        let extensionIndex = this.extensions.findIndex((ext) => {
+            return ext.id === data.extensionId;
+        });
+        if (extensionIndex !== -1) {
+            let extension = this.extensions[extensionIndex];
+            // remove the extension's blades
+            extension.removeBlades();
+
+            // remove the iframe element
+            var iFrameElement = document.getElementById(extension.id);
+            if (iFrameElement) iFrameElement.remove();
+
+            // remove the extension
+            this.extensions.splice(extensionIndex);
+
+            console.log('[SHELL] Finish unloading extension: ' + extension.name);
+            this._unloadExtensionPromise.resolve("extension unloaded");
+        } else {
+            this._unloadExtensionPromise.reject("extension unload failed: extension not found");
+        }
+    }
+
     extensions: Extension[] = [];
 
-    loadExtension(extensionName: string, ...params: any[]): Promise<string> {
+    loadExtension(extensionName: string, params: any[], queryParams: Object): Promise<string> {
         return new Promise<string>((resolve) => {
             let extensionScripts = [
                 'common-bundle.js',
@@ -32,6 +61,9 @@ class ExtensionManager {
                 case 'ext1':
                     extensionScripts.push('tapExt1-bundle.js');
                     break;
+                case 'ext2':
+                    extensionScripts.push('tapExt2-bundle.js');
+                    break;
                 default: throw new Error('Unknown extension specified.');
             }
 
@@ -41,7 +73,7 @@ class ExtensionManager {
             iFrame.setAttribute('id', extensionID);
             iFrame.setAttribute('src', 'about:blank');
 
-            let iFramesEl = document.querySelector('#extension-iframes');
+            let iFramesEl = document.getElementById('extension-iframes');
             if (iFramesEl) {
                 iFramesEl.appendChild(iFrame);
             }
@@ -58,7 +90,9 @@ class ExtensionManager {
                     iFrame.contentWindow.document.body.appendChild(scriptTag);
 
                     if (index === array.length - 1) {
-                        this.extensions.push(this._extensionFactory(extensionID));
+                        this.extensions.push(this._extensionFactory(extensionID, extensionName));
+
+                        console.log('[SHELL] Finish loading extension: ' + extensionName + ' with (ID): ', extensionID);
                         resolve(extensionID);
                     }
                 }, 1000 * index);
@@ -67,25 +101,33 @@ class ExtensionManager {
     }
 
     // TODO: Stubbed for now.
-    updateExtensionParams(extensionName: string, ...params: any[]): Promise<string> {
+    updateExtensionParams(extensionName: string, params: any[], queryParams: Object): Promise<string> {
         return new Promise<string>((resolve) => {
             // Need to ensure passed extension is loaded
 
             // Update params for that extension
 
+            console.log('[SHELL] Finish updating extension: ' + extensionName);
             resolve("extension params updated");
         });
     }
 
-    // TODO: Stubbed for now. Function params TBD, but probably just the extension name
     unloadExtension(extensionName: string): Promise<string> {
-        return new Promise<string>((resolve) => {
-            // Need to ensure passed extension is loaded
+        this._unloadExtensionPromise = new DeferredPromise<string>();
 
-            // Upload the extension
-
-            resolve("extension unloaded");
+        let extension = this.extensions.find((ext) => {
+            return ext.name === extensionName;
         });
+
+        if (!extension) {
+            this._unloadExtensionPromise.reject("extension unload failed: extension hasn't been loaded yet");
+        } else {
+            // communication from the shell to tapfx uses tapfx.removeExtension
+            window.TapFx.Rpc.publish('tapfx.removeExtension', extension.id);
+            // TODO: implement timing out of an extension, if an extension takes to long to respond, we will remove it regardless
+        }
+
+        return this._unloadExtensionPromise.promise;
     }
 }
 

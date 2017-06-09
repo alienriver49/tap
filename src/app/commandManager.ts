@@ -4,26 +4,42 @@ import Command from './command' // type only
 
 @inject(ExtensionManager)
 class CommandManager {
-    constructor(public extensionManager: ExtensionManager) { }
+    constructor(
+        private _extensionManager: ExtensionManager
+    ) { }
 
     handleRouteChange(from: string, to: string): void {
         console.log('[SHELL] Handle route change from "' + from + '" to "' + to + '".');
 
+        // NOTE: we may not need to pass the "from" every time, might be better to just store it
         let fromCommand = this.resolveUrlToCommand(from);
         let toCommand = this.resolveUrlToCommand(to);
 
-        // Not sure we want the command manager to manage this case
-        /*if (from === to) {
+        if (fromCommand.extensionName === toCommand.extensionName && toCommand.extensionName === '') {
             return;
-        }*/
-        
-        if (fromCommand.extensionName === toCommand.extensionName) {
-            this.updateExtensionParams(toCommand.extensionName, toCommand.params);
-        } else if(toCommand.extensionName === "") {
-            this.unloadExtension(toCommand.extensionName);
-        } else {
-            this.loadExtension(toCommand.extensionName, toCommand.params);
         }
+
+        let promiseArray: Promise<any>[] = [];
+        // if the extension is the same, we'll send a command to update extension params
+        if (fromCommand.extensionName === toCommand.extensionName) {
+            // NOTE: should we check if the params were updated?
+            promiseArray.push(this.updateExtensionParams(toCommand));
+        } else {
+            // if the previous extension is not empty (meaning it is loaded), unload it
+            if (fromCommand.extensionName !== '') {
+                promiseArray.push(this.unloadExtension(fromCommand));
+            }
+            // if the to extension is set, load it
+            if (toCommand.extensionName !== '') {
+                
+                promiseArray.push(this.loadExtension(toCommand));
+            }
+        }
+
+        // TODO: need to make sure that the next promise in sequence doesn't execute until the previous finishes; at least initially
+        Promise.all(promiseArray).then(values => { 
+            
+        });
     }
 
     resolveUrlToCommand(url: string): Command {
@@ -41,34 +57,24 @@ class CommandManager {
         let command = new Command();
         command.extensionName = fragmentArr[0];
         command.params = (fragmentArr.length > 1 ? fragmentArr.slice(1) : []);
-        // TODO: Determine handling of query params
-        //command.queryParams = (arr.length > 2 ? utilities.convertQueryStringToObject(arr[2]) : {});
+        command.queryParams = (fragmentArr.length > 2 ? window.TapFx.Utilities.convertQueryStringToObject(fragmentArr[2]) : {});
 
         return command;
     }
 
-    loadExtension(extensionName: string, ...params: any[]): void {
-        console.log('[SHELL] Start loading extension: ' + extensionName + ' with extension params: ', ...params);
-        this.extensionManager.loadExtension(extensionName, ...params).then((extensionID) => {
-            console.log('[SHELL] Finish loading extension: ' + extensionName + ' with (ID): ', extensionID);
-            console.log('');
-        });
+    loadExtension(command: Command): Promise<string> {
+        console.log('[SHELL] Start loading extension: ' + command.extensionName + ' with extension params: ', command.params);
+        return this._extensionManager.loadExtension(command.extensionName, command.params, command.queryParams);
     }
 
-    updateExtensionParams(extensionName: string, ...params: any[]): void {
-        console.log('[SHELL] Start updating extension: ' + extensionName + ' with extension params: ', ...params);
-        this.extensionManager.updateExtensionParams(extensionName, ...params).then((response) => {
-            console.log('[SHELL] Finish updating extension: ' + extensionName + ' with response: ', response);
-            console.log('');
-        });
+    updateExtensionParams(command: Command): Promise<string> {
+        console.log('[SHELL] Start updating extension: ' + command.extensionName + ' with extension params: ', command.params);
+        return this._extensionManager.updateExtensionParams(command.extensionName, command.params, command.queryParams);
     }
 
-    unloadExtension(extensionName: string): void {
-        console.log('[SHELL] Start unloading extension: ' + extensionName);
-        this.extensionManager.unloadExtension(extensionName).then((response) => {
-            console.log('[SHELL] Finish unloading extension: ' + extensionName + ' with response: ', response);
-            console.log('');
-        });
+    unloadExtension(command: Command): Promise<string> {
+        console.log('[SHELL] Start unloading extension: ' + command.extensionName);
+        return this._extensionManager.unloadExtension(command.extensionName);
     }
 }
 

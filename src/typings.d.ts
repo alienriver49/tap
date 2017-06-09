@@ -1,7 +1,7 @@
 import Utilities from './tapFx/utilities/utilities'
 import RpcClient from './tapFx/rpc/client'
 import Blade from './tapFx/ux/viewModels/viewModels.blade'
-import ExtensionManager from './tapFx/core/extensionManager/extensionManager'
+import Extension from './tapFx/core/extension/extension'
 
 declare global {
     interface Window {
@@ -11,7 +11,7 @@ declare global {
             ViewModels: {
                 Blade: typeof Blade
             },
-            ExtensionManager: ExtensionManager
+            Extension: Extension
         }
     }
 }

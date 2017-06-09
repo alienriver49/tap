@@ -12,6 +12,8 @@ const tapFxOutDir = path.resolve(__dirname, 'dist/tapFx');
 //const tapShellOutDir = path.resolve(__dirname, 'dist/tapShell');
 const tapExt1SrcDir = path.resolve(__dirname, 'src/tapExt1');
 const tapExt1OutDir = path.resolve(__dirname, 'dist/tapExt1');
+const tapExt2SrcDir = path.resolve(__dirname, 'src/tapExt2');
+const tapExt2OutDir = path.resolve(__dirname, 'dist/tapExt2');
 
 const nodeModulesDir = path.resolve(__dirname, 'node_modules');
 const appUrlRoot = '';
@@ -25,6 +27,7 @@ module.exports = {
             tapFxSrcDir,
             //tapShellSrcDir,
             tapExt1SrcDir,
+            tapExt2SrcDir,
             nodeModulesDir
         ].map(dir => path.resolve(dir))
     },
@@ -32,7 +35,8 @@ module.exports = {
         app: 'aurelia-bootstrapper',
         //tapShell: path.join(tapShellSrcDir, 'index.ts'),
         tapFx: ['aurelia-polyfills', 'aurelia-loader-webpack', path.join(tapFxSrcDir, 'index.ts')],
-        tapExt1: path.join(tapExt1SrcDir, 'index.ts')
+        tapExt1: path.join(tapExt1SrcDir, 'index.ts'),
+        tapExt2: path.join(tapExt2SrcDir, 'index.ts')
     },
     output: {
         path: outDir,

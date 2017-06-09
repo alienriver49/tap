@@ -61,6 +61,37 @@ class BindingEngine {
             (this._contextObserversMap.get(contextID) || []).push(observer);
         }
     }
+
+    /**
+     * Unobserve a specific context.
+     * @param context 
+     */
+    unobserve(context: Object): void {
+        // get this context from the map
+        let contextID = this._contextIDMap.get(context);
+        if (!contextID) {
+            throw new Error("Couldn't find content ID when unobserving context.")
+        }
+
+        // dispose of any observers
+        (this._contextObserversMap.get(contextID) || []).forEach((proxiedObservable) => {
+            proxiedObservable.dispose();
+        });
+
+        // remove the context from the map
+        this._contextIDMap.delete(context);
+    }
+
+    /**
+     * Unobserve all contexts.
+     */
+    unobserveAll(): void {
+        this._contextObserversMap.forEach((proxiedObservables, key) => {
+            proxiedObservables.forEach((proxiedObservable) => proxiedObservable.dispose());
+        });
+
+        this._contextIDMap.clear();
+    }
 }
 
 export default BindingEngine;

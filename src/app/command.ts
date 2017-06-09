@@ -3,6 +3,7 @@ class Command {
 
     extensionName: string;
     params: string[];
+    queryParams: Object;
 }
 
 export default Command;

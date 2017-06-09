@@ -10,12 +10,7 @@ import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 import {TextTemplateLoader} from 'aurelia-loader-default'
 
 bootstrap(aurelia => {
-    console.log('[EXT-1] bootstrap');
-    //document.body.setAttribute('aurelia-app', 'tapExt1/');
-     //let blade = document.createElement('app');
-     //document.body.appendChild(blade);
-     //aurelia.setRoot('tapExt1/landingBlade', document.body)
-
+    console.log('[EXT-2] bootstrap');
 
     // If this instance is in an iframe, use the id attribute as the InstanceId for RPC
     if (window.self !== window.top){
@@ -32,13 +27,13 @@ bootstrap(aurelia => {
      let init = aurelia.container.get(Init);
 
      // here's where we get the html for serializing 
-     init.getView('tapExt1/landingBlade.html').then((serializedView) => {
-        console.log('[EXT-1], got view', serializedView);
+     init.getView('tapExt2/landingBlade.html').then((serializedView) => {
+        console.log('[EXT-2], got view', serializedView);
         // Then add the blade to extension manager
         let blade = new LandingBlade();
         blade.title = 'Title';
         blade.subtitle = 'Subtitle';
-        blade.display = 'Title - Subtitle';
+        blade.display = 'NOT MATCHING';
         init.addBlade(blade, serializedView);
      })
 });
@@ -65,7 +60,7 @@ class Init{
      * @param source html file name
      */
     public getView(source: string): Promise<string> {
-        console.log('[EXT-1], getView begin: ', source);
+        console.log('[EXT-2], getView begin: ', source);
         return new Promise<string>((resolve, reject) => {
             let templateRegistryEntry = new TemplateRegistryEntry(source); 
             // Load the html file into a template (basically a string)
@@ -86,37 +81,7 @@ class Init{
     }
 
     public addBlade(blade: LandingBlade, serializedView: string): void {
-        console.log('[EXT-1] Attempting to add blade.');
+        console.log('[EXT-2] Attempting to add blade.');
         window.TapFx.Extension.addBlade(blade, serializedView);
     }
 }
-
-
-//  ((TapFx) => {
-
-//     // If this instance is in an iframe, use the id attribute as the InstanceId for RPC
-//     if (window.self !== window.top){
-//         let iframeWindow = window.frameElement;
-//         if (!iframeWindow)
-//             throw new Error('Could not find frameElement');
-//         let id = iframeWindow.getAttribute("id") as string;
-//         if (!id)
-//             throw new Error('Could not find id attribute on iframe element');
-//         TapFx.Rpc.setInstanceId(id)
-//     }
-//     let aurelia: any = Aurelia;
-//     let dmf = aurelia.host;
-//     console.log('[EXT-1] Attempting to add blade.');
-
-//     var landingBlade = new LandingBlade();
-//     landingBlade.title = 'Title';
-//     landingBlade.subtitle = 'Subtitle';
-//     landingBlade.display = 'Title - Subtitle';
-
-//     TapFx.ExtensionManager.addBlade(landingBlade);
-
-//     // setTimeout(() => {
-//     //     console.log('[EXT-1] Attempting to update title.');
-//     //     landingBlade.title = 'I_HAVE_UDPATED_TITLE';
-//     // }, 2500);
-// })(window.TapFx);

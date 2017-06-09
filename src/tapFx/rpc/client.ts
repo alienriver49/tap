@@ -34,7 +34,7 @@ export declare type RpcClientSubscriptionCallback = (RpcClientSubscriptionCallba
  * 
  * Messages from iframes to the root window do not require filtering.
  */
-class RpcClient {
+export class RpcClient {
     constructor() {
         // Listen for window.postMessage calls and handle them 
         window.addEventListener('message', this._onWindowMessage, false);
@@ -63,7 +63,7 @@ class RpcClient {
 
     private _onWindowMessage = ((message: any): void => {
         // Ignore messages that have a different destination Ids unless the instance accepts all messages 
-        if (message && message.data && message.data.messageType && message.data.destId && message.data.messageData &&
+        if (message && message.data && message.data.messageType && message.data.destId /*&& message.data.messageData*/ &&
             (message.data.destId === this.InstanceId || this.InstanceId === 'all' || message.data.destId === 'all')) {
             this._notifySubscriber(message.data.messageType, message.data.messageData);
         }

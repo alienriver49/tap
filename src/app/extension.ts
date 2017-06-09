@@ -14,7 +14,8 @@ class Extension {
         private container: Container,
         private compositionEngine: CompositionEngine,
         private viewResources: ViewResources,
-        public id: string
+        public id: string,
+        public name: string
     ) { 
         this.loader = loader || new PLATFORM.Loader();
         this.container = container || (new Container()).makeGlobal();
@@ -42,6 +43,14 @@ class Extension {
                 this._bindingEngine.observe(blade, prop, this.id);
             }
         }
+    }
+
+    private _unregisterBladeBindings(blade: Object): void {
+        this._bindingEngine.unobserve(blade);
+    }
+
+    private _unregisterAllBladeBindings(): void {
+        this._bindingEngine.unobserveAll();
     }
 
     addBlade(bladeID: string, serializedBlade: Object, serializedView: string): void {
@@ -93,6 +102,25 @@ class Extension {
         }
     }
 
+    /**
+     * Remove a blade and it's binding from an extension.
+     * @param blade 
+     */
+    removeBlade(blade: Object): void {
+        let index = this.blades.indexOf(blade);
+        if (index !== -1) {
+            this._unregisterBladeBindings(blade);
+            this.blades.splice(index, 1);
+        }
+    }
+
+    /**
+     * Remove all blades.
+     */
+    removeBlades(): void {
+        this._unregisterAllBladeBindings();
+        this.blades.splice(0, this.blades.length);
+    }
 }
 
 export default Extension

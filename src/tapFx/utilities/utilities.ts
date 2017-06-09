@@ -9,6 +9,12 @@ class Utilities {
     classOf(object: any): string {
         return ({}).toString.call(object);
     }
+
+    // Doesn't handle all situations, like foo=bar&foo=foo for an array
+    convertQueryStringToObject(queryString: string): Object {
+        return JSON.parse('{"' + decodeURI(queryString.substring(1).replace(/&/g, "\",\"").replace(/=/g,"\":\"")) + '"}')
+
+    }
 }
 
 export default Utilities;

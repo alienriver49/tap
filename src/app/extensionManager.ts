@@ -21,7 +21,7 @@ class ExtensionManager {
             return ext.id === data.extensionId;
         });
         if (extension)
-            extension.addBlade(data.bladeId, data.serializedBlade, data.view || '');
+            extension.addBlade(data.bladeId, data.serializedBlade, data.viewName); 
     }
 
     private _onRemoveExtension(data: any): void {

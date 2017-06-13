@@ -60,11 +60,11 @@ class Extension {
         }
     }
 
-    addBlade(blade: Blade, serializedView: string): void {
+    addBlade(blade: Blade, viewName: string): void {
         let bladeInfo = this.registerBladeBindings(blade);
         // Get the extension Id from RPC and pass it to the shell
         bladeInfo.extensionId = this._rpc.InstanceId;
-        bladeInfo.view = serializedView;
+        bladeInfo.viewName = viewName;
         this._rpc.publish('tapfx.newBlade', "", bladeInfo);
     }
 }

@@ -3,6 +3,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { AureliaPlugin } = require('aurelia-webpack-plugin');
 const { optimize: { CommonsChunkPlugin }, ProvidePlugin } = require('webpack')
 const { TsConfigPathsPlugin, CheckerPlugin } = require('awesome-typescript-loader');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin')
 
 const outDir = path.resolve(__dirname, 'dist');
 const srcDir = path.resolve(__dirname, 'src');
@@ -70,6 +72,13 @@ module.exports = {
                 //'tapShell'
             ],
             chunksSortMode: 'dependency'
-        })
+        }),
+        new CleanWebpackPlugin([outDir+"/**/*"]),
+        // Use CopyWebpackPlugin to copy all html files (without bundling) from extensions to output directory
+        // This will allow the shell to load them by name
+        new CopyWebpackPlugin([
+            { from: tapExt1SrcDir+"/*.html", to: outDir+"/ext1", flatten: "Y"},
+            { from: tapExt2SrcDir+"/*.html", to: outDir+"/ext2", flatten: "Y"}
+        ])
     ]
 };

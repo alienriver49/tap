@@ -81,7 +81,7 @@ class ExtensionManager {
             iFrame.setAttribute('sandbox', '');
 
             extensionScripts.forEach((script: string, index: number, array: string[]) => {
-                // temp fix: loading every second so that there is enough time for scripts to load
+                // temp fix: loading every 100ms so that there is enough time for scripts to load
                 setTimeout(() => {
                     console.log('[SHELL] Loading:', script);
                     let scriptTag = iFrame.contentWindow.document.createElement('script');
@@ -95,7 +95,7 @@ class ExtensionManager {
                         console.log('[SHELL] Finish loading extension: ' + extensionName + ' with (ID): ', extensionID);
                         resolve(extensionID);
                     }
-                }, 1000 * index);
+                }, 100 * index);
             });
         });
     }

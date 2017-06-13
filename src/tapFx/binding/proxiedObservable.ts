@@ -20,6 +20,8 @@ class ProxiedObservable {
 
     private _propertyChanged(newValue: any, oldValue: any) {
         if (newValue === oldValue) return;
+        // TODO: observing / syncing of objects
+        if (JSON.stringify(newValue) === JSON.stringify(oldValue)) return; // temp, for object observation to stop an infinite loop from happening. only works if the order of properties is always the same
 
         console.log('[TAP-FX] Property has changed from: "', oldValue, '" to: "', newValue, '"');
         this._rpc.publish('tapfx.bindingSync', this._extensionId, {
@@ -43,7 +45,12 @@ class ProxiedObservable {
 
     observe(): void {
         if (this._observer) throw new Error("Property is already being observed.");
-        this._observer = this._observerLocator.getObserver(this._context, this._property);
+        // TODO: observing / syncing of arrays
+        /*if (this._context[this._property] instanceof Array) {
+            this._observer = this._observerLocator.getArrayObserver(this._context[this._property]);
+        } else {*/
+            this._observer = this._observerLocator.getObserver(this._context, this._property);
+        //}
         this._observer.subscribe(this._propertyChanged.bind(this));
     }
 

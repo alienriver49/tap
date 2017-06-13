@@ -1,16 +1,34 @@
 <template>
-    <div>
-        <label for="title"><strong>Title:</strong></label>
-        <input type="text" value.bind="title" />
+    <h1>${title}</h1>
+    <h2>${subtitle}</h2>
+
+    <button type='button' name='clickMe' click.delegate='onButtonClicked()'>Click Me!</button>
+
+    <br /><br />
+
+    <input name='showHideCheckbox' type='checkbox' value='true' checked.bind='showHideCheckbox'> Show / Hide
+    <div if.bind='showHideCheckbox'>
+        <b>Show / Hide Content</b>
     </div>
-    <br />
-    <div>
-        <label for="subtitle"><strong>Subtitle:</strong></label>
-        <input type="text" value.bind="subtitle & updateTrigger:'blur'" />
+
+    <br /><br />
+
+    <select value.bind='selectedOption'>
+        <option name='selectOptions' repeat.for='option of selectOptions' model.bind='option'>${option}</option>
+    </select>
+    <h3>Selected Option: ${selectedOption}</h3>
+
+    <br /><br />
+
+    <div repeat.for='input of checkboxes'>
+        <input name='checkboxes' type='checkbox' model.bind='input' checked.bind='selectedCheckboxes'> ${input}
     </div>
-    <br />
-    <div>
-        <label for="subtitle"><strong>Display:</strong></label>
-        <span>${display}</span>
+    <h3>Selected Checkboxes: ${selectedCheckboxes}</h3>
+
+    <br /><br />
+
+    <div repeat.for='input of radios'>
+        <input name='radios' type='radio' model.bind='input' checked.bind='selectedRadio'> ${input.label}
     </div>
+    <h3>Selected Radio: ${selectedRadio}</h3>
 </template>

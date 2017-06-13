@@ -40,7 +40,7 @@ class Extension {
             // skip Functions
             if (blade.hasOwnProperty(prop) &&
                 prop.charAt(0) !== '_' &&
-                ({}).toString.call(blade[prop] !== '[object Function]')
+                window.TapFx.Utilities.classOf(blade[prop]) !== '[object Function]'
             ) {
                 this._bindingEngine.observe(blade, prop, this.id);
             }

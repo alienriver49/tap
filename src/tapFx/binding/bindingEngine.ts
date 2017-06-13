@@ -42,10 +42,10 @@ class BindingEngine {
     }
 
     observe(context: Object, property: string, extensionId: string = ""): void {
-        // if it is the first property to be observerd on the context, keep track of the context as being observed
+        // if it is the first property to be observed on the context, keep track of the context as being observed
         let contextID = this._contextIDMap.get(context);
         if (!contextID) {
-            throw new Error("Missing context ID. The context ID must first be resolved before observing propertis on the context.")
+            throw new Error("Missing context ID. The context ID must first be resolved before observing properties on the context.")
         }
 
         // make sure the property is not currently being observed

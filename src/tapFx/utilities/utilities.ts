@@ -12,8 +12,7 @@ class Utilities {
 
     // Doesn't handle all situations, like foo=bar&foo=foo for an array
     convertQueryStringToObject(queryString: string): Object {
-        return JSON.parse('{"' + decodeURI(queryString.substring(1).replace(/&/g, "\",\"").replace(/=/g,"\":\"")) + '"}')
-
+        return JSON.parse('{"' + decodeURI(queryString.substring(1).replace(/&/g, "\",\"").replace(/=/g,"\":\"")) + '"}');
     }
 }
 

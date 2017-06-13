@@ -1,23 +1,28 @@
 class LandingBlade extends window.TapFx.ViewModels.Blade {
     title: string;
     subtitle: string;
-    display: string;
+
+    showHideCheckbox = true;
+
+    selectOptions = ['Option 1', 'Option 2', 'Option 3'];
+    selectedOption = this.selectOptions[0];
+
+    checkboxes = ['Checkbox 1', 'Checkbox 2', 'Checkbox 3'];
+    selectedCheckboxes = [this.checkboxes[0]];
+
+    radios = [
+        {value: '1', label: 'Radio 1'},
+        {value: '2', label: 'Radio 2'},
+        {value: '3', label: 'Radio 3'},
+    ];
+    selectedRadio = this.radios[0];
 
     constructor() { 
         super();
     }
-    private _updateDisplay() {
-        this.display = this.title !== this.subtitle ? 'NOT MATCHING' : 'MATCHING';
-    }
 
-    titleChanged(newValue: string, oldValue: string): void {
-        console.log('[EXT-2] Blade title has changed.');
-        this._updateDisplay();
-    }
-
-    subtitleChanged(newValue: string, oldValue: string): void {
-        console.log('[EXT-2] Blade subtitle has changed.')
-        this._updateDisplay();
+    onButtonClicked() {
+        alert('Button clicked!');
     }
 }
 

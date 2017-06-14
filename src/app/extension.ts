@@ -55,10 +55,19 @@ class Extension {
         this._bindingEngine.unobserveAll();
     }
 
-    addBlade(bladeID: string, serializedBlade: Object, viewName: string): void {
+    private _attachBladeFunctions(blade: Object, functions: string[]) {
+        console.log('[SHELL] Attaching blade functions: ', functions)
+        for (let func of functions) blade[func] = (...data) => {
+            console.log('[SHELL] Publishing message from function: ' + func);
+            window.TapFx.Rpc.publish('tapfx.' + func, this.id, { functionData: data });
+        };
+    }
+
+    addBlade(bladeID: string, serializedBlade: Object, viewName: string, functions: string[]): void {
         let blade = new window.TapFx.ViewModels.Blade();
         Object.assign(blade, serializedBlade);
         this._registerBladeBindings(bladeID, blade);
+        this._attachBladeFunctions(blade, functions);
         this.blades.push(blade);
         // Load the view with the passed name
         this.addView(viewName, blade);

@@ -60,11 +60,37 @@ class Extension {
         }
     }
 
+    attachBladeFunctions(blade: Object): string[] {
+        let returnFuncs: string[] = [];
+        let funcIgnoreArray = ['constructor'];
+        let bladeProto = Object.getPrototypeOf(blade);
+        let bladeFuncs = Object.getOwnPropertyNames(bladeProto);
+        for (let func of bladeFuncs) {
+            // TODO: implement conventions
+            // ignore private functions beginning with _, similar to property observing
+            // for now, we will use a function ignore array to ignore functions we don't want to listen for (like 'constructor')
+            if (func.charAt(0) !== '_' &&
+                funcIgnoreArray.indexOf(func) === -1
+            ) {
+                let subscription = this._rpc.subscribe('tapfx.' + func, (data) => {
+                    console.log('[TAP-FX] Received message from function: ' + func);
+                    blade[func](...data.functionData);
+                });
+                this._rpcSubscriptions.push(subscription);
+
+                returnFuncs.push(func);
+            }
+        }
+
+        return returnFuncs;
+    }
+
     addBlade(blade: Blade, viewName: string): void {
         let bladeInfo = this.registerBladeBindings(blade);
         // Get the extension Id from RPC and pass it to the shell
         bladeInfo.extensionId = this._rpc.InstanceId;
         bladeInfo.viewName = viewName;
+        bladeInfo.functions = this.attachBladeFunctions(blade);
         this._rpc.publish('tapfx.newBlade', "", bladeInfo);
     }
 }

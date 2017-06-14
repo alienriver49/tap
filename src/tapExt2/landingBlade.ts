@@ -21,8 +21,8 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
         super();
     }
 
-    onButtonClicked() {
-        alert('Button clicked!');
+    onButtonClicked(arg: any, arg2: any) {
+        alert('Button clicked!\n\nReceived arg:\n' + arg + '\n\nReceived arg2:\n' + arg2);
     }
 }
 

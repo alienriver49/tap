@@ -20,6 +20,18 @@ export interface RpcClientSubscriptionCallbackData {
 export declare type RpcClientSubscriptionCallback = (RpcClientSubscriptionCallbackData) => void;
 
 /**
+ * Properties of the dispatched message object
+ */
+interface IDispatchedMessage {
+    // Object passed from other window
+    data: any,
+    // Origin of the window that sent the message
+    origin: string,
+    // Reference to window object that sent the message
+    source: Window
+}
+
+/**
  * Provide subscription based messaging between a root window and child iframe windows
  * Messaging between iframes is not supported
  * By default all root window messages are sent to all iframes on the root window.  Limiting
@@ -35,15 +47,27 @@ export declare type RpcClientSubscriptionCallback = (RpcClientSubscriptionCallba
  * Messages from iframes to the root window do not require filtering.
  */
 export class RpcClient {
-    constructor() {
+    constructor(){
         // Listen for window.postMessage calls and handle them 
         window.addEventListener('message', this._onWindowMessage, false);
+        this.setInternalId();
+        this._inIFrame();
+        console.log(`[TAP-FX][${this._className}][${this._guid}][${this._isInIFrame ? "IFRAME" : "SHELL"}] RpcClient constructor`);
     }
 
+    private _guid: string;  // Internal instance identifier
+    private _className: string = (this as Object).constructor.name;
     private _subscriptionLookup: { [messageType: string]: RpcClientSubscriptionCallback[] } = {};
     private _isInIFrame: boolean | null = null;
     public InstanceId: string = 'all';
     private _useFrameIdAddressing: boolean = false;
+
+    private setInternalId(): void {
+        this._guid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+    }
 
     /**
      * Determine if the current page is in an iFrame or not
@@ -61,7 +85,7 @@ export class RpcClient {
         }
     }
 
-    private _onWindowMessage = ((message: any): void => {
+    private _onWindowMessage = ((message: IDispatchedMessage): void => {
         // Ignore messages that have a different destination Ids unless the instance accepts all messages 
         if (message && message.data && message.data.messageType && message.data.destId /*&& message.data.messageData*/ &&
             (message.data.destId === this.InstanceId || this.InstanceId === 'all' || message.data.destId === 'all')) {

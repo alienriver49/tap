@@ -2,10 +2,10 @@ import { inject } from 'aurelia-dependency-injection'
 import { ObserverLocator } from 'aurelia-binding';
 import RpcClient from './../rpc/client'
 import Utilities from './../utilities/utilities'
-import { InternalPropertyObserver } from 'aurelia-binding'; // type
+import { InternalPropertyObserver, Callable } from 'aurelia-binding'; // type
 
 @inject(ObserverLocator, RpcClient, Utilities)
-class ProxiedObservable {
+class ProxiedObservable implements Callable {
     constructor(
         private _observerLocator: ObserverLocator,
         private _rpc: RpcClient,
@@ -14,16 +14,35 @@ class ProxiedObservable {
         private _context: Object,
         private _property: string,
         private _extensionId: string
-    ) { }
+    ) { 
+        var dmf = 1;
+    }
 
     private _observer: InternalPropertyObserver;
+    private _className: string = (this as Object).constructor.name;
+    private _boundPropertyChanged = this._propertyChanged.bind(this) as (newValue: any, oldValue: any) => void;
+
+    public call(context: any, newValueOrChangeRecords: any, oldValue?: any): void {
+        if (oldValue !== undefined)
+            this.callWithOldAndNew(context, newValueOrChangeRecords, oldValue);
+        else
+            this.callWithChangeRecords(context, newValueOrChangeRecords);
+
+    }
+
+    private callWithOldAndNew(context: any, newValue: any, oldValue: any): void {
+
+    }
+    private callWithChangeRecords(context: any, changeRecords: any): void {
+
+    }
 
     private _propertyChanged(newValue: any, oldValue: any) {
         if (newValue === oldValue) return;
         // TODO: observing / syncing of objects
         if (JSON.stringify(newValue) === JSON.stringify(oldValue)) return; // temp, for object observation to stop an infinite loop from happening. only works if the order of properties is always the same
 
-        console.log('[TAP-FX] Property has changed from: "', oldValue, '" to: "', newValue, '"');
+        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Property has changed from: "${oldValue}" to: "${newValue}"`);
         this._rpc.publish('tapfx.bindingSync', this._extensionId, {
             contextID: this._contextID,
             property: this._property,
@@ -51,11 +70,20 @@ class ProxiedObservable {
         } else {*/
             this._observer = this._observerLocator.getObserver(this._context, this._property);
         //}
-        this._observer.subscribe(this._propertyChanged.bind(this));
+        this._observer.subscribe(this._boundPropertyChanged);
     }
 
-    setValue(value: any): void {
+    setValue(value: any, disableObservation: boolean = true): void {
+        // If this was called due to an RPC message, we probably want to 
+        // temporarily disable the observation while the value is being 
+        // set to avoid 'duplicate' messages back to the RPC message source
+        if (disableObservation)
+            this._observer.unsubscribe(this._boundPropertyChanged);
+        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Setting property ${this._property} to: "${value}"`);
         this._observer.setValue(value);
+        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Done setting property ${this._property} to: "${value}"`);
+        if (disableObservation)
+            this._observer.subscribe(this._boundPropertyChanged);
     }
 
     dispose(): void {

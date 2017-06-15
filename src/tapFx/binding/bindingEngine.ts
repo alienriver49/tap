@@ -13,11 +13,12 @@ class BindingEngine {
         _rpc.subscribe('tapfx.bindingSync', this._onBindingSync.bind(this));
     }
 
+    private _className: string = (this as Object).constructor.name;
     private _contextIDMap: Map<Object, string> = new Map();
     private _contextObserversMap: Map<string, ProxiedObservable[]> = new Map();
 
     private _onBindingSync(data): void {
-        console.log('[TAP-FX] Binding sync.', data);
+        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Binding sync.`, data);
         let allObservers = this._contextObserversMap.get(data.contextID)
         let observer = (allObservers || []).find((i) => {
             return i.property() === data.property;
@@ -25,7 +26,7 @@ class BindingEngine {
         // let observer = (this._contextObserversMap.get(data.contextID) || []).find((i) => {
         //     return i.property === data.property;
         // });
-        observer && observer.setValue(data.newValue);
+        observer && observer.setValue(data.newValue, true);
     }
 
     /**

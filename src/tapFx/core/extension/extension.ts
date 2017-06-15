@@ -73,7 +73,7 @@ class Extension {
                 funcIgnoreArray.indexOf(func) === -1
             ) {
                 let subscription = this._rpc.subscribe('tapfx.' + func, (data) => {
-                    console.log('[TAP-FX] Received message from function: ' + func);
+                    console.log(`[TAP-FX][${this._rpc.InstanceId}] Received message from function: ` + func);
                     blade[func](...data.functionData);
                 });
                 this._rpcSubscriptions.push(subscription);

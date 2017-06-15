@@ -1,10 +1,14 @@
 import { inject, Factory, computedFrom } from 'aurelia-framework'
+import ExtensionLoaderEngine from './extensionLoaderEngine'
 import Extension from './extension'
 import DeferredPromise from './deferredPromise'
 
-@inject(Factory.of(Extension))
+@inject(ExtensionLoaderEngine, Factory.of(Extension))
 class ExtensionManager {
-    constructor(private _extensionFactory: (...args: any[]) => Extension) {
+    constructor(
+        private _extensionLoaderEngine: ExtensionLoaderEngine,
+        private _extensionFactory: (...args: any[]) => Extension
+    ) {
         let subscription = window.TapFx.Rpc.subscribe('tapfx.newBlade', this._onNewBlade.bind(this));
         this._rpcSubscriptions.push(subscription);
 
@@ -14,7 +18,12 @@ class ExtensionManager {
 
     private _unloadExtensionPromise: DeferredPromise<string>;
     private _rpcSubscriptions: any[] = [];
+    extensions: Extension[] = [];
 
+    /**
+     * Adds a new blade for an extension.
+     * @param data 
+     */
     private _onNewBlade(data: any): void {
         console.log('[SHELL] Received newBlade message: ', data);
         let extension = this.extensions.find((ext) => {
@@ -24,6 +33,10 @@ class ExtensionManager {
             extension.addBlade(data.bladeId, data.serializedBlade, data.viewName, data.functions); 
     }
 
+    /**
+     * Removes an extension from the shell.
+     * @param data 
+     */
     private _onRemoveExtension(data: any): void {
         console.log('[SHELL] Received removeExtension message: ', data);
         let extensionIndex = this.extensions.findIndex((ext) => {
@@ -48,54 +61,18 @@ class ExtensionManager {
         }
     }
 
-    extensions: Extension[] = [];
-
+    /**
+     * Handles the loading of an extension.
+     * @param extensionName 
+     * @param params 
+     * @param queryParams 
+     */
     loadExtension(extensionName: string, params: any[], queryParams: Object): Promise<string> {
         return new Promise<string>((resolve) => {
-            let extensionScripts = [
-                'common-bundle.js',
-                'tapFx-bundle.js'
-            ];
+            this._extensionLoaderEngine.loadExtension(extensionName).then((extensionId) => {
+                this.extensions.push(this._extensionFactory(extensionId, extensionName));
 
-            switch (extensionName) {
-                case 'ext1':
-                    extensionScripts.push('tapExt1-bundle.js');
-                    break;
-                case 'ext2':
-                    extensionScripts.push('tapExt2-bundle.js');
-                    break;
-                default: throw new Error('Unknown extension specified.');
-            }
-
-            let extensionID = window.TapFx.Utilities.newGuid();
-
-            let iFrame = document.createElement('iframe');
-            iFrame.setAttribute('id', extensionID);
-            iFrame.setAttribute('src', 'about:blank');
-
-            let iFramesEl = document.getElementById('extension-iframes');
-            if (iFramesEl) {
-                iFramesEl.appendChild(iFrame);
-            }
-
-            iFrame.setAttribute('sandbox', '');
-
-            extensionScripts.forEach((script: string, index: number, array: string[]) => {
-                // temp fix: loading every 100ms so that there is enough time for scripts to load
-                setTimeout(() => {
-                    console.log('[SHELL] Loading:', script);
-                    let scriptTag = iFrame.contentWindow.document.createElement('script');
-                    scriptTag.setAttribute('type', 'text/javascript');
-                    scriptTag.setAttribute('src', script);
-                    iFrame.contentWindow.document.body.appendChild(scriptTag);
-
-                    if (index === array.length - 1) {
-                        this.extensions.push(this._extensionFactory(extensionID, extensionName));
-
-                        console.log('[SHELL] Finish loading extension: ' + extensionName + ' with (ID): ', extensionID);
-                        resolve(extensionID);
-                    }
-                }, 100 * index);
+                resolve(extensionId);
             });
         });
     }
@@ -112,6 +89,10 @@ class ExtensionManager {
         });
     }
 
+    /**
+     * Handles the unloading of an extension.
+     * @param extensionName 
+     */
     unloadExtension(extensionName: string): Promise<string> {
         this._unloadExtensionPromise = new DeferredPromise<string>();
 

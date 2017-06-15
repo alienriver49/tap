@@ -1,12 +1,17 @@
 import { Aurelia, PLATFORM } from 'aurelia-framework';
 import BindingEngine from './../tapFx/binding/bindingEngine'
+import CommandManager from './commanding/commandManager'
 import ExtensionManager from './extensionManager'
-import CommandManager from './commandManager'
+import ExtensionLoaderEngine from './extensionLoaderEngine'
+import ConventionEngine from './conventionEngine'
+
 
 export function configure(aurelia: Aurelia) {
-    aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
     aurelia.container.registerSingleton(BindingEngine, BindingEngine);
     aurelia.container.registerSingleton(CommandManager, CommandManager);
+    aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
+    aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
+    aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
 
     aurelia.use
         .basicConfiguration()

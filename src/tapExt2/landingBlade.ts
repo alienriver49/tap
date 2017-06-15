@@ -2,6 +2,7 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
     title: string;
     subtitle: string;
 
+    buttonConventionDisabled = false;
     showHideCheckbox = true;
 
     selectOptions = ['Option 1', 'Option 2', 'Option 3'];
@@ -17,11 +18,21 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
     ];
     selectedRadio = this.radios[0];
 
-    constructor() { 
+    constructor() {
         super();
     }
 
-    onButtonClicked(arg: any, arg2: any) {
+    onButtonConventionClick() {
+        var origSubtitle = this.subtitle;
+        this.subtitle = origSubtitle + ' - Convention Button Clicked!';
+        this.buttonConventionDisabled = true;
+        setTimeout(() => {
+            this.subtitle = origSubtitle;
+            this.buttonConventionDisabled = false;
+        }, 3000)
+    }
+
+    onButtonClickMeClick(arg: any, arg2: any) {
         alert('Button clicked!\n\nReceived arg:\n' + arg + '\n\nReceived arg2:\n' + arg2);
     }
 }

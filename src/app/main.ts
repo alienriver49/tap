@@ -2,8 +2,11 @@
 import { Aurelia, PLATFORM } from 'aurelia-framework';
 import BindingEngine from './../tapFx/binding/bindingEngine'
 import {RpcClient} from './../tapFx/rpc/client'
+import CommandManager from './commanding/commandManager'
 import ExtensionManager from './extensionManager'
-import CommandManager from './commandManager'
+import ExtensionLoaderEngine from './extensionLoaderEngine'
+import ConventionEngine from './conventionEngine'
+
 
 export function configure(aurelia: Aurelia) {
     // The app and tapFx have separate instances of Aurelia,
@@ -12,6 +15,9 @@ export function configure(aurelia: Aurelia) {
     aurelia.container.registerInstance(BindingEngine, window.TapFx.BindingEngine)
     aurelia.container.registerInstance(RpcClient, window.TapFx.Rpc)
     aurelia.container.registerSingleton(CommandManager, CommandManager);
+    aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
+    aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
+    aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
 
     aurelia.use
         .basicConfiguration()

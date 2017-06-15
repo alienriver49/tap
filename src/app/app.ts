@@ -1,5 +1,5 @@
 import { inject } from 'aurelia-framework'
-import Router from './router'
+import Router from './commanding/router'
 import extension from './extension'
 import ExtensionManager from './extensionManager' // imported and injected for use on the view
 
@@ -15,10 +15,5 @@ export class App {
             console.log('[SHELL] Window onload triggered.')
             this.router.activate();
         }
-    }
-
-    bind(appBindingContext: Object, appOverrideContext: Object) {
-        extension.bindingContext = appBindingContext;
-        extension.overrideContext = appOverrideContext;
-    }    
+    } 
 }

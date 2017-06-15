@@ -1,5 +1,5 @@
 import { inject } from 'aurelia-framework'
-import ExtensionManager from './extensionManager'
+import ExtensionManager from './../extensionManager'
 import Command from './command'
 
 @inject(ExtensionManager)

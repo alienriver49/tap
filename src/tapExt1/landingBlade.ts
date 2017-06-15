@@ -4,7 +4,7 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
     subtitle: string;
     display: string;
 
-    constructor() { 
+    constructor() {
         super();
     }
     private _updateDisplay() {

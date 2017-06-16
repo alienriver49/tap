@@ -18,17 +18,17 @@ class ConventionEngine {
             let result = this.onClickRegex.exec(func);
             // if result is set and there is a substring match
             if (result && result[1]) {
-                // grabe the result name and format it to our convention, i.e. Convention becomes convention, ClickMe becomes clickMe 
+                // grab the result name and format it to our convention, i.e. Convention becomes convention, ClickMe becomes clickMe 
                 let resultName = result[1];
                 let name = resultName.charAt(0).toLowerCase() + resultName.slice(1);
                 // query the document fragment for the convention name
                 let element = docFragment.querySelector('[name="' + name + '"]');
-                // if there is an element and the attribute hasn't been set yet
+                // if there is an element and the click attribute hasn't been set yet
                 if (element && !element.attributes[this.onClickAttribute]) {
                     console.log('[SHELL] Attaching attribute ' + this.onClickAttribute + ' with function ' + func + ' to element ' + name);
                     // use our master document to create an attribute of this.onClickAttribute
                     let attribute = document.createAttribute(this.onClickAttribute);
-                    // set the value of that attribute to be a all to our function
+                    // set the value of that attribute to be a call to our function
                     attribute.value = func + '()';
                     // attach, woohoo!
                     element.attributes.setNamedItem(attribute);

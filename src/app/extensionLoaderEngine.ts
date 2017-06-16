@@ -56,28 +56,38 @@ class ExtensionLoaderEngine {
             let iFrame = document.createElement('iframe');
             iFrame.setAttribute('id', extensionID);
             iFrame.setAttribute('src', 'about:blank');
-            //iFrame.setAttribute('sandbox', '');
+            //iFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts');
+            // function to bootstrap extension scripts. note: should add functionality for async scripts which can be loaded simultaneously
+            let bootstrapScripts = (scripts: string[]) => {
+                // grab the first script from the array, this removes it from the array as well
+                let script = scripts.shift();
+                if (script) {
+                    // if we have a script, set up the tag and add a load listener to recall bootstrapScripts (for the next script)
+                    console.log('[SHELL] Loading:', script);
+                    let scriptTag = iFrame.contentWindow.document.createElement('script');
+                    scriptTag.setAttribute('type', 'text/javascript');
+                    scriptTag.setAttribute('src', script);
+                    scriptTag.addEventListener('load', (e) => {
+                        bootstrapScripts(scripts);
+                    });
+
+                    iFrame.contentWindow.document.body.appendChild(scriptTag);
+                } else {
+                    // else, we have no more scripts to load and are finished, so resolve our promise
+                    console.log('[SHELL] Finish loading extension: ' + extensionName + ' with (ID): ', extensionID);
+                    resolve(extensionID);
+                }
+            };
+            // add an event listener to the iframe to load the scripts on load of the iframe element (not sure this is completely necessary)
+            iFrame.addEventListener('load', (e) => {
+                bootstrapScripts(extensionScripts);
+            }, false);
+            
             // append that iframe to our 'extension-iframes' element
             let iFramesEl = document.getElementById('extension-iframes');
             if (iFramesEl) {
                 iFramesEl.appendChild(iFrame);
             }
-            // load the extension scripts in the iframe
-            extensionScripts.forEach((script: string, index: number, array: string[]) => {
-                // temp fix: loading every 100ms so that there is enough time for scripts to load
-                setTimeout(() => {
-                    console.log('[SHELL] Loading:', script);
-                    let scriptTag = iFrame.contentWindow.document.createElement('script');
-                    scriptTag.setAttribute('type', 'text/javascript');
-                    scriptTag.setAttribute('src', script);
-                    iFrame.contentWindow.document.body.appendChild(scriptTag);
-
-                    if (index === array.length - 1) {
-                        console.log('[SHELL] Finish loading extension: ' + extensionName + ' with (ID): ', extensionID);
-                        resolve(extensionID);
-                    }
-                }, 100 * index);
-            });
         });
     }
 
@@ -125,6 +135,7 @@ class ExtensionLoaderEngine {
                         if (linkToDelete)
                             linkToDelete.remove();
 
+                        // attempt to attach conventions before compiling the view
                         let docFragment = (templateRegistryEntry.template as HTMLTemplateElement).content;
                         if (functions.length > 0) this._conventionEngine.attachFunctions(docFragment, functions);
 
@@ -135,7 +146,7 @@ class ExtensionLoaderEngine {
                         let viewFactory = viewCompiler.compile(templateRegistryEntry.template, this._viewResources, ViewCompileInstruction.normal);
                         this._container.registerInstance(viewWithPath, viewFactory); 
                         let view = viewFactory.create(this._container, undefined, baseElement);
-                        console.log('[SHELL] addView2: created view', );
+                        console.log('[SHELL] addView: created view', );
                         view.appendNodesTo(baseElement);
                         view.bind(viewModel);
                     }
@@ -144,14 +155,14 @@ class ExtensionLoaderEngine {
 
             if (cachedViewFactory.constructor.name === "ViewFactory") {
                 let view = cachedViewFactory.create(this._container, undefined, baseElement);
-                console.log('[SHELL] addView2: created view (cached)', );
+                console.log('[SHELL] addView: created view (cached)', );
                 view.appendNodesTo(baseElement);
                 view.bind(viewModel);
             }
 
         }
     }
-    
+
     /**
      * Deprecated
      * Loads the view from the serialized html and binds to the passed viewmodel
@@ -171,7 +182,7 @@ class ExtensionLoaderEngine {
             let viewCompiler = new ViewCompiler(this._container.get(BindingLanguage) as BindingLanguage, this._viewResources)
             let viewFactory = viewCompiler.compile(content, this._viewResources, ViewCompileInstruction.normal);
             let view = viewFactory.create(this._container, undefined, baseElement);
-            console.log('[SHELL] addView: created view', );
+            console.log('[SHELL] addView2: created view', );
             view.appendNodesTo(baseElement);
             view.bind(viewModel);
 
@@ -190,7 +201,7 @@ class ExtensionLoaderEngine {
                 }
             };
             document.head.appendChild(link);
-            console.log('[SHELL] addView: view binding done', );*/
+            console.log('[SHELL] addView2: view binding done', );*/
             /*
             this.instruction = {
                 container: this.container,

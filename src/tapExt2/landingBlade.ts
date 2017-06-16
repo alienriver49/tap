@@ -33,7 +33,12 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
     }
 
     onButtonClickMeClick(arg: any, arg2: any) {
-        alert('Button clicked!\n\nReceived arg:\n' + arg + '\n\nReceived arg2:\n' + arg2);
+        //alert('Button clicked!\n\nReceived arg:\n' + arg + '\n\nReceived arg2:\n' + arg2);
+        console.log('[EXT-2] onButtonClickMeClick arg 1: ' + arg + ' | arg 2: ' + arg2);
+        let random = (min: number, max: number) => { return Math.floor(Math.random() * (max - min + 1) + min); };
+        this.selectedOption = this.selectOptions[random(0, 2)];
+        this.selectedCheckboxes = [this.checkboxes[random(0, 2)]];
+        this.selectedRadio = this.radios[random(0, 2)];
     }
 }
 

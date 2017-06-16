@@ -9,6 +9,7 @@ const CleanWebpackPlugin = require('clean-webpack-plugin')
 const outDir = path.resolve(__dirname, 'dist');
 const srcDir = path.resolve(__dirname, 'src');
 const tapFxSrcDir = path.resolve(__dirname, 'src/tapFx');
+const appSrcDir = path.resolve(__dirname, 'src/app');
 const tapFxOutDir = path.resolve(__dirname, 'dist/tapFx');
 //const tapShellSrcDir = path.resolve(__dirname, 'src/tapShell');
 //const tapShellOutDir = path.resolve(__dirname, 'dist/tapShell');
@@ -34,7 +35,8 @@ module.exports = {
         ].map(dir => path.resolve(dir))
     },
     entry: {
-        app: 'aurelia-bootstrapper',
+        //app: [path.join(appSrcDir, 'main.ts'), 'aurelia-bootstrapper'],
+        app: ['aurelia-bootstrapper'],
         //tapShell: path.join(tapShellSrcDir, 'index.ts'),
         tapFx: ['aurelia-polyfills', 'aurelia-loader-webpack', path.join(tapFxSrcDir, 'index.ts')],
         tapExt1: path.join(tapExt1SrcDir, 'index.ts'),
@@ -76,9 +78,11 @@ module.exports = {
         new CleanWebpackPlugin([outDir+"/**/*"]),
         // Use CopyWebpackPlugin to copy all html files (without bundling) from extensions to output directory
         // This will allow the shell to load them by name
+        // Also, need webcomponent polyfills for Edge/IE11, for now just copy them to the output directory
         new CopyWebpackPlugin([
             { from: tapExt1SrcDir+"/*.html", to: outDir+"/ext1", flatten: "Y"},
-            { from: tapExt2SrcDir+"/*.html", to: outDir+"/ext2", flatten: "Y"}
+            { from: tapExt2SrcDir+"/*.html", to: outDir+"/ext2", flatten: "Y"},
+            { from: "node_modules/webcomponents.js/webcomponents-lite.js", to: outDir, flatten: "Y"}
         ])
     ]
 };

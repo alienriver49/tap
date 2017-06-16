@@ -17,8 +17,8 @@ bootstrap(aurelia => {
     aurelia.container.registerSingleton(BindingEngine, BindingEngine);
     aurelia.container.registerSingleton(AuthorizationEngine, AuthorizationEngine);
     aurelia.container.registerSingleton(Extension, Extension);
-	aurelia.container.registerSingleton(BindingLanguage, TemplatingBindingLanguage);
-	aurelia.container.registerAlias(BindingLanguage, TemplatingBindingLanguage);
+    aurelia.container.registerSingleton(BindingLanguage, TemplatingBindingLanguage);
+    aurelia.container.registerAlias(BindingLanguage, TemplatingBindingLanguage);
 
     let tapFx = {
         Utilities: aurelia.container.get(Utilities),
@@ -27,7 +27,17 @@ bootstrap(aurelia => {
         ViewModels: {
             Blade: Blade
         },
-        Extension: aurelia.container.get(Extension)
+        Extension: aurelia.container.get(Extension),
+        Aurelia: aurelia,
     };
     window.TapFx = tapFx;
+
+    // Once window.TapFx is initialized, dispatch the TapFxReady event
+    // The main app should check for the existence of window.TapFx or listen for this event
+    document.dispatchEvent(
+        new CustomEvent('TapFxReady', {
+            bubbles: true
+        })
+    );
+
 });

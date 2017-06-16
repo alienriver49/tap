@@ -15,7 +15,6 @@ class ProxiedObservable implements Callable {
         private _property: string,
         private _extensionId: string
     ) { 
-        var dmf = 1;
     }
 
     private _observer: InternalPropertyObserver;
@@ -79,9 +78,9 @@ class ProxiedObservable implements Callable {
         // set to avoid 'duplicate' messages back to the RPC message source
         if (disableObservation)
             this._observer.unsubscribe(this._boundPropertyChanged);
-        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Setting property ${this._property} to: "${value}"`);
+        //console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Setting property ${this._property} to: "${value}"`);
         this._observer.setValue(value);
-        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Done setting property ${this._property} to: "${value}"`);
+        //console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Done setting property ${this._property} to: "${value}"`);
         if (disableObservation)
             this._observer.subscribe(this._boundPropertyChanged);
     }

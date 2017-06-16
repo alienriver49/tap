@@ -17,6 +17,7 @@ class Extension {
 
     private _rpcSubscriptions: RpcClientSubscription[] = [];
     private _bladeIDs: string[] = [];
+    private _className: string = (this as Object).constructor.name;
 
     private _onRemoveExtension(data: any) {
         console.log('[TAP-FX] Removing extension with id of: ' + this._rpc.InstanceId);
@@ -75,7 +76,7 @@ class Extension {
             ) {
                 // add a subscription which will call the blade's original function with the passed data
                 let subscription = this._rpc.subscribe('tapfx.' + func, (data) => {
-                    console.log(`[TAP-FX][${this._rpc.InstanceId}] Received message from function: ` + func);
+                    console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + func);
                     blade[func](...data.functionData);
                 });
                 this._rpcSubscriptions.push(subscription);

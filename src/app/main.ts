@@ -26,3 +26,35 @@ export function configure(aurelia: Aurelia) {
 
     aurelia.start().then(() => aurelia.setRoot(PLATFORM.moduleName('app/app')));
 }
+
+// Attempt to share just one instance of Aurelia with Tap-Fx
+// (It never quite worked)
+// (function (tapFx){
+//     if (!tapFx)
+//         document.addEventListener("TapFxReady", (e) => {
+//             var dmf = e;
+//             initialize(window.TapFx.Aurelia);
+//             delete(window.TapFx.Aurelia);
+//         });
+//     else{
+//         initialize(window.TapFx.Aurelia);
+//         delete(window.TapFx.Aurelia);
+//     }
+
+// })(window.TapFx)
+
+// function initialize(aurelia: Aurelia) : void {
+//     aurelia.host = document.body;
+//     aurelia.container.registerSingleton(CommandManager, CommandManager);
+//     aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
+//     aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
+//     aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
+
+//     aurelia.use
+//         .basicConfiguration()
+//         .history()
+//         .developmentLogging();
+
+//     aurelia.start().then(() => aurelia.setRoot(PLATFORM.moduleName('app/app'), document.body));
+//     window.TapFx.BootstrapResolve(undefined);
+// }

@@ -7,6 +7,7 @@
     "clean": "rmdir dist /s /q"
   },
   "dependencies": {
+    "@webcomponents/webcomponentsjs": "^1.0.1",
     "aurelia-binding": "^1.2.1",
     "aurelia-bootstrapper": "^2.1.1",
     "aurelia-fetch-client": "^1.1.2",

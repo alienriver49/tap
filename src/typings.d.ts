@@ -3,6 +3,7 @@ import RpcClient from './tapFx/rpc/client'
 import BindingEngine from './tapFx/binding/bindingEngine'
 import Blade from './tapFx/ux/viewModels/viewModels.blade'
 import Extension from './tapFx/core/extension/extension'
+import { Aurelia, PLATFORM } from 'aurelia-framework';
 
 declare global {
     interface Window {
@@ -13,7 +14,8 @@ declare global {
                 Blade: typeof Blade
             },
             Extension: Extension,
-            BindingEngine: BindingEngine 
+            BindingEngine: BindingEngine,
+            Aurelia: Aurelia
         }
     }
 }

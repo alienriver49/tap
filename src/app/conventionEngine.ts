@@ -20,7 +20,7 @@ class ConventionEngine {
             if (result && result[1]) {
                 // grab the result name and format it to our convention, i.e. Convention becomes convention, ClickMe becomes clickMe 
                 let resultName = result[1];
-                let name = resultName.charAt(0).toLowerCase() + resultName.slice(1);
+                let name = window.TapFx.Utilities.lowerCaseFirstChar(resultName);
                 // query the document fragment for the convention name
                 let element = docFragment.querySelector('[name="' + name + '"]');
                 // if there is an element and the click attribute hasn't been set yet

@@ -49,6 +49,7 @@ class ProxiedObservable implements Callable {
             oldValue: oldValue
         });
 
+        // check for a convention function for handling property changed events. note: Aurelia can do this but requires an @observable decorator on the variable (creates a getter / setter) and that currently doesn't work with our function serialization
         let propertyChangedHandler = `${this._property}Changed`;
         if (propertyChangedHandler in this._context &&
             this._utilities.classOf(this._context[propertyChangedHandler]) === '[object Function]'

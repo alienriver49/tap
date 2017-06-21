@@ -22,6 +22,16 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
         super();
     }
 
+    activate() {
+        console.log('[EXT-2] activate method called');
+    }
+
+    canActivate() {
+        console.log('[EXT-2] canActivate method called');
+
+        return true;
+    }
+    
     onButtonConventionClick() {
         var origSubtitle = this.subtitle;
         this.subtitle = origSubtitle + ' - Convention Button Clicked!';

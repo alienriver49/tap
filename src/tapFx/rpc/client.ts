@@ -1,3 +1,6 @@
+import { inject } from 'aurelia-dependency-injection'
+import Utilities from './../utilities/utilities'
+
 /**
  * Object returned by the call to subscribe that contains an unsubscribe function
  */
@@ -46,11 +49,14 @@ interface IDispatchedMessage {
  * 
  * Messages from iframes to the root window do not require filtering.
  */
+@inject(Utilities)
 export class RpcClient {
-    constructor(){
+    constructor(
+        private _utilities: Utilities
+    ) {
         // Listen for window.postMessage calls and handle them 
         window.addEventListener('message', this._onWindowMessage, false);
-        this.setInternalId();
+        this._setInternalId();
         this._inIFrame();
         console.log(`[TAP-FX][${this._className}][${this._guid}][${this._isInIFrame ? "IFRAME" : "SHELL"}] RpcClient constructor`);
     }
@@ -62,11 +68,12 @@ export class RpcClient {
     public InstanceId: string = 'all';
     private _useFrameIdAddressing: boolean = false;
 
-    private setInternalId(): void {
-        this._guid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
+    /**
+     * Set the internal guid of this RPC client.
+     * @internal
+     */
+    private _setInternalId(): void {
+        this._guid = this._utilities.newGuid();
     }
 
     /**
@@ -180,13 +187,13 @@ export class RpcClient {
         let i = window.frames.length;
         let messageSent = false;
         while (i--) {
-            if (!this._useFrameIdAddressing || destId === 'all'){
+            if (!this._useFrameIdAddressing || destId === 'all') {
                 window.frames[i].postMessage(message, '*');
                 messageSent = true;
-            }else{
+            } else {
                 // If the destination isn't all children, then only post message to frame with matching Id
                 let frameId = window.frames[i].getAttribute('id');
-                if (frameId && frameId === destId){
+                if (frameId && frameId === destId) {
                     window.frames[i].postMessage(message, '*');
                     messageSent = true;
                 }
@@ -216,7 +223,7 @@ export class RpcClient {
      * that matches the id parameter and will be used to only send messages to the appropriate iframe windows
      * @returns {void} 
      */
-    setUseFrameIdAddressing(useFrameIdAddressing: boolean ): void {
+    setUseFrameIdAddressing(useFrameIdAddressing: boolean): void {
         this._useFrameIdAddressing = useFrameIdAddressing;
     }
 

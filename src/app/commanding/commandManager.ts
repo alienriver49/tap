@@ -8,13 +8,20 @@ class CommandManager {
         private _extensionManager: ExtensionManager
     ) { }
 
+    /**
+     * Handle a route change from one route URL fragment to another.
+     * NOTE: We may not need to pass the "from" every time, might be better to just store it.
+     * @param from The URL fragment being navigated from.
+     * @param to The URL fragment being navigated to.
+     */
     handleRouteChange(from: string, to: string): void {
         console.log('[SHELL] Handle route change from "' + from + '" to "' + to + '".');
 
-        // NOTE: we may not need to pass the "from" every time, might be better to just store it
+        // resolve the URL fragments into usable commands.
         let fromCommand = this.resolveUrlToCommand(from);
         let toCommand = this.resolveUrlToCommand(to);
 
+        // if both extensions are blank '' it means we don't need to load any extension since this is the portal home
         if (fromCommand.extensionName === toCommand.extensionName && toCommand.extensionName === '') {
             return;
         }
@@ -42,6 +49,10 @@ class CommandManager {
         });
     }
 
+    /**
+     * Resolve a URL fragment to a command. This can be considered part of the Extension Resolver Engine.
+     * @param url 
+     */
     resolveUrlToCommand(url: string): Command {
         // URL fragment parsing (may change this to use a regex in the future)
         let fragment: string = url;
@@ -62,16 +73,28 @@ class CommandManager {
         return command;
     }
 
+    /**
+     * Returns a promise which will load an extension using the passed command.
+     * @param command 
+     */
     loadExtension(command: Command): Promise<string> {
         console.log('[SHELL] Start loading extension: ' + command.extensionName + ' with extension params: ', command.params);
         return this._extensionManager.loadExtension(command.extensionName, command.params, command.queryParams);
     }
 
+    /**
+     * Returns a promise which will update an extension's parameters using the passed command.
+     * @param command 
+     */
     updateExtensionParams(command: Command): Promise<string> {
         console.log('[SHELL] Start updating extension: ' + command.extensionName + ' with extension params: ', command.params);
         return this._extensionManager.updateExtensionParams(command.extensionName, command.params, command.queryParams);
     }
 
+    /**
+     * Returns a promise which will unload an extension using the passed command.
+     * @param command 
+     */
     unloadExtension(command: Command): Promise<string> {
         console.log('[SHELL] Start unloading extension: ' + command.extensionName);
         return this._extensionManager.unloadExtension(command.extensionName);

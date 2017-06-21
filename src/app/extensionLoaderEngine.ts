@@ -27,6 +27,14 @@ class ExtensionLoaderEngine {
     private _htmlImportTemplateLoader: HTMLImportTemplateLoader;
 
     /**
+     * Function for getting an extension JS bundle based on convention and the IIS file layout.
+     * @param extensionName 
+     */
+    private getExtensionBundle(extensionName: string): string {
+        return 'tap' + window.TapFx.Utilities.upperCaseFirstChar(extensionName) + '-bundle.js';
+    }
+
+    /**
      * Load an extension.
      * @param extensionName The name of the extension to load.
      */
@@ -35,19 +43,9 @@ class ExtensionLoaderEngine {
             // standard script bundles
             let extensionScripts = [
                 'common-bundle.js',
-                'tapFx-bundle.js'
+                'tapFx-bundle.js',
+                this.getExtensionBundle(extensionName)
             ];
-
-            // logic for looking up extension assets
-            switch (extensionName) {
-                case 'ext1':
-                    extensionScripts.push('tapExt1-bundle.js');
-                    break;
-                case 'ext2':
-                    extensionScripts.push('tapExt2-bundle.js');
-                    break;
-                default: throw new Error('Unknown extension specified.');
-            }
 
             // get a new extension id
             let extensionID = window.TapFx.Utilities.newGuid();

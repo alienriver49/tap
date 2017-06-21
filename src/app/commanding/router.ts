@@ -10,6 +10,9 @@ class Router {
     ) {
     }
 
+    /**
+     * Flag for if the router active.
+     */
     isActive: boolean = false;
     private _prevUrlFragment: string = '/';
     private _currUrlFragment: string = '/';

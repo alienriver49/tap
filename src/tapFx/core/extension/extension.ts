@@ -36,7 +36,7 @@ class Extension {
         this._rpc.publish('shell.removeExtension', '', returnData);
     }
 
-    registerBladeBindings(blade: Object): any {
+    registerBladeBindings(blade: Blade): any {
         let serializedBlade = {};
 
         let bladeID = this._utilities.newGuid();
@@ -61,23 +61,30 @@ class Extension {
         }
     }
 
-    registerBladeFunctions(blade: Object): string[] {
+    registerBladeFunctions(blade: Blade, bladeId: string): string[] {
         let returnFuncs: string[] = [];
         let funcIgnoreArray = ['constructor'];
         // get the functions from the blade prototype
         let bladeProto = Object.getPrototypeOf(blade);
         let bladeFuncs = Object.getOwnPropertyNames(bladeProto);
         for (let func of bladeFuncs) {
-            // TODO: implement conventions
+            let funcDesc = Object.getOwnPropertyDescriptor(bladeProto, func);
             // ignore private functions beginning with _, similar to property observing
             // for now, we will use a function ignore array to ignore functions we don't want to listen for (like 'constructor')
+            // TODO: determine how to attach get and set functions
             if (func.charAt(0) !== '_' &&
-                funcIgnoreArray.indexOf(func) === -1
+                funcIgnoreArray.indexOf(func) === -1/* &&
+                funcDesc.get === undefined*/
             ) {
-                // add a subscription which will call the blade's original function with the passed data
-                let subscription = this._rpc.subscribe('tapfx.' + func, (data) => {
+                // add a subscription which will call the blade's original function with the passed function args
+                let subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + func, (data) => {
+                    // call the function and get the result
                     console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + func);
-                    blade[func](...data.functionData);
+                    let result = blade[func](...data.functionArgs);
+
+                    // publish the result back to the shell
+                    console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Publishing result from function: ` + func);
+                    this._rpc.publish('shell.' + bladeId + '.' + func, '', result);
                 });
                 this._rpcSubscriptions.push(subscription);
 
@@ -93,7 +100,7 @@ class Extension {
         // Get the extension Id from RPC and pass it to the shell
         bladeInfo.extensionId = this._rpc.InstanceId;
         bladeInfo.viewName = viewName;
-        bladeInfo.functions = this.registerBladeFunctions(blade);
+        bladeInfo.functions = this.registerBladeFunctions(blade, bladeInfo.bladeId);
         this._rpc.publish('tapfx.newBlade', "", bladeInfo);
     }
 }

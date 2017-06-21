@@ -22,15 +22,41 @@ class ExtensionManager {
 
     /**
      * Adds a new blade for an extension.
-     * @param data 
+     * @param data
      */
     private _onNewBlade(data: any): void {
         console.log('[SHELL] Received newBlade message: ', data);
         let extension = this.extensions.find((ext) => {
             return ext.id === data.extensionId;
         });
-        if (extension)
-            extension.addBlade(data.bladeId, data.serializedBlade, data.viewName, data.functions); 
+        if (extension) {
+            // add the blade to the extension
+            let blade = extension.addBlade(data.bladeId, data.serializedBlade, data.viewName, data.functions);
+
+            // let's check if we can activate:
+            // if the canActivate function is not defined, true by default.
+            // if the canActivate function is defined we will get the result from it
+            let canActivate = !(blade.canActivate) || (blade.canActivate && blade.canActivate());
+            if (canActivate) {
+                // if the result was a boolean
+                if (canActivate === true) {
+                    // load the view for that blade
+                    this._extensionLoaderEngine.addView(extension, data.viewName, blade, data.functions);
+                    if (blade.activate) blade.activate();
+                } else {
+                    // otherwise, it was a promise we will resolve and determine the resule of
+                    canActivate.then((result) => {
+                        if (result) {
+                            if (result) {
+                                // load the view for that blade
+                                if (extension) this._extensionLoaderEngine.addView(extension, data.viewName, blade, data.functions);
+                                if (blade.activate) blade.activate();
+                            }
+                        }
+                    });
+                }
+            } 
+        }
     }
 
     /**

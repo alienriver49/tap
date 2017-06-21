@@ -14,6 +14,14 @@ class Utilities {
     convertQueryStringToObject(queryString: string): Object {
         return JSON.parse('{"' + decodeURI(queryString.substring(1).replace(/&/g, "\",\"").replace(/=/g,"\":\"")) + '"}');
     }
+
+    lowerCaseFirstChar(str: string): string {
+        return str.charAt(0).toLowerCase() + str.slice(1);
+    }
+
+    upperCaseFirstChar(str: string): string {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
 }
 
 export default Utilities;

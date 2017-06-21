@@ -1,21 +1,21 @@
 import { inject} from 'aurelia-framework'
 import BindingEngine from './../tapFx/binding/bindingEngine'
-import ExtensionLoaderEngine from './extensionLoaderEngine'
+import DeferredPromise from './deferredPromise'
+import Blade from './../tapFx/ux/viewModels/viewModels.blade'
 
-@inject(BindingEngine, ExtensionLoaderEngine)
+@inject(BindingEngine)
 class Extension {
     constructor(
         private _bindingEngine: BindingEngine,
-        private _extensionLoaderEngine: ExtensionLoaderEngine,
         public id: string,
         public name: string
     ) { 
         
     }
 
-    blades: Object[] = [];
+    blades: Blade[] = [];
 
-    private _registerBladeBindings(bladeID: string, blade: Object): void {
+    private _registerBladeBindings(bladeID: string, blade: Blade): void {
         this._bindingEngine.resolveId(blade, bladeID);
 
         for (let prop in blade) {
@@ -31,7 +31,7 @@ class Extension {
         }
     }
 
-    private _unregisterBladeBindings(blade: Object): void {
+    private _unregisterBladeBindings(blade: Blade): void {
         this._bindingEngine.unobserve(blade);
     }
 
@@ -39,32 +39,53 @@ class Extension {
         this._bindingEngine.unobserveAll();
     }
 
-    private _registerBladeFunctions(blade: Object, functions: string[]) {
+    private _registerBladeFunctions(bladeID: string, blade: Blade, functions: string[]) {
         console.log('[SHELL] Attaching blade functions: ', functions);
         // loop through all the passed functions and add them as a function to the serialized blade which will publish a message with the function data
-        for (let func of functions) blade[func] = (...data) => {
-            console.log('[SHELL] Publishing message from function: ' + func);
-            window.TapFx.Rpc.publish('tapfx.' + func, this.id, { functionData: data });
+        for (let func of functions) {
+            var extId = this.id;
+            blade[func] = function() {
+                // publish the function call to the extension
+                console.log('[SHELL] Publishing message from function: ' + func);
+                window.TapFx.Rpc.publish('tapfx.' + bladeID + '.' + func, extId, { functionArgs: [...arguments] });
+                
+                // set up a subscription for any result from the calling of the function in the extension
+                let resultPromise = new DeferredPromise();
+                let subscription = window.TapFx.Rpc.subscribe('shell.' + bladeID + '.' + func, (data) => {
+                    console.log('[SHELL] Receiving result from function: ' + func + ' result: ', data);
+                    resultPromise.resolve(data);
+
+                    // unsubscribe from the result subscription
+                    subscription.unsubscribe();
+                });
+
+                return resultPromise.promise.then((result) => { return result; });
+            };
         };
     }
 
-    addBlade(bladeID: string, serializedBlade: Object, viewName: string, functions: string[]): void {
+    /**
+     * Add a blade to an extension.
+     * @param bladeID 
+     * @param serializedBlade 
+     * @param viewName 
+     * @param functions 
+     */
+    addBlade(bladeID: string, serializedBlade: Object, viewName: string, functions: string[]): Blade {
         let blade = new window.TapFx.ViewModels.Blade();
         Object.assign(blade, serializedBlade);
         this._registerBladeBindings(bladeID, blade);
-        this._registerBladeFunctions(blade, functions);
+        this._registerBladeFunctions(bladeID, blade, functions);
         this.blades.push(blade);
-        // Load the view with the passed name
-        this._extensionLoaderEngine.addView(this, viewName, blade, functions);
-        // Deserialize the view with aurelia and bind it to the blade (viewmodel)
-        //this.addView2(serializedView, blade);
+        
+        return blade;
     }
 
     /**
      * Remove a blade and it's binding from an extension.
      * @param blade 
      */
-    removeBlade(blade: Object): void {
+    removeBlade(blade: Blade): void {
         let index = this.blades.indexOf(blade);
         if (index !== -1) {
             this._unregisterBladeBindings(blade);

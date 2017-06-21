@@ -34,5 +34,5 @@
     <div repeat.for="input of radios">
         <input name="radios" type="radio" model.bind="input" checked.bind="selectedRadio"> ${input.label}
     </div>
-    <h3>Selected Radio: ${selectedRadio}</h3>
+    <h3>Selected Radio: <code>{ value: ${selectedRadio.value}, label: ${selectedRadio.label} }</code></h3>
 </template>

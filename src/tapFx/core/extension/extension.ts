@@ -36,6 +36,67 @@ class Extension {
         this._rpc.publish('shell.removeExtension', '', returnData);
     }
 
+    /**
+     * Attempts to add a blade to an extension. This will check the canActivate function and call activate. If canActivate fails, the shell will be notified.
+     * @param blade 
+     * @param viewName 
+     */
+    addBlade(blade: Blade, viewName: string): void {
+        let activateChain = Promise.resolve<boolean>(true);
+        // if there is no canActivate method we return true, otherwise we will return the result of blade.canActivate()
+        let canActivate = (!blade.canActivate) || (blade.canActivate && blade.canActivate());
+        // if it's true or a promise
+        if (canActivate) {
+            // let's chain our results together
+            activateChain = activateChain.then((result) => {
+                console.log('[TAP-FX] addBlade activateChain 1 result: ' + result);
+                // whether it's true or a promise we will return it
+                return canActivate;
+            });
+            activateChain = activateChain.then((result) => {
+                console.log('[TAP-FX] addBlade activateChain 2 result: ' + result);
+                // result is the value from canActivate or the return value from the canActivate() promise
+                let ret: boolean | Promise<boolean> = result;
+                if (result) {
+                    // if we canActivate, call the activate function if it exists and have it return our result
+                    let activate = blade.activate ? blade.activate() : undefined;
+                    if (activate) ret = activate.then(() => { return result; });
+                }
+                
+                return ret;
+            });
+            activateChain = activateChain.then((result) => {
+                console.log('[TAP-FX] addBlade activateChain 3 result: ' + result);
+                // if we canActivate and the activate method has been called, add the blade
+                if (result) {
+                    this._performAddBlade(blade, viewName);
+                } else {
+                    // otherwise, notify the shell that we failed
+                    this._addBladeFailed();
+                }
+                return result;
+            });
+        } else {
+            this._addBladeFailed();
+        }
+    }
+
+    private _performAddBlade(blade: Blade, viewName: string): void {
+        let bladeInfo = this.registerBladeBindings(blade);
+        // Get the extension Id from RPC and pass it to the shell
+        bladeInfo.extensionId = this._rpc.InstanceId;
+        bladeInfo.viewName = viewName;
+        bladeInfo.functions = this.registerBladeFunctions(blade, bladeInfo.bladeId);
+        this._rpc.publish('shell.addBlade', "", bladeInfo);
+    }
+
+    private _addBladeFailed(): void {
+        let returnData: Object = {
+            extensionId: this._rpc.InstanceId
+        };
+        this._rpc.publish('shell.addBladeFailed', '', returnData);
+    }
+
     registerBladeBindings(blade: Blade): any {
         let serializedBlade = {};
 
@@ -63,7 +124,8 @@ class Extension {
 
     registerBladeFunctions(blade: Blade, bladeId: string): string[] {
         let returnFuncs: string[] = [];
-        let funcIgnoreArray = ['constructor'];
+        // for now, don't sync the activation lifecycle functions over
+        let funcIgnoreArray = ['constructor', 'activate', 'canActivate', 'deactivate', 'canDeactivate'];
         // get the functions from the blade prototype
         let bladeProto = Object.getPrototypeOf(blade);
         let bladeFuncs = Object.getOwnPropertyNames(bladeProto);
@@ -93,15 +155,6 @@ class Extension {
         }
 
         return returnFuncs;
-    }
-
-    addBlade(blade: Blade, viewName: string): void {
-        let bladeInfo = this.registerBladeBindings(blade);
-        // Get the extension Id from RPC and pass it to the shell
-        bladeInfo.extensionId = this._rpc.InstanceId;
-        bladeInfo.viewName = viewName;
-        bladeInfo.functions = this.registerBladeFunctions(blade, bladeInfo.bladeId);
-        this._rpc.publish('tapfx.newBlade', "", bladeInfo);
     }
 }
 

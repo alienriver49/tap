@@ -1,7 +1,6 @@
 import { inject } from 'aurelia-framework'
 import Router from './commanding/router'
-import extension from './extension'
-import ExtensionManager from './extensionManager' // imported and injected for use on the view
+import ExtensionManager from './extensionManagement/extensionManager' // imported and injected for use on the view
 
 @inject(Router, ExtensionManager)
 export class App {

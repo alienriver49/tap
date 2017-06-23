@@ -24,12 +24,23 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
 
     activate() {
         console.log('[EXT-2] activate method called');
+        // fake a timeout for an extension activation
+        let timeout: number = 500;
+        let promise = new Promise<undefined>((resolve) => {
+            setTimeout(resolve, timeout);
+        });
+        return promise;
     }
 
     canActivate() {
         console.log('[EXT-2] canActivate method called');
-
-        return true;
+        // fake a timeout for an extension can activate call and return whether an extension can activate
+        let retVal: boolean = true;
+        let timeout: number = 0;
+        let promise = new Promise<boolean>((resolve) => {
+            setTimeout(() => { resolve(retVal) }, timeout);
+        });
+        return promise;
     }
     
     onButtonConventionClick() {

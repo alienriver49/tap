@@ -3,9 +3,9 @@ import { Aurelia, PLATFORM, FrameworkConfiguration } from 'aurelia-framework';
 import BindingEngine from './../tapFx/binding/bindingEngine'
 import {RpcClient} from './../tapFx/rpc/client'
 import CommandManager from './commanding/commandManager'
-import ExtensionManager from './extensionManager'
-import ExtensionLoaderEngine from './extensionLoaderEngine'
-import ConventionEngine from './conventionEngine'
+import ExtensionManager from './extensionManagement/extensionManager'
+import ExtensionLoaderEngine from './extensionManagement/extensionLoaderEngine'
+import ConventionEngine from './extensionManagement/conventionEngine'
 import {LogManager} from "aurelia-framework";
 import {ConsoleAppender} from "aurelia-logging-console";
 //import 'material-components-web'

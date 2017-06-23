@@ -1,0 +1,15 @@
+<template>
+    <br>
+    <div style="border: 2px solid black; padding: 10px">
+        <label>Extension 3 with common and material components</label>
+        <div>
+            <label for="title"><strong>Blade text:</strong></label>
+            <input type="text" value.bind="title" />
+        </div>
+        <label>
+            <mdc-checkbox is-checked.bind="raised"></mdc-checkbox>
+            Raise button
+        </label>
+        <tap-test-component display.bind="display" clear-text.bind="clearText" raised.bind="raised" ></tap-test-component>
+    </div>
+</template>

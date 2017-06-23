@@ -1,0 +1,9 @@
+<template>
+    <div style="border: 2px solid black; padding: 10px; margin: 10px">
+        <label><strong>TAP test component</strong></label>
+        <div>Display: ${display}</div>
+        <div>
+            <button mdc-ripple mdc-button="raised.bind: raised;" disabled.bind="isDisabled" click.delegate="onClearText()" >Clear text</button>
+        </div>
+    </div>
+</template>

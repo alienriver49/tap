@@ -1,21 +1,76 @@
-import { inject} from 'aurelia-framework'
+import { inject, Factory} from 'aurelia-framework'
+import {Container} from 'aurelia-dependency-injection';
+import {Loader, TemplateRegistryEntry} from 'aurelia-loader';
+import {DefaultLoader, TextTemplateLoader} from 'aurelia-loader-default';
+import {BindingLanguage, TemplateRegistryViewStrategy, ViewEngine, ModuleAnalyzer, ViewSlot, ViewLocator, ViewFactory, ViewResources, TemplatingEngine, CompositionTransaction, CompositionEngine, View, CompositionContext, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
+import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
+import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 import BindingEngine from './../tapFx/binding/bindingEngine'
 import DeferredPromise from './deferredPromise'
-import Blade from './../tapFx/ux/viewModels/viewModels.blade'
+import ConventionEngine from './conventionEngine';
+import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
 
-@inject(BindingEngine)
+export interface IExtensionResources {
+    container: Container;
+    viewResources: ViewResources;
+    textTemplateLoader: TextTemplateLoader;
+    htmlImportLoader: HTMLImportTemplateLoader;
+    viewCompiler: ViewCompiler;
+    viewEngine: ViewEngine; 
+    defaultLoader: DefaultLoader;
+    conventionEngine: ConventionEngine;
+}
+
+
+@inject(Container, ViewResources, Loader, TextTemplateLoader, BindingEngine, ConventionEngine, Factory.of(PortalBlade))
 class Extension {
     constructor(
+        _globalContainer: Container,
+        _globalViewResources: ViewResources,
+        private _defaultLoader: DefaultLoader,
+        _textTemplateLoader: TextTemplateLoader,
         private _bindingEngine: BindingEngine,
+        private _conventionEngine: ConventionEngine,
+        private _portalBladeFactory: (...args: any[]) => PortalBlade, 
         public id: string,
         public name: string
     ) { 
-        
+        // Create a new child container for every extension
+        this._container = new Container();
+        this._container.parent = _globalContainer;
+	    this._container.registerSingleton(TemplatingBindingLanguage, TemplatingBindingLanguage);
+        // Create child ViewResources for every extension
+        this._viewResources = new ViewResources(_globalViewResources);
+        // Create loader for HTML Imports
+        this._htmlImportLoader = new HTMLImportTemplateLoader("");
+
+        // Create a new ViewCompiler and ViewEngine for the extension
+        this._viewCompiler = new ViewCompiler(this._container.get(TemplatingBindingLanguage) as BindingLanguage, this._viewResources);
+        this._viewEngine = new ViewEngine(this._defaultLoader, this._container, this._viewCompiler, this._container.get(ModuleAnalyzer), this._viewResources);
     }
 
-    blades: Blade[] = [];
+    public blades: PortalBlade[] = [];
+    private _container: Container;
+    private _viewResources: ViewResources;
+    private _textTemplateLoader: TextTemplateLoader;
+    private _htmlImportLoader: HTMLImportTemplateLoader;
+    private _viewCompiler: ViewCompiler;
+    private _viewEngine: ViewEngine; 
 
-    private _registerBladeBindings(bladeID: string, blade: Blade): void {
+    public getResources(): IExtensionResources {
+        return {
+            container: this._container,
+            viewResources: this._viewResources,
+            textTemplateLoader: this._textTemplateLoader,
+            htmlImportLoader: this._htmlImportLoader,
+            viewCompiler: this._viewCompiler,
+            viewEngine: this._viewEngine,
+            defaultLoader: this._defaultLoader,
+            conventionEngine: this._conventionEngine
+        }
+    }
+
+    private _registerBladeBindings(bladeID: string, blade: PortalBlade): void {
         this._bindingEngine.resolveId(blade, bladeID);
 
         for (let prop in blade) {
@@ -31,7 +86,7 @@ class Extension {
         }
     }
 
-    private _unregisterBladeBindings(blade: Blade): void {
+    private _unregisterBladeBindings(blade: PortalBlade): void {
         this._bindingEngine.unobserve(blade);
     }
 
@@ -39,7 +94,7 @@ class Extension {
         this._bindingEngine.unobserveAll();
     }
 
-    private _registerBladeFunctions(bladeID: string, blade: Blade, functions: string[]) {
+    private _registerBladeFunctions(bladeID: string, blade: PortalBlade, functions: string[]) {
         console.log('[SHELL] Attaching blade functions: ', functions);
         // loop through all the passed functions and add them as a function to the serialized blade which will publish a message with the function data
         for (let func of functions) {
@@ -71,11 +126,12 @@ class Extension {
      * @param viewName 
      * @param functions 
      */
-    addBlade(bladeID: string, serializedBlade: Object, viewName: string, functions: string[]): Blade {
-        let blade = new window.TapFx.ViewModels.Blade();
-        Object.assign(blade, serializedBlade);
-        this._registerBladeBindings(bladeID, blade);
-        this._registerBladeFunctions(bladeID, blade, functions);
+    addBlade(config: IPortalBladeConfig): PortalBlade {
+        let blade = new PortalBlade(this, config) 
+        // Should we move these functions to PortalBlade?
+        Object.assign(blade, config.serializedBlade);
+        this._registerBladeBindings(config.bladeId, blade);
+        this._registerBladeFunctions(config.bladeId, blade, config.functions);
         this.blades.push(blade);
         
         return blade;
@@ -85,7 +141,7 @@ class Extension {
      * Remove a blade and it's binding from an extension.
      * @param blade 
      */
-    removeBlade(blade: Blade): void {
+    removeBlade(blade: PortalBlade): void {
         let index = this.blades.indexOf(blade);
         if (index !== -1) {
             this._unregisterBladeBindings(blade);

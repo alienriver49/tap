@@ -3,12 +3,12 @@ import Extension from './extension'; // type only
 import ConventionEngine from './conventionEngine';
 import {Container, Factory} from 'aurelia-dependency-injection';
 import {Loader, TemplateRegistryEntry} from 'aurelia-loader';
-import {BindingLanguage, ViewSlot, ViewFactory, ViewResources, TemplatingEngine, CompositionTransaction, CompositionEngine, View, CompositionContext, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
+import {BindingLanguage, TemplateRegistryViewStrategy, ViewEngine, ViewSlot, ViewLocator, ViewFactory, ViewResources, TemplatingEngine, CompositionTransaction, CompositionEngine, View, CompositionContext, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 import {TextTemplateLoader, DefaultLoader} from 'aurelia-loader-default'
 import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 
-@inject(Loader, Container, CompositionEngine, ViewResources, TextTemplateLoader, ConventionEngine)
+@inject(Loader, Container, CompositionEngine, ViewResources, TextTemplateLoader, ConventionEngine, ViewEngine, ViewLocator)
 class ExtensionLoaderEngine {
     constructor(
         private _defaultLoader: DefaultLoader,
@@ -17,6 +17,8 @@ class ExtensionLoaderEngine {
         private _viewResources: ViewResources,
         private _textTemplateLoader: TextTemplateLoader,
         private _conventionEngine: ConventionEngine,
+        private _viewEngine: ViewEngine,
+        private _viewLocator: ViewLocator,
     ) {
         this._defaultLoader = _defaultLoader || new PLATFORM.Loader();
         this._container = _container || (new Container()).makeGlobal();
@@ -87,78 +89,6 @@ class ExtensionLoaderEngine {
                 iFramesEl.appendChild(iFrame);
             }
         });
-    }
-
-    /**
-     * For the passed view, check if any cached ViewFactories exist for it.
-     * If so, use the cached ViewFactory and bind it to the passed viewModel and 
-     * append it to the DOM
-     * If not, load the view via HTML Import and create and cache the ViewFactory,
-     * then bind it to passed view model and append it to the DOM
-     * @param extension The extension associated with the viewName and viewModel
-     * @param viewName Name of the view to load 
-     * @param viewModel Viewmodel object to bind to the view
-     */
-    public addView(extension: Extension, viewName: string, viewModel: object, functions: string[]): void {
-        console.log('[SHELL] addView: ');
-        // Assume we get the directory based on the Extension routing
-        let viewPath = extension.name + "/"; 
-        let viewWithPath = `${viewPath}${viewName}`;
-        // Insert the blade view at the element with the matching prefix + extension Id
-        let elementSelector = '#tap_ext\\:'+extension.id;
-        let queryBaseElement = document.querySelector(elementSelector);
-        if (queryBaseElement) {
-            let baseElement = queryBaseElement
-
-            let cachedViewFactory = this._container.get(viewWithPath);
-            if (typeof cachedViewFactory === "string") {
-                // Don't have a viewfactory for this view yet, so import, compile and cache it
-                // The container.get call creates a resolver for the key if it can't find any matches,
-                // but the resolver just returns the key string, so remove it
-                this._container.unregister(viewWithPath);
-
-                this._htmlImportTemplateLoader = this._htmlImportTemplateLoader || new HTMLImportTemplateLoader("");
-                // extension passes the name of the main blade view
-                let templateRegistryEntry = new TemplateRegistryEntry(viewName); 
-                //let loader = new WebpackLoader();
-                let loader = this._defaultLoader;
-                loader.useTemplateLoader(this._htmlImportTemplateLoader);
-
-                loader.loadTemplate(viewWithPath).then((templateRegistryEntry) => {
-                    if (templateRegistryEntry.template) {
-                        // Delete the link element, otherwise if this blade/view is re-imported, the compiler will fail because it will
-                        // be a duplicate link element
-                        // Don't really need to delete it anymore since we're using cached viewFactories, but doesn't hurt to clean up
-                        let linkToDelete = document.querySelector(`link[rel="import"][href="${viewPath}${viewName}"]`);
-                        if (linkToDelete)
-                            linkToDelete.remove();
-
-                        // attempt to attach conventions before compiling the view
-                        let docFragment = (templateRegistryEntry.template as HTMLTemplateElement).content;
-                        if (functions.length > 0) this._conventionEngine.attachFunctions(docFragment, functions);
-
-                        //(baseElement as Element).appendChild((templateRegistryEntry.template as HTMLTemplateElement).content.cloneNode(true));
-                        this._viewResources = new ViewResources(this._viewResources, viewPath + viewName);
-                        this._viewResources.bindingLanguage = this._container.get(BindingLanguage);
-                        let viewCompiler = new ViewCompiler(this._container.get(BindingLanguage) as BindingLanguage, this._viewResources)
-                        let viewFactory = viewCompiler.compile(templateRegistryEntry.template, this._viewResources, ViewCompileInstruction.normal);
-                        this._container.registerInstance(viewWithPath, viewFactory); 
-                        let view = viewFactory.create(this._container, undefined, baseElement);
-                        console.log('[SHELL] addView: created view', );
-                        view.appendNodesTo(baseElement);
-                        view.bind(viewModel);
-                    }
-                });
-            }
-
-            if (cachedViewFactory.constructor.name === "ViewFactory") {
-                let view = cachedViewFactory.create(this._container, undefined, baseElement);
-                console.log('[SHELL] addView: created view (cached)', );
-                view.appendNodesTo(baseElement);
-                view.bind(viewModel);
-            }
-
-        }
     }
 
     /**

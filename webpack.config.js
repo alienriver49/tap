@@ -17,6 +17,8 @@ const tapExt1SrcDir = path.resolve(__dirname, 'src/tapExt1');
 const tapExt1OutDir = path.resolve(__dirname, 'dist/tapExt1');
 const tapExt2SrcDir = path.resolve(__dirname, 'src/tapExt2');
 const tapExt2OutDir = path.resolve(__dirname, 'dist/tapExt2');
+const tapExt3SrcDir = path.resolve(__dirname, 'src/tapExt3');
+const tapExt3OutDir = path.resolve(__dirname, 'dist/tapExt3');
 
 const nodeModulesDir = path.resolve(__dirname, 'node_modules');
 const appUrlRoot = '';
@@ -31,6 +33,7 @@ module.exports = {
             //tapShellSrcDir,
             tapExt1SrcDir,
             tapExt2SrcDir,
+            tapExt3SrcDir,
             nodeModulesDir
         ].map(dir => path.resolve(dir))
     },
@@ -40,7 +43,8 @@ module.exports = {
         //tapShell: path.join(tapShellSrcDir, 'index.ts'),
         tapFx: ['aurelia-polyfills', 'aurelia-loader-webpack', path.join(tapFxSrcDir, 'index.ts')],
         tapExt1: path.join(tapExt1SrcDir, 'index.ts'),
-        tapExt2: path.join(tapExt2SrcDir, 'index.ts')
+        tapExt2: path.join(tapExt2SrcDir, 'index.ts'),
+        tapExt3: path.join(tapExt3SrcDir, 'index.ts')
     },
     output: {
         path: outDir,
@@ -52,7 +56,8 @@ module.exports = {
     module: {
         rules: [
             { test: /\.ts$/i, loader: 'awesome-typescript-loader', exclude: nodeModulesDir },
-            { test: /\.html$/, loader: 'html-loader' }
+            { test: /\.html$/, loader: 'html-loader' },
+            { test: /\.css$/, loader: "style-loader!css-loader" }
         ]
     },
     plugins: [
@@ -82,7 +87,8 @@ module.exports = {
         new CopyWebpackPlugin([
             { from: tapExt1SrcDir+"/*.html", to: outDir+"/ext1", flatten: "Y"},
             { from: tapExt2SrcDir+"/*.html", to: outDir+"/ext2", flatten: "Y"},
+            { from: tapExt3SrcDir+"/*.html", to: outDir+"/ext3", flatten: "Y"},
             { from: "node_modules/webcomponents.js/webcomponents-lite.js", to: outDir, flatten: "Y"}
-        ])
+        ]),
     ]
 };

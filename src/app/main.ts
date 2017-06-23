@@ -1,14 +1,38 @@
 /// <reference path="./../typings.d.ts" />
-import { Aurelia, PLATFORM } from 'aurelia-framework';
+import { Aurelia, PLATFORM, FrameworkConfiguration } from 'aurelia-framework';
 import BindingEngine from './../tapFx/binding/bindingEngine'
 import {RpcClient} from './../tapFx/rpc/client'
 import CommandManager from './commanding/commandManager'
 import ExtensionManager from './extensionManager'
 import ExtensionLoaderEngine from './extensionLoaderEngine'
 import ConventionEngine from './conventionEngine'
+import {LogManager} from "aurelia-framework";
+import {ConsoleAppender} from "aurelia-logging-console";
+//import 'material-components-web'
 
+// LogManager.addAppender(new ConsoleAppender());
+// LogManager.setLevel(LogManager.logLevel.debug);
 
-export function configure(aurelia: Aurelia) {
+export async function configure(aurelia: Aurelia) {
+
+    // Register WebComponents
+    // Material components with Aurelia wrappers
+    // and custom components
+    const components = [
+        PLATFORM.moduleName('webComponents/button/mdc-button'),
+        PLATFORM.moduleName('webComponents/checkbox/mdc-checkbox'),
+        PLATFORM.moduleName('webComponents/ripple/mdc-ripple'),
+        PLATFORM.moduleName('webComponents/tapComponents/tap-test-component')
+    ];
+
+    // Register the components globally so we don't need to
+    // 'require' them in each html (useful when dynamically creating views)
+    // Would like to use the FrameworkConfiguration.feature functionality
+    // commented out below, but can't seem to get it to work 
+    // because it appends an 'index' to the module Id that it tries to load
+    // and it's not working with webpack as setup
+    aurelia.use.globalResources(components);
+
     // The app and tapFx have separate instances of Aurelia,
     // Use singletons from TapFx in the app
     aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
@@ -22,9 +46,12 @@ export function configure(aurelia: Aurelia) {
     aurelia.use
         .basicConfiguration()
         .history()
-        .developmentLogging();
+        //.feature('webComponents')
+        .developmentLogging()
 
-    aurelia.start().then(() => aurelia.setRoot(PLATFORM.moduleName('app/app')));
+    await aurelia.start();
+    aurelia.setRoot(PLATFORM.moduleName('app/app'));
+
 }
 
 // Attempt to share just one instance of Aurelia with Tap-Fx

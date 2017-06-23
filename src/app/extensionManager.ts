@@ -2,6 +2,7 @@ import { inject, Factory, computedFrom } from 'aurelia-framework'
 import ExtensionLoaderEngine from './extensionLoaderEngine'
 import Extension from './extension'
 import DeferredPromise from './deferredPromise'
+import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
 
 @inject(ExtensionLoaderEngine, Factory.of(Extension))
 class ExtensionManager {
@@ -31,7 +32,13 @@ class ExtensionManager {
         });
         if (extension) {
             // add the blade to the extension
-            let blade = extension.addBlade(data.bladeId, data.serializedBlade, data.viewName, data.functions);
+            let bladeConfig: IPortalBladeConfig = {
+                bladeId: data.bladeId,
+                serializedBlade: data.serializedBlade,
+                viewName: data.viewName,
+                functions: data.functions
+            };
+            let blade = extension.addBlade(bladeConfig);
 
             // let's check if we can activate:
             // if the canActivate function is not defined, true by default.
@@ -41,7 +48,7 @@ class ExtensionManager {
                 // if the result was a boolean
                 if (canActivate === true) {
                     // load the view for that blade
-                    this._extensionLoaderEngine.addView(extension, data.viewName, blade, data.functions);
+                    blade.addView();
                     if (blade.activate) blade.activate();
                 } else {
                     // otherwise, it was a promise we will resolve and determine the resule of
@@ -49,8 +56,10 @@ class ExtensionManager {
                         if (result) {
                             if (result) {
                                 // load the view for that blade
-                                if (extension) this._extensionLoaderEngine.addView(extension, data.viewName, blade, data.functions);
-                                if (blade.activate) blade.activate();
+                                if (extension) 
+                                    blade.addView();
+                                if (blade.activate) 
+                                    blade.activate();
                             }
                         }
                     });

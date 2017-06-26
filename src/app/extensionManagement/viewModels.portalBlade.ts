@@ -53,21 +53,19 @@ export class PortalBlade extends Blade{
 
         let baseElement = queryBaseElement
 
-        let cachedViewFactory = this._extensionResources.container.get(viewWithPath);
-        if (typeof cachedViewFactory === "string") {
-            // Don't have a viewfactory for this view yet, so import, compile and cache it
-            // The container.get call creates a resolver for the key if it can't find any matches,
-            // but the resolver just returns the key string, so remove it
-            this._extensionResources.container.unregister(viewWithPath);
-
-            // extension passes the name of the main blade view
-            let templateRegistryEntry = new TemplateRegistryEntry(this.config.viewName); 
+        let loader = this._extensionResources.defaultLoader;
+        let cachedTemplateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(viewWithPath);
+        if (!cachedTemplateRegistryEntry || !cachedTemplateRegistryEntry.factory){
             // Use the HTML Import loader
-            let loader = this._extensionResources.defaultLoader;
             loader.useTemplateLoader(this._extensionResources.htmlImportLoader);
 
+            // The loader caches templateRegistryEntries in its templateRegistry,
             loader.loadTemplate(viewWithPath).then((templateRegistryEntry) => {
                 loader.useTemplateLoader(this._extensionResources.textTemplateLoader);
+                // the loadTemplate call automatically creates a resolver for the view in the global container
+                // But the resolver just returns the view string, so we don't want to keep it, so try to remove it
+                // if (this._extensionResources.container.parent && this._extensionResources.container.parent.get(viewWithPath))
+                //     this._extensionResources.container.parent.unregister(viewWithPath);
 
                 if (templateRegistryEntry.template) {
                     // Delete the link element, otherwise if this blade/view is re-imported, the compiler will fail because it will
@@ -102,27 +100,30 @@ export class PortalBlade extends Blade{
                     //     view.bind(viewModel);
                     // })
 
-                    this._extensionResources.viewResources = new ViewResources(this._extensionResources.viewResources, templateRegistryEntry.address);
-                    this._extensionResources.viewResources.bindingLanguage = this._extensionResources.container.get(TemplatingBindingLanguage);
-                    let viewCompiler = new ViewCompiler(this._extensionResources.container.get(TemplatingBindingLanguage) as BindingLanguage, this._extensionResources.viewResources)
-                    let viewFactory = viewCompiler.compile(templateRegistryEntry.template, this._extensionResources.viewResources, ViewCompileInstruction.normal);
-                    this._extensionResources.container.registerInstance(viewWithPath, viewFactory); 
-                    let view = viewFactory.create(this._extensionResources.container, undefined, baseElement);
-                    console.log(`[SHELL] addView: created view ${this.config.viewName} `);
-                    view.appendNodesTo(baseElement);
-                    view.attached();
-                    view.bind(this);
+                    // Get associated viewFactory for template, otherwise create it and attach to templateRegistryEntry
+                    let viewFactory = templateRegistryEntry.factory;
+                    if (!viewFactory){
+                        this._extensionResources.viewResources = new ViewResources(this._extensionResources.viewResources, templateRegistryEntry.address);
+                        this._extensionResources.viewResources.bindingLanguage = this._extensionResources.container.get(TemplatingBindingLanguage);
+                        let viewCompiler = new ViewCompiler(this._extensionResources.container.get(TemplatingBindingLanguage) as BindingLanguage, this._extensionResources.viewResources)
+                        viewFactory = viewCompiler.compile(templateRegistryEntry.template, this._extensionResources.viewResources, ViewCompileInstruction.normal);
+                        templateRegistryEntry.factory = viewFactory;
+                    }
+                    this.createBindView(viewFactory, baseElement);
                 }
             });
+        }else{
+            let viewFactory = cachedTemplateRegistryEntry.factory;
+            this.createBindView(viewFactory, baseElement);
         }
+    }
 
-        if (cachedViewFactory.constructor.name === "ViewFactory") {
-            let view = cachedViewFactory.create(this._extensionResources.container, undefined, baseElement);
-            console.log(`[SHELL] addView: created view ${this.config.viewName} (cached)`, );
-            view.appendNodesTo(baseElement);
-            view.attached();
-            view.bind(this);
-        }
+    private createBindView(viewFactory: ViewFactory, baseElement: Element): void {
+        let view = viewFactory.create(this._extensionResources.container, undefined, baseElement);
+        console.log(`[SHELL] addView: created view ${this.config.viewName} `);
+        view.appendNodesTo(baseElement);
+        view.attached();
+        view.bind(this);
 
     }
 

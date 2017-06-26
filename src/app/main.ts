@@ -15,24 +15,6 @@ import {ConsoleAppender} from "aurelia-logging-console";
 
 export async function configure(aurelia: Aurelia) {
 
-    // Register WebComponents
-    // Material components with Aurelia wrappers
-    // and custom components
-    const components = [
-        PLATFORM.moduleName('webComponents/button/mdc-button'),
-        PLATFORM.moduleName('webComponents/checkbox/mdc-checkbox'),
-        PLATFORM.moduleName('webComponents/ripple/mdc-ripple'),
-        PLATFORM.moduleName('webComponents/tapComponents/tap-test-component')
-    ];
-
-    // Register the components globally so we don't need to
-    // 'require' them in each html (useful when dynamically creating views)
-    // Would like to use the FrameworkConfiguration.feature functionality
-    // commented out below, but can't seem to get it to work 
-    // because it appends an 'index' to the module Id that it tries to load
-    // and it's not working with webpack as setup
-    aurelia.use.globalResources(components);
-
     // The app and tapFx have separate instances of Aurelia,
     // Use singletons from TapFx in the app
     aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
@@ -46,7 +28,9 @@ export async function configure(aurelia: Aurelia) {
     aurelia.use
         .basicConfiguration()
         .history()
-        //.feature('webComponents')
+        // Register the components globally so we don't need to
+        // 'require' them in each html (useful when dynamically creating views)
+        .feature(PLATFORM.moduleName('webComponents/index'))        
         .developmentLogging()
 
     await aurelia.start();

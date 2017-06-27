@@ -147,14 +147,14 @@ class Extension {
                 funcDesc.get === undefined*/
             ) {
                 // add a subscription which will call the blade's original function with the passed function args
-                let subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + func, (data) => {
+                let subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + funcName, (data) => {
                     // call the function and get the result
-                    console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + func);
+                    console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + funcName);
                     let result = blade[funcName](...data.functionArgs);
 
                     // publish the result back to the shell
-                    console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Publishing result from function: ` + func);
-                    this._rpc.publish('shell.' + bladeId + '.' + func, '', result);
+                    console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Publishing result from function: ` + funcName);
+                    this._rpc.publish('shell.' + bladeId + '.' + funcName, '', result);
                 });
                 this._rpcSubscriptions.push(subscription);
 

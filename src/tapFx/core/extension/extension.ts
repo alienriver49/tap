@@ -4,6 +4,14 @@ import { RpcClient, RpcClientSubscription } from './../../rpc/client'
 import BindingEngine from './../../binding/bindingEngine'
 import Blade from './../../ux/viewModels/viewModels.blade' // type only
 
+/**
+ * Interface defining a function. Includes the name and the property descriptor.
+ */
+interface IFunction {
+    funcName: string;
+    funcDesc: PropertyDescriptor;
+}
+
 @inject(Utilities, RpcClient, BindingEngine)
 class Extension {
     constructor(
@@ -127,22 +135,22 @@ class Extension {
         // for now, don't sync the activation lifecycle functions over
         let funcIgnoreArray = ['constructor', 'activate', 'canActivate', 'deactivate', 'canDeactivate'];
         // get the functions from the blade prototype
-        let bladeProto = Object.getPrototypeOf(blade);
-        let bladeFuncs = Object.getOwnPropertyNames(bladeProto);
+        let bladeFuncs = this._getBladeFunctions(blade);
         for (let func of bladeFuncs) {
-            let funcDesc = Object.getOwnPropertyDescriptor(bladeProto, func);
+            let funcName = func.funcName;
+            let funcDesc = func.funcDesc;
             // ignore private functions beginning with _, similar to property observing
             // for now, we will use a function ignore array to ignore functions we don't want to listen for (like 'constructor')
             // TODO: determine how to attach get and set functions
-            if (func.charAt(0) !== '_' &&
-                funcIgnoreArray.indexOf(func) === -1/* &&
+            if (funcName.charAt(0) !== '_' &&
+                funcIgnoreArray.indexOf(funcName) === -1/* &&
                 funcDesc.get === undefined*/
             ) {
                 // add a subscription which will call the blade's original function with the passed function args
                 let subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + func, (data) => {
                     // call the function and get the result
                     console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + func);
-                    let result = blade[func](...data.functionArgs);
+                    let result = blade[funcName](...data.functionArgs);
 
                     // publish the result back to the shell
                     console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Publishing result from function: ` + func);
@@ -150,11 +158,28 @@ class Extension {
                 });
                 this._rpcSubscriptions.push(subscription);
 
-                returnFuncs.push(func);
+                returnFuncs.push(funcName);
             }
         }
 
         return returnFuncs;
+    }
+
+    /**
+     * Get an array of function information for a blade.
+     * @param blade 
+     */
+    private _getBladeFunctions(blade: Blade): IFunction[] {
+        // get the proto of the blade and then the functions from that
+        let bladeProto = Object.getPrototypeOf(blade);
+        let bladeFuncs = Object.getOwnPropertyNames(bladeProto);
+
+        // now lets map that to an array of function information
+        let funcs = bladeFuncs.map((funcName: string): IFunction => {
+            return { funcName: funcName, funcDesc: Object.getOwnPropertyDescriptor(bladeProto, funcName) };
+        });
+
+        return funcs;
     }
 }
 

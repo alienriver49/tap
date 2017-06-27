@@ -1,13 +1,15 @@
-import { inject, Factory, computedFrom } from 'aurelia-framework'
+import { inject, Factory } from 'aurelia-framework'
+import { EventAggregator } from 'aurelia-event-aggregator';
 import { ExtensionCommandResult, ExtensionCommandQueue }  from './extensionCommandQueue'
 import ExtensionLoaderEngine from './extensionLoaderEngine'
 import Extension from './extension'
 //import DeferredPromise from './../deferredPromise'
 import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
 
-@inject(ExtensionCommandQueue, ExtensionLoaderEngine, Factory.of(Extension))
+@inject(EventAggregator, ExtensionCommandQueue, ExtensionLoaderEngine, Factory.of(Extension))
 class ExtensionManager {
     constructor(
+        private _eventAggregator: EventAggregator,
         private _extensionCommandQueue: ExtensionCommandQueue,
         private _extensionLoaderEngine: ExtensionLoaderEngine,
         private _extensionFactory: (...args: any[]) => Extension
@@ -60,13 +62,17 @@ class ExtensionManager {
         let extensionId = data.extensionId;
         let extension = this._findExtension(extensionId);
         if (extension) {
-            // if the extension has no blades then that means we just want to remove it (usually a case on initial load)
+            // if the extension has no blades then that means we just want to remove it. this would most likely be a case where the initial blade of the extension failed to load, which would mean the extension failed to load.
             if (extension.blades.length === 0) {
                 this.extensions.splice(this._findExtensionIndex(extensionId));
 
                 // TODO: research resolving vs. rejecting
                 let defer = this._extensionCommandQueue.current.defer;
                 if (defer) defer.resolve({ successful: false, message: 'extension load failed'});
+
+                // since the extension failed to load we will clear the queue and reroute to the portal index. note: this could go to the previous extension in the future
+                this._extensionCommandQueue.clear();
+                this._eventAggregator.publish('shell.router.reroute', { urlFragment: '/' })
             }
         }
     }
@@ -113,16 +119,18 @@ class ExtensionManager {
     // TODO: Stubbed for now.
     updateExtensionParams(extensionName: string, params: any[], queryParams: Object): void {
         let extension = this._findExtensionByName(extensionName);
+        let defer = this._extensionCommandQueue.current.defer;
         if (extension) {
             let extensionId = extension.id;
             this._extensionCommandQueue.queueCommand(extensionId, () => {
                 // Update params for that extension
 
-                let defer = this._extensionCommandQueue.current.defer;
+
                 if (defer) defer.resolve({ successful: true, message: 'extension params updated'});
             });
         } else {
-            // we could be 
+            // TODO: we could be waiting for an extension to finish loading so that's why it wasn't found
+            if (defer) defer.resolve({ successful: false, message: 'extension params update failed: extension not found'});
         }
     }
 

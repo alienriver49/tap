@@ -121,10 +121,7 @@ class Extension {
 
     /**
      * Add a blade to an extension.
-     * @param bladeID 
-     * @param serializedBlade 
-     * @param viewName 
-     * @param functions 
+     * @param config
      */
     addBlade(config: IPortalBladeConfig): PortalBlade {
         let blade = new PortalBlade(this, config) 

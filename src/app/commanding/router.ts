@@ -1,14 +1,25 @@
 import { inject } from 'aurelia-framework'
 import { History } from 'aurelia-history'
+import { EventAggregator, Subscription } from 'aurelia-event-aggregator';
 import CommandManager from './commandManager'
 
-@inject(History, CommandManager)
+interface IRouterReroute {
+    urlFragment: string;
+}
+
+@inject(History, EventAggregator, CommandManager)
 class Router {
     constructor(
-        public history: History,
-        public commandManager: CommandManager
+        private _history: History,
+        private _eventAggregator: EventAggregator,
+        private _commandManager: CommandManager
     ) {
     }
+
+    /**
+     * Rerouting subscription which allows other parts of the shell to reroute.
+     */
+    private _rerouteSubscription: Subscription;
 
     /**
      * Flag for if the router active.
@@ -27,8 +38,16 @@ class Router {
         
         console.log('[SHELL] Activate router.');
         this.isActive = true;
-        this.history.activate({routeHandler: this.loadUrl.bind(this)});
-        this.history.setTitle('Titanium Application Portal');
+        this._history.activate({routeHandler: this._loadUrl.bind(this)});
+        this._history.setTitle('Titanium Application Portal');
+
+        this._rerouteSubscription = this._eventAggregator.subscribe('shell.router.reroute', (response: IRouterReroute) => {
+            console.log('[SHELL] Router rerouting to url fragment: ' + response.urlFragment);
+            // overwrite these for now
+            this._prevUrlFragment = this._currUrlFragment = response.urlFragment;
+            // navigate to the urlFragment and don't trigger the routeHandler (which would trigger our _loadUrl function)
+            this._history.navigate(response.urlFragment, { trigger: false });
+        });
     }
 
     /**
@@ -36,7 +55,8 @@ class Router {
      */
     deactivate(): void {
         this.isActive = false;
-        this.history.deactivate();
+        this._history.deactivate();
+        this._rerouteSubscription.dispose();
     }
 
     /**
@@ -44,11 +64,11 @@ class Router {
      * @param fragment Standard for aurelia-history; "/" followed by the route information. i.e. "/ext1" would be an example for the URL "/#ext1"
      * @returns {boolean} Success of the route change.
      */
-    loadUrl(fragment: string): boolean {
+    private _loadUrl(fragment: string): boolean {
         this._prevUrlFragment = this._currUrlFragment;
         this._currUrlFragment = fragment;
         
-        this.commandManager.handleRouteChange(this._prevUrlFragment, this._currUrlFragment);
+        this._commandManager.handleRouteChange(this._prevUrlFragment, this._currUrlFragment);
 
         return true;
     }

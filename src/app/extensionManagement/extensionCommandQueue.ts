@@ -27,9 +27,13 @@ interface ICurrentCommand {
  */
 export class ExtensionCommandQueue {
     constructor() {
+        this.clear();
     }
 
-    private _commandPromiseQueue = Promise.resolve<ExtensionCommandResult>({successful: true, message: ''});
+    /**
+     * A promise queue which ensures that commands are executed in sequential order.
+     */
+    private _commandPromiseQueue;
 
     /**
      * Information about the current command in the queue.
@@ -37,7 +41,7 @@ export class ExtensionCommandQueue {
     current: ICurrentCommand = {} as ICurrentCommand;
 
     /**
-     * Queue an extension id command call.
+     * Queue an extension command call.
      * @param extensionId 
      * @param commandCall 
      */
@@ -49,21 +53,24 @@ export class ExtensionCommandQueue {
 
         // append to the promise queue
         this._commandPromiseQueue = this._commandPromiseQueue.then((result) => {
-            // if successful we will continue to queue, otherwise everything after is cancelled. note: good chance this won't stay this way, but initially this is fine
-            if (result.successful) {
-                // set the current command information to this information
-                this.current.extensionId = extensionId;
-                this.current.commandId = commandId;
-                this.current.defer = defer;
-                
-                // return a promise which will call the commandCall and then resolve to the defer.promise. this allows the extensionManager to resolve the current command later.
-                return new Promise((resolve) => {
-                    commandCall();
-                    resolve(defer.promise);
-                });
-            }
-            return result;
+            // set the current command information to this information
+            this.current.extensionId = extensionId;
+            this.current.commandId = commandId;
+            this.current.defer = defer;
+            
+            // return a promise which will call the commandCall and then resolve to the defer.promise. this allows the command to be called at the appropriate time in the queue and the promise to be resolved by the extensionManager
+            return new Promise((resolve) => {
+                commandCall();
+                resolve(defer.promise);
+            });
         });
+    }
+
+    /**
+     * "Clear" the queue, currently resets the promise.
+     */
+    clear() {
+        this._commandPromiseQueue = Promise.resolve<ExtensionCommandResult>({successful: true, message: ''});
     }
 }
 

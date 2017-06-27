@@ -67,7 +67,7 @@ class ExtensionLoaderEngine {
     }
 
     /**
-     * 
+     * Unload an extension. Calls the extension function to remove blades. Removes the iframe of the extension.
      * @param extension 
      */
     public unloadExtension(extension: Extension): void {

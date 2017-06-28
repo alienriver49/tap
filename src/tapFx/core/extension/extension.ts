@@ -2,6 +2,7 @@ import { inject } from 'aurelia-dependency-injection'
 import Utilities from './../../utilities/utilities'
 import { RpcClient, RpcClientSubscription } from './../../rpc/client'
 import BindingEngine from './../../binding/bindingEngine'
+import {formParser} from './../../ux/form/formParser'
 import Blade from './../../ux/viewModels/viewModels.blade' // type only
 
 /**
@@ -95,13 +96,23 @@ class Extension {
         bladeInfo.extensionId = this._rpc.InstanceId;
         bladeInfo.viewName = viewName;
         bladeInfo.functions = this.registerBladeFunctions(blade, bladeInfo.bladeId);
+        bladeInfo.view = this._parseBladeForm(blade);
         this._rpc.publish('shell.addBlade', "", bladeInfo);
     }
 
-    private _addBladeFailed(): void {
+    private _parseBladeForm(blade: Blade): string {
+        if (!blade.form)
+            return '';
+        let viewHTML = formParser.parseFormToHTML(blade.form);
+        return viewHTML;
+    }
+
+    private _addBladeFailed(message?: string): void {
         let returnData: Object = {
             extensionId: this._rpc.InstanceId
         };
+        if (message)
+            console.log(`[addBladeFailed]: message`)
         this._rpc.publish('shell.addBladeFailed', '', returnData);
     }
 
@@ -116,6 +127,7 @@ class Extension {
             // anything starting with an underscore is treated as a private property and is not watched for changes
             // skip Functions
             if (blade.hasOwnProperty(prop) &&
+                prop !== 'form' &&  // don't observe form
                 prop.charAt(0) !== '_' &&
                 this._utilities.classOf(blade[prop]) !== '[object Function]'
             ) {

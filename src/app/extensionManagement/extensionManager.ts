@@ -41,11 +41,16 @@ class ExtensionManager {
                 bladeId: data.bladeId,
                 serializedBlade: data.serializedBlade,
                 viewName: data.viewName,
-                functions: data.functions
+                functions: data.functions,
+                serializedView: data.view
             };
             // add the blade to the extension
             let blade = extension.addBlade(bladeConfig);
-            blade.addView();
+            // Either load the serialized view or specified HTML file
+            if (bladeConfig.serializedView)
+                blade.addView2();
+            else
+                blade.addView();
 
             // since we know the current command is the extension load command, we will resolve this one. for now, this works since commands are sequential and we know to only call this when appropriate
             let defer = this._extensionCommandQueue.current.defer;

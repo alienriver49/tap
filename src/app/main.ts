@@ -13,13 +13,52 @@ import {ConsoleAppender} from "aurelia-logging-console";
 // LogManager.addAppender(new ConsoleAppender());
 // LogManager.setLevel(LogManager.logLevel.debug);
 
-export async function configure(aurelia: Aurelia) {
+// export async function configure(aurelia: Aurelia) {
 
+//     // The app and tapFx have separate instances of Aurelia,
+//     // Use singletons from TapFx in the app
+//     aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
+//     aurelia.container.registerInstance(BindingEngine, window.TapFx.BindingEngine)
+//     aurelia.container.registerInstance(RpcClient, window.TapFx.Rpc)
+//     aurelia.container.registerSingleton(CommandManager, CommandManager);
+//     aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
+//     aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
+//     aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
+
+//     aurelia.use
+//         .basicConfiguration()
+//         .history()
+//         // Register the components globally so we don't need to
+//         // 'require' them in each html (useful when dynamically creating views)
+//         .feature(PLATFORM.moduleName('webComponents/index'))        
+//         .developmentLogging()
+
+//     await aurelia.start();
+//     aurelia.setRoot(PLATFORM.moduleName('app/app'));
+
+// }
+
+// Attempt to share just one instance of Aurelia with Tap-Fx
+// (It never quite worked)
+(function (tapFx){
+    if (!tapFx)
+        document.addEventListener("TapFxReady", (e) => {
+            var dmf = e;
+            initialize(window.TapFx.Aurelia);
+            delete(window.TapFx.Aurelia);
+        });
+    else{
+        initialize(window.TapFx.Aurelia);
+        delete(window.TapFx.Aurelia);
+    }
+
+})(window.TapFx)
+
+function initialize(aurelia: Aurelia) : void {
+    aurelia.host = document.body;
     // The app and tapFx have separate instances of Aurelia,
     // Use singletons from TapFx in the app
     aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
-    aurelia.container.registerInstance(BindingEngine, window.TapFx.BindingEngine)
-    aurelia.container.registerInstance(RpcClient, window.TapFx.Rpc)
     aurelia.container.registerSingleton(CommandManager, CommandManager);
     aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
     aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
@@ -33,39 +72,12 @@ export async function configure(aurelia: Aurelia) {
         .feature(PLATFORM.moduleName('webComponents/index'))        
         .developmentLogging()
 
-    await aurelia.start();
-    aurelia.setRoot(PLATFORM.moduleName('app/app'));
+    aurelia.start().then(() => aurelia.setRoot(PLATFORM.moduleName('app/app'), document.body));
 
+    // aurelia.container.registerSingleton(CommandManager, CommandManager);
+    // aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
+    // aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
+    // aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
+
+    //window.TapFx.BootstrapResolve(undefined);
 }
-
-// Attempt to share just one instance of Aurelia with Tap-Fx
-// (It never quite worked)
-// (function (tapFx){
-//     if (!tapFx)
-//         document.addEventListener("TapFxReady", (e) => {
-//             var dmf = e;
-//             initialize(window.TapFx.Aurelia);
-//             delete(window.TapFx.Aurelia);
-//         });
-//     else{
-//         initialize(window.TapFx.Aurelia);
-//         delete(window.TapFx.Aurelia);
-//     }
-
-// })(window.TapFx)
-
-// function initialize(aurelia: Aurelia) : void {
-//     aurelia.host = document.body;
-//     aurelia.container.registerSingleton(CommandManager, CommandManager);
-//     aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
-//     aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
-//     aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
-
-//     aurelia.use
-//         .basicConfiguration()
-//         .history()
-//         .developmentLogging();
-
-//     aurelia.start().then(() => aurelia.setRoot(PLATFORM.moduleName('app/app'), document.body));
-//     window.TapFx.BootstrapResolve(undefined);
-// }

@@ -16,12 +16,12 @@ export interface IPortalBladeConfig {
     bladeId: string;
     serializedBlade: Object;
     viewName: string;
+    serializedView: string,
     functions: string[]
 }
 
 export class PortalBlade extends Blade{
     private _extensionResources: IExtensionResources;
-    public viewName: string;
     public bladeId: string;
 
     constructor(private _extension: Extension,
@@ -126,5 +126,98 @@ export class PortalBlade extends Blade{
         view.bind(this);
 
     }
+
+    /**
+     * Loads the view from the serialized html and binds to this     
+     */
+    public addView2(): void {
+        // Assume we get the directory based on the Extension routing
+        let viewPath = this._extension.name + "/"; 
+        let viewWithPath = `${viewPath}${this.config.viewName}`;
+        console.log('[SHELL] addView, loading ', viewWithPath);
+
+        // Insert the blade view at the element with the matching prefix + extension Id
+        let elementSelector = '#tap_ext\\:'+this._extension.id;
+        let queryBaseElement = document.querySelector(elementSelector);
+        if (!queryBaseElement){
+            throw Error(`Can't find element matching selector: ${elementSelector}`);
+        }
+
+        let baseElement = queryBaseElement
+
+        let loader = this._extensionResources.defaultLoader;
+        let cachedTemplateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(viewWithPath);
+        if (!cachedTemplateRegistryEntry || !cachedTemplateRegistryEntry.factory){
+
+            loader.useTemplateLoader(this._extensionResources.textTemplateLoader);
+            let templateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(viewWithPath);
+
+            // Get associated viewFactory for template, otherwise create it and attach to templateRegistryEntry
+            let viewFactory = templateRegistryEntry.factory;
+            if (!viewFactory){
+                this._extensionResources.viewResources = new ViewResources(this._extensionResources.viewResources, templateRegistryEntry.address);
+                this._extensionResources.viewResources.bindingLanguage = this._extensionResources.container.get(TemplatingBindingLanguage);
+                let viewCompiler = new ViewCompiler(this._extensionResources.container.get(TemplatingBindingLanguage) as BindingLanguage, this._extensionResources.viewResources)
+                viewFactory = viewCompiler.compile(this.config.serializedView, this._extensionResources.viewResources, ViewCompileInstruction.normal);
+                templateRegistryEntry.factory = viewFactory;
+            }
+            this.createBindView(viewFactory, baseElement);
+        }else{
+            let viewFactory = cachedTemplateRegistryEntry.factory;
+            this.createBindView(viewFactory, baseElement);
+        }
+
+
+        // console.log('[SHELL] addView2: ', content);
+        // //Insert the blade view at the element with the matching prefix + extension Id
+        // let elementSelector = '#tap_ext\\:'+this.id;
+        // let baseElement = document.querySelector(elementSelector);
+        // //content = '<template> <div> <label for="title"><strong>Title:</strong></label> <input type="text" value.bind="title" /> </div> <br /> <div> <label for="subtitle"><strong>Subtitle:</strong></label> <input type="text" value.bind="subtitle & updateTrigger:\'blur\'" /> </div> <br /> <div> <label for="subtitle"><strong>Display:</strong></label> <span>${display}</span> </div> </template>';
+        // if (baseElement){
+        //     //let vSlot = new ViewSlot(baseElement, true);
+        //     this._viewResources = new ViewResources(this._viewResources);
+        //     this._viewResources.bindingLanguage = this._container.get(BindingLanguage);
+        //     let viewCompiler = new ViewCompiler(this._container.get(BindingLanguage) as BindingLanguage, this._viewResources)
+        //     let viewFactory = viewCompiler.compile(content, this._viewResources, ViewCompileInstruction.normal);
+        //     let view = viewFactory.create(this._container, undefined, baseElement);
+        //     console.log('[SHELL] addView2: created view', );
+        //     view.appendNodesTo(baseElement);
+        //     view.bind(viewModel);
+        //     // Test loading an html file via a link element
+        //     let link = document.createElement('link');
+        //     link.rel = "import";
+        //     link.href = "Ext1/landingBlade.html";
+        //     link.onload = (e) => {
+        //         console.log("import loaded");
+        //         var link = (document.querySelector('link[rel="import"]') as HTMLLinkElement);
+        //         if (link && link.import){
+        //             var template = (link.import as Document).querySelector('template');
+        //             if (template){
+        //                 //(baseElement as Element).appendChild(template.content.cloneNode(true));
+        //             }
+        //         }
+        //     };
+        //     document.head.appendChild(link);
+        //     console.log('[SHELL] addView2: view binding done', );
+        //     /*
+        //     this.instruction = {
+        //         container: this.container,
+        //         viewResources: this.viewResources,
+        //         bindingContext: Extension.bindingContext,
+        //         overrideContext: Extension.overrideContext,
+        //         viewSlot: vSlot,
+        //         viewModel: viewModel,
+        //         host: baseElement 
+        //     };
+        //     console.log('[EXT] composing: ');
+        //     this.compositionEngine.compose(this.instruction).then(controller => {
+        //             console.log('[EXT] composed: ');
+        //             vSlot.bind(Extension.bindingContext, Extension.overrideContext);
+        //             vSlot.attached();
+        //     });
+        //     */
+        //}
+    }
+
 
 }

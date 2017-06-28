@@ -44,7 +44,7 @@ module.exports = {
         tapFx: ['aurelia-polyfills', 'aurelia-loader-webpack', path.join(tapFxSrcDir, 'index.ts')],
         tapExt1: path.join(tapExt1SrcDir, 'index.ts'),
         tapExt2: path.join(tapExt2SrcDir, 'index.ts'),
-        tapExt3: path.join(tapExt3SrcDir, 'index.ts')
+        tapExt3: path.join(tapExt3SrcDir, 'bootstrap.ts')
     },
     output: {
         path: outDir,

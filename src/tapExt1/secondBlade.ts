@@ -3,6 +3,7 @@ class SecondBlade extends window.TapFx.ViewModels.Blade {
     title: string;
     subtitle: string;
     display: string;
+    queryParams: string;
 
     constructor() {
         super();

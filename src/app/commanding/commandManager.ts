@@ -61,7 +61,7 @@ class CommandManager {
         let command = new Command();
         command.extensionName = fragmentArr[0];
         command.params = (fragmentArr.length > 1 ? fragmentArr.slice(1) : []);
-        command.queryParams = (fragmentArr.length > 2 ? window.TapFx.Utilities.convertQueryStringToObject(fragmentArr[2]) : {});
+        command.queryParams = (queryString.length > 0 ? window.TapFx.Utilities.convertQueryStringToObject(queryString) : {});
 
         return command;
     }

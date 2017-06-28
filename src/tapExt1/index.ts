@@ -29,10 +29,12 @@ export class Index {
                 this._secondBlade.title = 'Second Blade';
                 this._secondBlade.subtitle = 'Params: ' + params.join(', ');
                 this._secondBlade.display = this._secondBlade.title + ' - ' + this._secondBlade.subtitle;
+                this._secondBlade.queryParams = JSON.stringify(queryParams);
                 this.addBlade(this._secondBlade, "secondBlade.html");
             } else {
                 this._secondBlade.subtitle = 'Params: ' + params.join(', ');
                 this._secondBlade.display = this._secondBlade.title + ' - ' + this._secondBlade.subtitle;
+                this._secondBlade.queryParams = JSON.stringify(queryParams);
             }
         } else {
             if (this._secondBlade) {

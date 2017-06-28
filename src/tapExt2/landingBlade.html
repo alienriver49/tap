@@ -1,38 +1,43 @@
 <template>
-    <h1>${title}</h1>
-    <h2>${subtitle}</h2>
+    <br>
+    <div style="border: 2px solid black; padding: 10px">
+        <button type="button" name="remove" style="float: right;">Remove</button>
 
-    <button type="button" name="convention" disabled.bind="buttonConventionDisabled">Convention Button</button>
+        <h1>${title}</h1>
+        <h2>${subtitle}</h2>
 
-    <br /><br />
+        <button type="button" name="convention" disabled.bind="buttonConventionDisabled">Convention Button</button>
 
-    <button type="button" name="clickMe" click.delegate="onButtonClickMeClick('argument 1 being passed to a function', 'argument 2 being passed to a function')">Click Me!</button>
+        <br /><br />
 
-    <br /><br />
+        <button type="button" name="clickMe" click.delegate="onButtonClickMeClick('argument 1 being passed to a function', 'argument 2 being passed to a function')">Click Me!</button>
 
-    <input name="showHideCheckbox" type="checkbox" value="true" checked.bind="showHideCheckbox"> Show / Hide
-    <div if.bind="showHideCheckbox">
-        <b>Show / Hide Content</b>
+        <br /><br />
+
+        <input name="showHideCheckbox" type="checkbox" value="true" checked.bind="showHideCheckbox"> Show / Hide
+        <div if.bind="showHideCheckbox">
+            <b>Show / Hide Content</b>
+        </div>
+
+        <br /><br />
+
+        <select value.bind="selectedOption">
+            <option name="selectOptions" repeat.for="option of selectOptions" model.bind="option">${option}</option>
+        </select>
+        <h3>Selected Option: ${selectedOption}</h3>
+
+        <br /><br />
+
+        <div repeat.for="input of checkboxes">
+            <input name="checkboxes" type="checkbox" model.bind="input" checked.bind="selectedCheckboxes"> ${input}
+        </div>
+        <h3>Selected Checkboxes: ${selectedCheckboxes}</h3>
+
+        <br /><br />
+
+        <div repeat.for="input of radios">
+            <input name="radios" type="radio" model.bind="input" checked.bind="selectedRadio"> ${input.label}
+        </div>
+        <h3>Selected Radio: <code>{ value: ${selectedRadio.value}, label: ${selectedRadio.label} }</code></h3>
     </div>
-
-    <br /><br />
-
-    <select value.bind="selectedOption">
-        <option name="selectOptions" repeat.for="option of selectOptions" model.bind="option">${option}</option>
-    </select>
-    <h3>Selected Option: ${selectedOption}</h3>
-
-    <br /><br />
-
-    <div repeat.for="input of checkboxes">
-        <input name="checkboxes" type="checkbox" model.bind="input" checked.bind="selectedCheckboxes"> ${input}
-    </div>
-    <h3>Selected Checkboxes: ${selectedCheckboxes}</h3>
-
-    <br /><br />
-
-    <div repeat.for="input of radios">
-        <input name="radios" type="radio" model.bind="input" checked.bind="selectedRadio"> ${input.label}
-    </div>
-    <h3>Selected Radio: <code>{ value: ${selectedRadio.value}, label: ${selectedRadio.label} }</code></h3>
 </template>

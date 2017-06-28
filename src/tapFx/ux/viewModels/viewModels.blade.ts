@@ -1,7 +1,8 @@
 import {tapcForm} from './../form/tapcForm'
 
 class Blade {
-    constructor() { }
+    constructor() {
+    }
 
     title: string;
     subtitle: string;

@@ -6,12 +6,13 @@ import BindingEngine from './binding/bindingEngine'
 import AuthorizationEngine from './core/authorizationEngine/authorizationEngine'
 import Extension from './core/extension/extension'
 import Blade from './ux/viewModels/viewModels.blade'
+import { Aurelia } from 'aurelia-framework'; // type only
 import { bootstrap } from 'aurelia-bootstrapper'
 import {BindingLanguage } from 'aurelia-templating';
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 
 // Bootstrap function is called before any Aurelia 'configure' convention startup
-bootstrap(aurelia => {
+bootstrap((aurelia: Aurelia) => {
     aurelia.container.registerSingleton(Utilities, Utilities);
     aurelia.container.registerSingleton(RpcClient, RpcClient);
     aurelia.container.registerSingleton(BindingEngine, BindingEngine);
@@ -39,5 +40,4 @@ bootstrap(aurelia => {
             bubbles: true
         })
     );
-
 });

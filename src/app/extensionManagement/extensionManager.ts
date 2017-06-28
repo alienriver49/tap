@@ -22,6 +22,9 @@ class ExtensionManager {
 
         subscription = window.TapFx.Rpc.subscribe('shell.removeExtension', this._onRemoveExtension.bind(this));
         this._rpcSubscriptions.push(subscription);
+
+        subscription = window.TapFx.Rpc.subscribe('shell.removeBlade', this._onRemoveBlade.bind(this));
+        this._rpcSubscriptions.push(subscription);
     }
 
     private _rpcSubscriptions: any[] = [];
@@ -46,11 +49,6 @@ class ExtensionManager {
             };
             // add the blade to the extension
             let blade = extension.addBlade(bladeConfig);
-            // Either load the serialized view or specified HTML file
-            if (bladeConfig.serializedView)
-                blade.addView2();
-            else
-                blade.addView();
 
             // since we know the current command is the extension load command, we will resolve this one. for now, this works since commands are sequential and we know to only call this when appropriate
             let defer = this._extensionCommandQueue.current.defer;
@@ -77,7 +75,7 @@ class ExtensionManager {
 
                 // since the extension failed to load we will clear the queue and reroute to the portal index. note: this could go to the previous extension in the future
                 this._extensionCommandQueue.clear();
-                this._eventAggregator.publish('shell.router.reroute', { urlFragment: '/' })
+                this._eventAggregator.publish('shell.router.reroute', { urlFragment: '/' });
             }
         }
     }
@@ -106,7 +104,37 @@ class ExtensionManager {
     }
 
     /**
-     * Handles the loading of an extension.
+     * Removes an extension's blade from the shell.
+     * @param data 
+     */
+    private _onRemoveBlade(data: any): void {
+        console.log('[SHELL] Received removeBlade message: ', data);
+        let extensionId = data.extensionId;
+        let extension = this._findExtension(extensionId);
+        if (extension) {
+            // remove the blade
+            extension.removeBlade(data.bladeId);
+
+            console.log('[SHELL] Finish removing blade for extension: ' + extension.name);
+            // If there are no more blades, remove the extension
+            if (extension.blades.length === 0) {
+                console.log('[SHELL] No more blades left - unloading extension: ' + extension.name);
+                // unload the extension
+                this._extensionLoaderEngine.unloadExtension(extension);
+
+                // remove the extension
+                this.extensions.splice(this._findExtensionIndex(extensionId));
+
+                this._extensionCommandQueue.clear();
+                this._eventAggregator.publish('shell.router.reroute', { urlFragment: '/' })
+            }
+        } else {
+            // 
+        }
+    }
+
+    /**
+     * Load an extension with the passed params.
      * @param extensionName 
      * @param params 
      * @param queryParams 
@@ -117,30 +145,38 @@ class ExtensionManager {
         this._extensionCommandQueue.queueCommand(extensionId, () => {
             this._extensionLoaderEngine.loadExtension(extensionId, extensionName).then((result) => {
                 this.extensions.push(this._extensionFactory(extensionId, extensionName));
+                // just publish an update params event when we've finished loading
+                window.TapFx.Rpc.publish('tapfx.updateExtensionParams', extensionId, { params: params, queryParams: queryParams });
             });
         });
     }
 
-    // TODO: Stubbed for now.
+    /**
+     * Update an extension with the passed params.
+     * @param extensionName 
+     * @param params 
+     * @param queryParams 
+     */
     updateExtensionParams(extensionName: string, params: any[], queryParams: Object): void {
         let extension = this._findExtensionByName(extensionName);
-        let defer = this._extensionCommandQueue.current.defer;
         if (extension) {
             let extensionId = extension.id;
             this._extensionCommandQueue.queueCommand(extensionId, () => {
-                // Update params for that extension
+                // update params for that extension
+                window.TapFx.Rpc.publish('tapfx.updateExtensionParams', extensionId, { params: params, queryParams: queryParams });
 
-
+                // note: in the future, should probably subscribe to a 'shell.updateExtensionParams' from the extension to detect when the update params completed and then resolve.
+                //       similar to what loadExtension and unloadExtension do
+                let defer = this._extensionCommandQueue.current.defer;
                 if (defer) defer.resolve({ successful: true, message: 'extension params updated'});
             });
         } else {
-            // TODO: we could be waiting for an extension to finish loading so that's why it wasn't found
-            if (defer) defer.resolve({ successful: false, message: 'extension params update failed: extension not found'});
+            // TODO: we could be waiting for an extension to finish loading so that's why it wasn't found so check the queue, otherwise display an error page
         }
     }
 
     /**
-     * Handles the unloading of an extension.
+     * Unload an extension.
      * @param extensionName 
      */
     unloadExtension(extensionName: string):void {
@@ -151,7 +187,7 @@ class ExtensionManager {
                 window.TapFx.Rpc.publish('tapfx.removeExtension', extensionId);
             });
         } else {
-            // 
+            // TODO: display an error page
         }
     }
 

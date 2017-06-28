@@ -24,6 +24,7 @@ interface ICurrentCommand {
 
 /**
  * Class for queueing extension commands (promises).
+ * TODO: implement command timeouts
  */
 export class ExtensionCommandQueue {
     constructor() {

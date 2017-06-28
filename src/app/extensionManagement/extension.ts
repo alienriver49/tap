@@ -129,6 +129,13 @@ class Extension {
         Object.assign(blade, config.serializedBlade);
         this._registerBladeBindings(config.bladeId, blade);
         this._registerBladeFunctions(config.bladeId, blade, config.functions);
+
+        // Either load the serialized view or specified HTML file
+        if (config.serializedView)
+            blade.addView2();
+        else
+            blade.addView();
+
         this.blades.push(blade);
         
         return blade;
@@ -136,13 +143,17 @@ class Extension {
 
     /**
      * Remove a blade and it's binding from an extension.
-     * @param blade 
+     * @param bladeId 
      */
-    removeBlade(blade: PortalBlade): void {
-        let index = this.blades.indexOf(blade);
+    removeBlade(bladeId: string): void {
+        let index = this.blades.findIndex((b) => {
+            return b.bladeId === bladeId;
+        });
         if (index !== -1) {
+            let blade = this.blades[index];
             this._unregisterBladeBindings(blade);
             this.blades.splice(index, 1);
+            blade.removeView();
         }
     }
 
@@ -152,6 +163,7 @@ class Extension {
     removeBlades(): void {
         this._unregisterAllBladeBindings();
         this.blades.splice(0, this.blades.length);
+        this.blades.forEach((blade) => { blade.removeView(); });
     }
 }
 

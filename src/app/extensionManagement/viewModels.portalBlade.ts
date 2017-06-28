@@ -20,16 +20,28 @@ export interface IPortalBladeConfig {
     functions: string[]
 }
 
-export class PortalBlade extends Blade{
-    private _extensionResources: IExtensionResources;
-    public bladeId: string;
-
-    constructor(private _extension: Extension,
-                public config: IPortalBladeConfig) { 
+export class PortalBlade extends Blade {
+    constructor(
+        private _extension: Extension,
+        public config: IPortalBladeConfig
+    ) { 
         super();
         this._extensionResources = _extension.getResources();
+        // set this from the config
+        this.bladeId = config.bladeId;
     }
 
+    private _extensionResources: IExtensionResources;
+    /**
+     * The blade's view. Stored for removal.
+     * @internal
+     */
+    private _view: View;
+    /**
+     * The blade's id, set via the config.
+     * @readonly
+     */
+    public readonly bladeId: string;
 
     /**
      * For the blade viewName, check if any cached ViewFactories exist for it.
@@ -109,22 +121,13 @@ export class PortalBlade extends Blade{
                         viewFactory = viewCompiler.compile(templateRegistryEntry.template, this._extensionResources.viewResources, ViewCompileInstruction.normal);
                         templateRegistryEntry.factory = viewFactory;
                     }
-                    this.createBindView(viewFactory, baseElement);
+                    this._createBindView(viewFactory, baseElement);
                 }
             });
         }else{
             let viewFactory = cachedTemplateRegistryEntry.factory;
-            this.createBindView(viewFactory, baseElement);
+            this._createBindView(viewFactory, baseElement);
         }
-    }
-
-    private createBindView(viewFactory: ViewFactory, baseElement: Element): void {
-        let view = viewFactory.create(this._extensionResources.container, undefined, baseElement);
-        console.log(`[SHELL] addView: created view ${this.config.viewName} `);
-        view.appendNodesTo(baseElement);
-        view.attached();
-        view.bind(this);
-
     }
 
     /**
@@ -161,10 +164,10 @@ export class PortalBlade extends Blade{
                 viewFactory = viewCompiler.compile(this.config.serializedView, this._extensionResources.viewResources, ViewCompileInstruction.normal);
                 templateRegistryEntry.factory = viewFactory;
             }
-            this.createBindView(viewFactory, baseElement);
-        }else{
+            this._createBindView(viewFactory, baseElement);
+        } else {
             let viewFactory = cachedTemplateRegistryEntry.factory;
-            this.createBindView(viewFactory, baseElement);
+            this._createBindView(viewFactory, baseElement);
         }
 
 
@@ -219,5 +222,34 @@ export class PortalBlade extends Blade{
         //}
     }
 
+    /**
+     * Creates and binds the view.
+     * @param viewFactory 
+     * @param baseElement 
+     */
+    private _createBindView(viewFactory: ViewFactory, baseElement: Element): void {
+        // create a new view and store it
+        this._view = viewFactory.create(this._extensionResources.container, undefined, baseElement);
+        console.log(`[SHELL] addView: created view ${this.config.viewName} `);
+        // add the needed HTML nodes for the view to a bade element
+        this._view.appendNodesTo(baseElement);
+        // trigger an attach
+        this._view.attached();
+        // bind the view
+        this._view.bind(this);
+    }
 
+    /**
+     * Removes the blade's view. Peforms unbinding, detaching, and removal of nodes from the DOM.
+     */
+    public removeView(): void {
+        // reverse order of _createBindView
+
+        // unbind the view
+        this._view.unbind();
+        // trigger a detach
+        this._view.detached();
+        // remove the nodes from the DOM
+        this._view.removeNodes();
+    }
 }

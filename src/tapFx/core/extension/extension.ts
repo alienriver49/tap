@@ -22,13 +22,26 @@ class Extension {
     ) {
         let subscription = this._rpc.subscribe('tapfx.removeExtension', this._onRemoveExtension.bind(this));
         this._rpcSubscriptions.push(subscription);
+
+        subscription = this._rpc.subscribe('tapfx.updateExtensionParams', this._onUpdateExtensionParams.bind(this));
+        this._rpcSubscriptions.push(subscription);
     }
 
     private _rpcSubscriptions: RpcClientSubscription[] = [];
-    private _bladeIDs: string[] = [];
+    private _bladeSubscriptions: Map<string, RpcClientSubscription[]> = new Map();
+    /**
+     * Same thing as the _contextIDMap in the bindingEngine.
+     */
+    private _bladeIdMap: Map<Blade, string> = new Map();
     private _className: string = (this as Object).constructor.name;
 
-    private _onRemoveExtension(data: any) {
+    /**
+     * To be implemented by the extension developer.
+     */
+    public updateParams?(params: any[], queryParams: Object): void;
+
+    // TODO: perform deactivation checks for each blade of the extension
+    private _onRemoveExtension(data: any): void {
         console.log('[TAP-FX] Removing extension with id of: ' + this._rpc.InstanceId);
         // unobserve all and clear out the binding engine
         this._bindingEngine.unobserveAll();
@@ -38,11 +51,22 @@ class Extension {
             subscription.unsubscribe();
         });
 
+        // unsubscribe from an blade subscriptions
+        this._bladeSubscriptions.forEach((subscriptions) => {
+            subscriptions.forEach((subscription) => {
+                subscription.unsubscribe();
+            });
+        });
+
         // publish to the shell that this extension is ready to be removed
         let returnData: Object = {
             extensionId: this._rpc.InstanceId
         };
         this._rpc.publish('shell.removeExtension', '', returnData);
+    }
+
+    private _onUpdateExtensionParams(data: any): void {
+        if (this.updateParams) this.updateParams(data.params, data.queryParams);
     }
 
     /**
@@ -91,12 +115,14 @@ class Extension {
     }
 
     private _performAddBlade(blade: Blade, viewName: string): void {
-        let bladeInfo = this.registerBladeBindings(blade);
+        let bladeInfo = this._registerBladeBindings(blade);
         // Get the extension Id from RPC and pass it to the shell
         bladeInfo.extensionId = this._rpc.InstanceId;
         bladeInfo.viewName = viewName;
-        bladeInfo.functions = this.registerBladeFunctions(blade, bladeInfo.bladeId);
+        bladeInfo.functions = this._registerBladeFunctions(blade, bladeInfo.bladeId);
         bladeInfo.view = this._parseBladeForm(blade);
+        
+        this._bladeIdMap.set(blade, bladeInfo.bladeId);
         this._rpc.publish('shell.addBlade', "", bladeInfo);
     }
 
@@ -116,7 +142,76 @@ class Extension {
         this._rpc.publish('shell.addBladeFailed', '', returnData);
     }
 
-    registerBladeBindings(blade: Blade): any {
+    /**
+     * Remove a blade 
+     * @param blade
+     */
+    removeBlade(blade: Blade): void {
+        let bladeId = this._bladeIdMap.get(blade);
+        let deactivateChain = Promise.resolve<boolean>(true);
+        // if there is no canDeactivate method we return true, otherwise we will return the result of blade.canDeactivate()
+        let canDeactivate = (!blade.canDeactivate) || (blade.canDeactivate && blade.canDeactivate());
+        // if it's true or a promise
+        if (bladeId && canDeactivate) {
+            // let's chain our results together
+            deactivateChain = deactivateChain.then((result) => {
+                console.log('[TAP-FX] removeBlade deactivateChain 1 result: ' + result);
+                // whether it's true or a promise we will return it
+                return canDeactivate;
+            });
+            deactivateChain = deactivateChain.then((result) => {
+                console.log('[TAP-FX] removeBlade deactivateChain 2 result: ' + result);
+                // result is the value from canDeactivate or the return value from the canDeactivate() promise
+                let ret: boolean | Promise<boolean> = result;
+                if (result) {
+                    // if we canDeactivate, call the deactivate function if it exists and have it return our result
+                    let deactivate = blade.deactivate ? blade.deactivate() : undefined;
+                    if (deactivate) ret = deactivate.then(() => { return result; });
+                }
+                
+                return ret;
+            });
+            deactivateChain = deactivateChain.then((result) => {
+                console.log('[TAP-FX] removeBlade deactivateChain 3 result: ' + result);
+                // if we canDeactivate and the deactivate method has been called, remove the blade
+                if (result) {
+                    if (bladeId) this._performRemoveBlade(blade, bladeId);
+                } else {
+                    // otherwise, notify the shell that we failed
+                    this._removeBladeFailed();
+                }
+                return result;
+            });
+        } else {
+            this._removeBladeFailed();
+        }
+    }
+
+    private _performRemoveBlade(blade: Blade, bladeId: string) {
+        // unobserve this blade
+        this._bindingEngine.unobserve(blade);
+
+        // unsubscribe from any blade events
+        (this._bladeSubscriptions.get(bladeId) || []).forEach((subscription) => {
+            subscription.unsubscribe();
+        });
+
+        this._bladeIdMap.delete(blade);
+        this._bladeSubscriptions.delete(bladeId);
+
+        // publish to the shell that this blade is ready to be removed
+        let returnData: Object = {
+            extensionId: this._rpc.InstanceId,
+            bladeId: bladeId
+        };
+        this._rpc.publish('shell.removeBlade', '', returnData);
+    }
+
+    private _removeBladeFailed() {
+
+    }
+
+    private _registerBladeBindings(blade: Blade): any {
         let serializedBlade = {};
 
         let bladeID = this._utilities.newGuid();
@@ -142,7 +237,13 @@ class Extension {
         }
     }
 
-    registerBladeFunctions(blade: Blade, bladeId: string): string[] {
+    /**
+     * Register the blade's functions as subscriptions so that they can be called from the shell over the RPC.
+     * @param blade 
+     * @param bladeId 
+     */
+    private _registerBladeFunctions(blade: Blade, bladeId: string): string[] {
+        let subArray: RpcClientSubscription[] = [];
         let returnFuncs: string[] = [];
         // for now, don't sync the activation lifecycle functions over
         let funcIgnoreArray = ['constructor', 'activate', 'canActivate', 'deactivate', 'canDeactivate'];
@@ -168,11 +269,27 @@ class Extension {
                     console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Publishing result from function: ` + funcName);
                     this._rpc.publish('shell.' + bladeId + '.' + funcName, '', result);
                 });
-                this._rpcSubscriptions.push(subscription);
-
+                subArray.push(subscription);
                 returnFuncs.push(funcName);
             }
         }
+
+        // convention - add a subscription for the onButtonRemoveClick which calls the removeBlade function
+        let funcName = 'onButtonRemoveClick'
+        let subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + funcName, (data) => {
+            // call the function and get the result
+            console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + funcName);
+            let result = this.removeBlade(blade);
+
+            // publish the result back to the shell
+            console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Publishing result from function: ` + funcName);
+            this._rpc.publish('shell.' + bladeId + '.' + funcName, '', result);
+        });
+        subArray.push(subscription);
+        returnFuncs.push(funcName);
+
+        // set anny subscriptions to the _bladeSubscriptions map mapped by the blade id
+        this._bladeSubscriptions.set(bladeId, subArray);
 
         return returnFuncs;
     }

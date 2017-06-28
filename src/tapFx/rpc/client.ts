@@ -23,15 +23,20 @@ export interface RpcClientSubscriptionCallbackData {
 export declare type RpcClientSubscriptionCallback = (RpcClientSubscriptionCallbackData) => void;
 
 /**
- * Properties of the dispatched message object
+ * Properties of the dispatched message object which extends MessageEvent.
  */
-interface IDispatchedMessage {
-    // Object passed from other window
-    data: any,
-    // Origin of the window that sent the message
-    origin: string,
-    // Reference to window object that sent the message
-    source: Window
+interface IDispatchedMessage extends MessageEvent {
+    // statically type the data we send
+    data: IMessageEventData;
+}
+
+/**
+ * Definition of the data we send via message post.
+ */
+interface IMessageEventData {
+    messageType: string;
+    destId: string;
+    messageData: any;
 }
 
 /**
@@ -171,7 +176,7 @@ export class RpcClient {
             destId = 'all';
         }
 
-        let message = {
+        let message: IMessageEventData = {
             messageType: messageType,
             destId: destId,
             messageData: data
@@ -204,12 +209,24 @@ export class RpcClient {
     }
 
     /**
-     * Set the unique string identifying the instance.  This is used to only handle
-     * messages that have this as the destination id.  Only applicable to iframes
+     * Set the unique string identifying the instance. This is used to only handle
+     * messages that have this as the destination id. Only applicable to iframes.
      * @param {string} id Unique string identifying the instance
      * @returns {void} 
      */
-    setInstanceId(id: string): void {
+    setInstanceId(id?: string): void {
+        // if not specified we will look for it on the iframe
+        if (id === undefined) {
+            if (this._inIFrame()) {
+                let iframeWindow = window.frameElement;
+                if (!iframeWindow)
+                    throw new Error('Could not find frameElement');
+                id = iframeWindow.getAttribute("id") as string;
+                if (!id)
+                    throw new Error('Could not find id attribute on iframe element');
+            }
+        }
+
         if (!id || typeof id !== 'string') {
             throw new Error('RpcClient.setInstanceId: id was invalid.');
         }

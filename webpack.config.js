@@ -1,6 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { AureliaPlugin } = require('aurelia-webpack-plugin');
+const { AureliaPlugin, ModuleDependenciesPlugin } = require('aurelia-webpack-plugin');
 const { optimize: { CommonsChunkPlugin }, ProvidePlugin } = require('webpack')
 const { TsConfigPathsPlugin, CheckerPlugin } = require('awesome-typescript-loader');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -65,7 +65,10 @@ module.exports = {
             nameExternalModules: false, 
             nameLocalModules: false, 
             aureliaApp: undefined,
-            includeAll: 'src/app'
+            includeAll: 'src/app'            
+        }),
+        new ModuleDependenciesPlugin({
+            "aurelia-auth": ["aurelia-auth/auth-filter"]
         }),
         new TsConfigPathsPlugin(),
         new CheckerPlugin(),

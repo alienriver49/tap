@@ -8,6 +8,8 @@ import ExtensionLoaderEngine from './extensionManagement/extensionLoaderEngine'
 import ConventionEngine from './extensionManagement/conventionEngine'
 import {LogManager} from "aurelia-framework";
 import {ConsoleAppender} from "aurelia-logging-console";
+import config from './authConfig';
+import {AuthService} from "aurelia-auth";
 //import 'material-components-web'
 
 // LogManager.addAppender(new ConsoleAppender());
@@ -65,14 +67,29 @@ function initialize(aurelia: Aurelia) : void {
     aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
 
     aurelia.use
-        .basicConfiguration()
+        .standardConfiguration()
         .history()
         // Register the components globally so we don't need to
         // 'require' them in each html (useful when dynamically creating views)
         .feature(PLATFORM.moduleName('webComponents/index'))        
         .developmentLogging()
+        .plugin(PLATFORM.moduleName('aurelia-auth'), (baseConfig) => {
+            baseConfig.configure(config);
+        });
 
-    aurelia.start().then(() => aurelia.setRoot(PLATFORM.moduleName('app/app'), document.body));
+    let auth: AuthService = aurelia.container.get(AuthService);
+    let userData: any = {};
+
+    aurelia.start().then(() => {
+        if (auth.isAuthenticated()) {
+            console.log('[SHELL] Authenticated!: ', auth.getTokenPayload());
+            aurelia.setRoot(PLATFORM.moduleName('app/app'));
+        }
+        else {
+            console.log('[SHELL] Not authenticated!');
+            auth.authenticate('TylerId', false, userData);
+        }
+    });
 
     // aurelia.container.registerSingleton(CommandManager, CommandManager);
     // aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);

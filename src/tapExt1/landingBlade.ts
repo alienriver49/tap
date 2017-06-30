@@ -1,5 +1,5 @@
 
-class LandingBlade extends window.TapFx.ViewModels.Blade {
+class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
     title: string;
     subtitle: string;
     display: string;

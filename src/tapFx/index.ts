@@ -5,8 +5,8 @@ import RpcClient from './rpc/client'
 import BindingEngine from './binding/bindingEngine'
 import AuthorizationEngine from './core/authorizationEngine/authorizationEngine'
 import Extension from './core/extension/extension'
-import Blade from './ux/viewModels/viewModels.blade'
 import { Aurelia } from 'aurelia-framework'; // type only
+import BaseBlade from './ux/viewModels/viewModels.baseBlade'
 import { bootstrap } from 'aurelia-bootstrapper'
 import {BindingLanguage } from 'aurelia-templating';
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
@@ -26,7 +26,7 @@ bootstrap((aurelia: Aurelia) => {
         Rpc: aurelia.container.get(RpcClient),
         BindingEngine: aurelia.container.get(BindingEngine),
         ViewModels: {
-            Blade: Blade
+            BaseBlade: BaseBlade
         },
         Extension: aurelia.container.get(Extension),
         Aurelia: aurelia,

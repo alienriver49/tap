@@ -45,7 +45,6 @@ import {AuthService} from "aurelia-auth";
 (function (tapFx){
     if (!tapFx)
         document.addEventListener("TapFxReady", (e) => {
-            var dmf = e;
             initialize(window.TapFx.Aurelia);
             delete(window.TapFx.Aurelia);
         });

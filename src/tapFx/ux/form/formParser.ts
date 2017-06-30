@@ -22,6 +22,7 @@ export class formParser{
 
     public static parseNode(parent: Element, node: tapcBase): void {
         let attrRegExp: RegExp = /^attribute(.*)/;
+        let eventRegExp: RegExp = /^event(.*)/;
         let match: RegExpExecArray | null;
         let bindRegExp = /^@(.*)/;
         let bindMatch: RegExpExecArray | null;
@@ -40,15 +41,23 @@ export class formParser{
             el = document.createElement('input');
         }
         if (node instanceof tapc.tapcText){
-            parent.innerHTML = node.attributeText;
+            let textNode = document.createTextNode(node.attributeText);
+            parent.appendChild(textNode);
         }
         if (node instanceof tapc.tapcTapTestComponent){
             el = document.createElement('tap-test-component');
         }
+        if (node instanceof tapc.tapcDataTable){
+            el = document.createElement('tap-data-table');
+        }
         if (node instanceof tapc.tapcMdcCheckbox){
             el = document.createElement('mdc-checkbox');
         }
+        if (node instanceof tapc.tapcButton){
+            el = document.createElement('button');
+        }
         if (el){
+            // Add attribute and event handlers
             for (let prop in node) {
                 if (node.hasOwnProperty(prop)){
                     let value = node[prop];
@@ -60,6 +69,9 @@ export class formParser{
                         }else{
                             el.setAttribute(this.camelCaseToHyphen(match[1]), node[prop]);
                         }
+                    }
+                    if (value && (match = eventRegExp.exec(prop))){
+                        el.setAttribute(`${match[1]}.delegate`, node[prop]);
                     }
                 }
             }

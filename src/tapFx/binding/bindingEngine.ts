@@ -1,7 +1,7 @@
 import { inject, Factory } from 'aurelia-dependency-injection'
 import Utilities from './../utilities/utilities';
 import RpcClient from './../rpc/client'
-import ProxiedObservable from './proxiedObservable'
+import {ProxiedObservable, IArrayBindingSync, IArrayChangedSplice} from './proxiedObservable'
 
 @inject(Utilities, RpcClient, Factory.of(ProxiedObservable))
 class BindingEngine {
@@ -10,15 +10,16 @@ class BindingEngine {
         private _rpc: RpcClient,
         private _proxiedObservableFactory: (...args: any[]) => ProxiedObservable
     ) {
-        _rpc.subscribe('tapfx.bindingSync', this._onBindingSync.bind(this));
+        _rpc.subscribe('tapfx.propertyBindingSync', this._onPropertyBindingSync.bind(this));
+        _rpc.subscribe('tapfx.arrayBindingSync', this._onArrayBindingSync.bind(this));
     }
 
     private _className: string = (this as Object).constructor.name;
     private _contextIDMap: Map<Object, string> = new Map();
     private _contextObserversMap: Map<string, ProxiedObservable[]> = new Map();
 
-    private _onBindingSync(data): void {
-        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Binding sync.`, data);
+    private _onPropertyBindingSync(data): void {
+        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Property binding sync.`, data);
         let allObservers = this._contextObserversMap.get(data.contextID)
         let observer = (allObservers || []).find((i) => {
             return i.property() === data.property;
@@ -27,6 +28,19 @@ class BindingEngine {
         //     return i.property === data.property;
         // });
         observer && observer.setValue(data.newValue, true);
+    }
+
+    private _onArrayBindingSync(data: IArrayBindingSync): void {
+        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Array binding sync.`, data);
+        let allObservers = this._contextObserversMap.get(data.contextID)
+        let observer = (allObservers || []).find((i) => {
+            return i.property() === data.property;
+        });
+
+        // splice changes into the array
+        data.splices.forEach((splice: IArrayChangedSplice) => {
+            observer && observer.updateArray(splice, true);
+        })
     }
 
     /**
@@ -60,6 +74,11 @@ class BindingEngine {
 
             // keep track of the current observer            
             (this._contextObserversMap.get(contextID) || []).push(observer);
+        }
+
+        // TODO If the property itself is an object, then recursively observe it
+        if (context[property] !== null && typeof context[property] === 'object'){
+
         }
     }
 

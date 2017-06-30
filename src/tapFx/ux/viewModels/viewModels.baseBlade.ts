@@ -1,8 +1,7 @@
 import {tapcForm} from './../form/tapcForm'
 
-class Blade {
-    constructor() {
-    }
+class BaseBlade {
+    constructor() { }
 
     title: string;
     subtitle: string;
@@ -14,4 +13,4 @@ class Blade {
     deactivate?(): Promise<void>/*|PromiseLike<void>|IObservable*/|void;
 }
 
-export default Blade
+export default BaseBlade

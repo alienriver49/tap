@@ -1,6 +1,6 @@
 /// <reference path="./../typings.d.ts" />
 import LandingBlade from './landingBlade'
-import Blade from './../tapFx/ux/viewModels/viewModels.blade'
+import BaseBlade from './../tapFx/ux/viewModels/viewModels.baseblade'
 
 export class Index {
     constructor(
@@ -21,7 +21,7 @@ export class Index {
 
     }
 
-    public addBlade(blade: Blade, viewName: string): void {
+    public addBlade(blade: BaseBlade, viewName: string): void {
         console.log('[EXT-2] Attempting to add blade.');
         window.TapFx.Extension.addBlade(blade, viewName);
     }

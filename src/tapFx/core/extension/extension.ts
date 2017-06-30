@@ -3,7 +3,7 @@ import Utilities from './../../utilities/utilities'
 import { RpcClient, RpcClientSubscription } from './../../rpc/client'
 import BindingEngine from './../../binding/bindingEngine'
 import {formParser} from './../../ux/form/formParser'
-import Blade from './../../ux/viewModels/viewModels.blade' // type only
+import BaseBlade from './../../ux/viewModels/viewModels.baseBlade' // type only
 
 /**
  * Interface defining a function. Includes the name and the property descriptor.
@@ -32,7 +32,7 @@ class Extension {
     /**
      * Same thing as the _contextIDMap in the bindingEngine.
      */
-    private _bladeIdMap: Map<Blade, string> = new Map();
+    private _bladeIdMap: Map<BaseBlade, string> = new Map();
     private _className: string = (this as Object).constructor.name;
 
     /**
@@ -74,7 +74,7 @@ class Extension {
      * @param blade 
      * @param viewName 
      */
-    addBlade(blade: Blade, viewName: string): void {
+    addBlade(blade: BaseBlade, viewName: string): void {
         let activateChain = Promise.resolve<boolean>(true);
         // if there is no canActivate method we return true, otherwise we will return the result of blade.canActivate()
         let canActivate = (!blade.canActivate) || (blade.canActivate && blade.canActivate());
@@ -114,7 +114,7 @@ class Extension {
         }
     }
 
-    private _performAddBlade(blade: Blade, viewName: string): void {
+    private _performAddBlade(blade: BaseBlade, viewName: string): void {
         let bladeInfo = this._registerBladeBindings(blade);
         // Get the extension Id from RPC and pass it to the shell
         bladeInfo.extensionId = this._rpc.InstanceId;
@@ -126,7 +126,7 @@ class Extension {
         this._rpc.publish('shell.addBlade', "", bladeInfo);
     }
 
-    private _parseBladeForm(blade: Blade): string {
+    private _parseBladeForm(blade: BaseBlade): string {
         if (!blade.form)
             return '';
         let viewHTML = formParser.parseFormToHTML(blade.form);
@@ -146,7 +146,7 @@ class Extension {
      * Remove a blade 
      * @param blade
      */
-    removeBlade(blade: Blade): void {
+    removeBlade(blade: BaseBlade): void {
         let bladeId = this._bladeIdMap.get(blade);
         let deactivateChain = Promise.resolve<boolean>(true);
         // if there is no canDeactivate method we return true, otherwise we will return the result of blade.canDeactivate()
@@ -187,7 +187,7 @@ class Extension {
         }
     }
 
-    private _performRemoveBlade(blade: Blade, bladeId: string) {
+    private _performRemoveBlade(blade: BaseBlade, bladeId: string) {
         // unobserve this blade
         this._bindingEngine.unobserve(blade);
 
@@ -211,7 +211,7 @@ class Extension {
 
     }
 
-    private _registerBladeBindings(blade: Blade): any {
+    private _registerBladeBindings(blade: BaseBlade): any {
         let serializedBlade = {};
 
         let bladeID = this._utilities.newGuid();
@@ -242,7 +242,7 @@ class Extension {
      * @param blade 
      * @param bladeId 
      */
-    private _registerBladeFunctions(blade: Blade, bladeId: string): string[] {
+    private _registerBladeFunctions(blade: BaseBlade, bladeId: string): string[] {
         let subArray: RpcClientSubscription[] = [];
         let returnFuncs: string[] = [];
         // for now, don't sync the activation lifecycle functions over
@@ -298,7 +298,7 @@ class Extension {
      * Get an array of function information for a blade.
      * @param blade 
      */
-    private _getBladeFunctions(blade: Blade): IFunction[] {
+    private _getBladeFunctions(blade: BaseBlade): IFunction[] {
         // get the proto of the blade and then the functions from that
         let bladeProto = Object.getPrototypeOf(blade);
         let bladeFuncs = Object.getOwnPropertyNames(bladeProto);

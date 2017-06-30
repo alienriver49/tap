@@ -8,7 +8,7 @@ import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 import {TextTemplateLoader, DefaultLoader} from 'aurelia-loader-default'
 import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 
-import Blade from './../../tapFx/ux/viewModels/viewModels.blade' 
+import Blade from './../../tapFx/ux/viewModels/viewModels.baseBlade' 
 import Extension from './extension'
 
 

@@ -1,5 +1,5 @@
 
-class SecondBlade extends window.TapFx.ViewModels.Blade {
+class SecondBlade extends window.TapFx.ViewModels.BaseBlade {
     title: string;
     subtitle: string;
     display: string;

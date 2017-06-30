@@ -1,10 +1,21 @@
 import * as tapfx from './../tapFx/ux/form/formModules'
+import Utilities from './../tapFx/utilities/utilities'
+import {ITapDataTableColumnConfig} from './../webComponents/dataTable/tap-data-table'
 
-class LandingBlade extends window.TapFx.ViewModels.Blade {
+class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
     title: string;
     display: string;
     raised: boolean = false;
     clearText: boolean = false;
+    headers: ITapDataTableColumnConfig[] = [
+        {header: 'School'},
+        {header: 'Type'}
+    ]
+    data: string[][] = [
+        ['Eddington', 'k-4'],
+        ['Holbrook', '5-8'],
+        ['Brewer HS', '9-12']
+    ]
 
     constructor() {
         super();
@@ -44,6 +55,38 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
             raised: '@raised'
         });
         this.form.content.push(testComp);
+        this.form.content.push(new tapfx.tapcLineBreak());
+
+        let addButton = new tapfx.tapcButton({
+            id: 'add-button',
+            type: 'button',
+            click: 'onAddButtonClick()',
+            content: [new tapfx.tapcText({text: 'Add row'})]
+        });
+        let removeButton = new tapfx.tapcButton({
+            id: 'remove-button',
+            type: 'button',
+            click: 'onRemoveButtonClick()',
+            content: [new tapfx.tapcText({text: 'Remove row'})]
+        });
+        let changeData = new tapfx.tapcButton({
+            id: 'change-data-button',
+            type: 'button',
+            click: 'onChangeDataClick()',
+            content: [new tapfx.tapcText({text: 'Change Array'})]
+        });
+        let div2 = new tapfx.tapcDiv({
+            content: [addButton, removeButton, changeData]
+        })
+        this.form.content.push(new tapfx.tapcText({text: 'Test syncing changing array contents and changing array'}));
+        this.form.content.push(div2);
+
+        let dataTable = new tapfx.tapcDataTable({
+            id: 'test-table',
+            attributeHeaders: '@headers',
+            attributeData: '@data'
+        })
+        this.form.content.push(dataTable);
     }
 
     private _updateDisplay() {
@@ -53,6 +96,44 @@ class LandingBlade extends window.TapFx.ViewModels.Blade {
     titleChanged(newValue: string, oldValue: string): void {
         console.log('[EXT-3] Blade title has changed.');
         this._updateDisplay();
+    }
+
+    onAddButtonClick(): void {
+        if (this.usingDataset1){
+            this.data.push([`School ${this.data.length}`, 'k-5'])
+        }else{
+            this.data.push([`First Name ${this.data.length}`, 'Last Name'])
+        }
+    }
+
+    onRemoveButtonClick(): void {
+        this.data.pop();
+    }
+
+    usingDataset1: boolean = true;
+    onChangeDataClick(): void {
+        if (this.usingDataset1){
+            this.headers = [
+                {header: 'First name'},
+                {header: 'Last name'}
+            ];
+            this.data = [
+                ['David', 'Foster'],
+                ['Brian', 'Jackson'],
+                ['Nick', 'Downs']
+            ];
+        }else{
+            this.headers = [
+                {header: 'School'},
+                {header: 'Type'}
+            ];
+            this.data = [
+                ['Eddington', 'k-4'],
+                ['Holbrook', '5-8'],
+                ['Brewer HS', '9-12']
+            ]
+        }
+        this.usingDataset1 = !this.usingDataset1;
     }
 
     clearTextChanged(newValue: string, oldValue: string): void {

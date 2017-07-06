@@ -42,6 +42,27 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         });
         return promise;
     }
+
+    deactivate() {
+        console.log('[EXT-2] deactivate method called');
+        // fake a timeout for an extension deactivation
+        let timeout: number = 500;
+        let promise = new Promise<undefined>((resolve) => {
+            setTimeout(resolve, timeout);
+        });
+        return promise;
+    }
+
+    canDeactivate() {
+        console.log('[EXT-2] canDeactivate method called');
+        // fake a timeout for an extension can deactivate call and return whether an extension can deactivate
+        let retVal: boolean = true;
+        let timeout: number = 0;
+        let promise = new Promise<boolean>((resolve) => {
+            setTimeout(() => { resolve(retVal) }, timeout);
+        });
+        return promise;
+    }
     
     onButtonConventionClick() {
         var origSubtitle = this.subtitle;

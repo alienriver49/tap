@@ -27,7 +27,13 @@ class Extension {
         this._rpcSubscriptions.push(subscription);
     }
 
+    /**
+     * Extension subscriptions.
+     */
     private _rpcSubscriptions: RpcClientSubscription[] = [];
+    /**
+     * Subscriptions for the extension's blades (i.e. subscriptions to function calls).
+     */
     private _bladeSubscriptions: Map<string, RpcClientSubscription[]> = new Map();
     /**
      * Same thing as the _contextIDMap in the bindingEngine.
@@ -65,6 +71,10 @@ class Extension {
         this._rpc.publish('shell.removeExtension', '', returnData);
     }
 
+    /**
+     * Function called from the update extension params RPC call. Will call the extensions updateParams if the developer has defined it.
+     * @param data 
+     */
     private _onUpdateExtensionParams(data: any): void {
         if (this.updateParams) this.updateParams(data.params, data.queryParams);
     }
@@ -82,12 +92,10 @@ class Extension {
         if (canActivate) {
             // let's chain our results together
             activateChain = activateChain.then((result) => {
-                console.log('[TAP-FX] addBlade activateChain 1 result: ' + result);
                 // whether it's true or a promise we will return it
                 return canActivate;
             });
             activateChain = activateChain.then((result) => {
-                console.log('[TAP-FX] addBlade activateChain 2 result: ' + result);
                 // result is the value from canActivate or the return value from the canActivate() promise
                 let ret: boolean | Promise<boolean> = result;
                 if (result) {
@@ -99,21 +107,28 @@ class Extension {
                 return ret;
             });
             activateChain = activateChain.then((result) => {
-                console.log('[TAP-FX] addBlade activateChain 3 result: ' + result);
                 // if we canActivate and the activate method has been called, add the blade
                 if (result) {
+                    console.log('[TAP-FX] addBlade activation successful');
                     this._performAddBlade(blade, viewName);
                 } else {
+                    console.log('[TAP-FX] addBlade activation unsuccessful');
                     // otherwise, notify the shell that we failed
                     this._addBladeFailed();
                 }
                 return result;
             });
         } else {
+            console.log('[TAP-FX] addBlade activation unsuccessful');
             this._addBladeFailed();
         }
     }
 
+    /**
+     * Function which performs the adding of a blade (since activation was successful). Publishes back to the shell that the blade was added.
+     * @param blade 
+     * @param viewName 
+     */
     private _performAddBlade(blade: BaseBlade, viewName: string): void {
         let bladeInfo = this._registerBladeBindings(blade);
         // Get the extension Id from RPC and pass it to the shell
@@ -133,6 +148,10 @@ class Extension {
         return viewHTML;
     }
 
+    /**
+     * Function which handles when an add blade event has failed. Publishes back to the shell that the add of a blade failed.
+     * @param message 
+     */
     private _addBladeFailed(message?: string): void {
         let returnData: Object = {
             extensionId: this._rpc.InstanceId
@@ -155,12 +174,10 @@ class Extension {
         if (bladeId && canDeactivate) {
             // let's chain our results together
             deactivateChain = deactivateChain.then((result) => {
-                console.log('[TAP-FX] removeBlade deactivateChain 1 result: ' + result);
                 // whether it's true or a promise we will return it
                 return canDeactivate;
             });
             deactivateChain = deactivateChain.then((result) => {
-                console.log('[TAP-FX] removeBlade deactivateChain 2 result: ' + result);
                 // result is the value from canDeactivate or the return value from the canDeactivate() promise
                 let ret: boolean | Promise<boolean> = result;
                 if (result) {
@@ -172,21 +189,28 @@ class Extension {
                 return ret;
             });
             deactivateChain = deactivateChain.then((result) => {
-                console.log('[TAP-FX] removeBlade deactivateChain 3 result: ' + result);
                 // if we canDeactivate and the deactivate method has been called, remove the blade
                 if (result) {
+                    console.log('[TAP-FX] removeBlade deactivation successful');
                     if (bladeId) this._performRemoveBlade(blade, bladeId);
                 } else {
+                    console.log('[TAP-FX] removeBlade deactivation unsuccessful');
                     // otherwise, notify the shell that we failed
                     this._removeBladeFailed();
                 }
                 return result;
             });
         } else {
+            console.log('[TAP-FX] removeBlade deactivation unsuccessful');
             this._removeBladeFailed();
         }
     }
 
+    /**
+     * Function which performs the removal of a blade (since deactivation was successful). Publishes back to the shell that the blade was removed.
+     * @param blade 
+     * @param bladeId 
+     */
     private _performRemoveBlade(blade: BaseBlade, bladeId: string) {
         // unobserve this blade
         this._bindingEngine.unobserve(blade);
@@ -207,8 +231,10 @@ class Extension {
         this._rpc.publish('shell.removeBlade', '', returnData);
     }
 
+    // TODO: determine what we need to implement for this and implement it.
+    //       common scenerio which might be the cause of this would be because the user was prompted
+    //       about unsaved changes and didn't want to leave, so the blade wouldn't be removed (canDeactivate would fail)
     private _removeBladeFailed() {
-
     }
 
     private _registerBladeBindings(blade: BaseBlade): any {

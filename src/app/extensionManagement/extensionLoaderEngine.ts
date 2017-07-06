@@ -1,5 +1,3 @@
-import Extension from './extension' // type only
-
 class ExtensionLoaderEngine {
     constructor(
     ) {
@@ -67,15 +65,12 @@ class ExtensionLoaderEngine {
     }
 
     /**
-     * Unload an extension. Calls the extension function to remove blades. Removes the iframe of the extension.
+     * Unload an extension. Removes the iframe of the extension.
      * @param extension 
      */
-    public unloadExtension(extension: Extension): void {
-        // remove the extension's blades
-        extension.removeBlades();
-
+    public unloadExtension(extensionId: string): void {
         // remove the iframe element
-        var iFrameElement = document.getElementById(extension.id);
+        var iFrameElement = document.getElementById(extensionId);
         if (iFrameElement) iFrameElement.remove();
     }
 }

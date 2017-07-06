@@ -27,8 +27,20 @@ class ExtensionManager {
         this._rpcSubscriptions.push(subscription);
     }
 
+    /**
+     * RPC subscriptions the extension manager is currently subscribed to.
+     */
     private _rpcSubscriptions: any[] = [];
+
+    /**
+     * Loaded extensions currently being managed by the extension manager.
+     */
     extensions: Extension[] = [];
+
+    /**
+     * Maps extension names to their ids. This gets set when the load command is received and the key is removed when the unload command is received.
+     */
+    private _extensionIdMap: Map<string, string> = new Map();
 
     /**
      * Adds a blade for an extension.
@@ -67,7 +79,8 @@ class ExtensionManager {
         if (extension) {
             // if the extension has no blades then that means we just want to remove it. this would most likely be a case where the initial blade of the extension failed to load, which would mean the extension failed to load.
             if (extension.blades.length === 0) {
-                this.extensions.splice(this._findExtensionIndex(extensionId));
+                // remove the extension
+                this._performRemoveExtension(extension);
 
                 // TODO: research resolving vs. rejecting
                 let defer = this._extensionCommandQueue.current.defer;
@@ -90,11 +103,10 @@ class ExtensionManager {
         let extension = this._findExtension(extensionId);
         let defer = this._extensionCommandQueue.current.defer;
         if (extension) {
-            // unload the extension
-            this._extensionLoaderEngine.unloadExtension(extension);
-
+            // remove the extension's blades
+            extension.removeBlades();
             // remove the extension
-            this.extensions.splice(this._findExtensionIndex(extensionId));
+            this._performRemoveExtension(extension);
 
             console.log('[SHELL] Finish unloading extension: ' + extension.name);
             if (defer) defer.resolve({ successful: true, message: 'extension unloaded'});
@@ -116,14 +128,11 @@ class ExtensionManager {
             extension.removeBlade(data.bladeId);
 
             console.log('[SHELL] Finish removing blade for extension: ' + extension.name);
-            // If there are no more blades, remove the extension
+            // if there are no more blades, remove the extension
             if (extension.blades.length === 0) {
                 console.log('[SHELL] No more blades left - unloading extension: ' + extension.name);
-                // unload the extension
-                this._extensionLoaderEngine.unloadExtension(extension);
-
                 // remove the extension
-                this.extensions.splice(this._findExtensionIndex(extensionId));
+                this._performRemoveExtension(extension);
 
                 this._extensionCommandQueue.clear();
                 this._eventAggregator.publish('shell.router.reroute', { urlFragment: '/' })
@@ -131,6 +140,19 @@ class ExtensionManager {
         } else {
             // 
         }
+    }
+
+    /**
+     * Performs the remove extension logic for the extension manager. Calls the extension loader engine to unload the extension, removes the extension from the list of extensions, and removes the mapping of the name to the id.
+     * @param extension 
+     */
+    private _performRemoveExtension(extension: Extension) {
+        // unload the extension
+        this._extensionLoaderEngine.unloadExtension(extension.id);
+
+        // remove the extension and delete it's id from our map
+        this.extensions.splice(this._findExtensionIndex(extension.id));
+        this._extensionIdMap.delete(extension.name);
     }
 
     /**
@@ -142,13 +164,18 @@ class ExtensionManager {
     loadExtension(extensionName: string, params: any[], queryParams: Object): void {
         // get a new extension id
         let extensionId = window.TapFx.Utilities.newGuid();
+        this._extensionIdMap.set(extensionName, extensionId);
+
+        // queue the load command
         this._extensionCommandQueue.queueCommand(extensionId, () => {
             this._extensionLoaderEngine.loadExtension(extensionId, extensionName).then((result) => {
                 this.extensions.push(this._extensionFactory(extensionId, extensionName));
-                // just publish an update params event when we've finished loading
-                window.TapFx.Rpc.publish('tapfx.updateExtensionParams', extensionId, { params: params, queryParams: queryParams });
             });
         });
+
+        // if we have params or query params, queue an event following the load command which will update those params
+        if (params.length > 0 || Object.keys(queryParams).length > 0)
+            this._queueUpdateExtensionParams(extensionId, params, queryParams);
     }
 
     /**
@@ -158,21 +185,24 @@ class ExtensionManager {
      * @param queryParams 
      */
     updateExtensionParams(extensionName: string, params: any[], queryParams: Object): void {
-        let extension = this._findExtensionByName(extensionName);
-        if (extension) {
-            let extensionId = extension.id;
-            this._extensionCommandQueue.queueCommand(extensionId, () => {
-                // update params for that extension
-                window.TapFx.Rpc.publish('tapfx.updateExtensionParams', extensionId, { params: params, queryParams: queryParams });
-
-                // note: in the future, should probably subscribe to a 'shell.updateExtensionParams' from the extension to detect when the update params completed and then resolve.
-                //       similar to what loadExtension and unloadExtension do
-                let defer = this._extensionCommandQueue.current.defer;
-                if (defer) defer.resolve({ successful: true, message: 'extension params updated'});
-            });
+        let extensionId = this._extensionIdMap.get(extensionName);
+        if (extensionId) {
+            this._queueUpdateExtensionParams(extensionId, params, queryParams);
         } else {
-            // TODO: we could be waiting for an extension to finish loading so that's why it wasn't found so check the queue, otherwise display an error page
+            // TODO: display an error page
         }
+    }
+
+    private _queueUpdateExtensionParams(extensionId: string, params: any[], queryParams: Object): void {
+        this._extensionCommandQueue.queueCommand(extensionId, () => {
+            // update params for that extension
+            window.TapFx.Rpc.publish('tapfx.updateExtensionParams', extensionId, { params: params, queryParams: queryParams });
+
+            // for now, automatically resolve (otherwise the queue will get stuck / timeout)
+            // note: in the future, should probably subscribe to a 'shell.updateExtensionParams' from the extension to detect when the update params completed and then resolve. similar to what loadExtension and unloadExtension do
+            let defer = this._extensionCommandQueue.current.defer;
+            if (defer) defer.resolve({ successful: true, message: 'extension params updated'});
+        });
     }
 
     /**
@@ -180,9 +210,8 @@ class ExtensionManager {
      * @param extensionName 
      */
     unloadExtension(extensionName: string):void {
-        let extension = this._findExtensionByName(extensionName);
-        if (extension) {
-            let extensionId = extension.id;
+        let extensionId = this._extensionIdMap.get(extensionName);
+        if (extensionId) {
             this._extensionCommandQueue.queueCommand(extensionId, () => {
                 window.TapFx.Rpc.publish('tapfx.removeExtension', extensionId);
             });
@@ -204,22 +233,11 @@ class ExtensionManager {
     /**
      * Find an extension using it's id.
      * @param extensionId 
-     * @returns The extension or null if no extension was found.
+     * @returns The extension or undefined if no extension was found.
      */
     private _findExtension(extensionId: string): Extension | undefined {
         return this.extensions.find((ext) => {
             return ext.id === extensionId;
-        });
-    }
-
-    /**
-     * Find an extension using it's id.
-     * @param extensionId 
-     * @returns The extension or null if no extension was found.
-     */
-    private _findExtensionByName(extensionName: string): Extension | undefined {
-        return this.extensions.find((ext) => {
-            return ext.name === extensionName;
         });
     }
 }

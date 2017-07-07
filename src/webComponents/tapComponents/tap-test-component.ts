@@ -4,7 +4,7 @@ import {inject, bindable, bindingMode, DOM} from 'aurelia-framework';
 export class TapTestComponent  {
     @bindable({ defaultBindingMode: bindingMode.twoWay }) display: string = '';
     @bindable({ defaultBindingMode: bindingMode.twoWay }) clearText: boolean = false; 
-    @bindable() raised: boolean; 
+    @bindable() raised: boolean;
     public isDisabled: boolean = false;
 
     constructor(private element: Element) { 

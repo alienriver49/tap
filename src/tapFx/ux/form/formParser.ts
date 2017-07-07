@@ -2,9 +2,9 @@ import * as tapc from './formModules'
 import {tapcBase} from './components/tapcBase'
 import {tapcBaseContainer} from './components/tapcBaseContainer'
 
-export class formParser{
-
-    constructor(){
+export class formParser {
+    constructor(
+    ) {
 
     }
 
@@ -65,9 +65,9 @@ export class formParser{
                         // If the attribute value starts with '@', then bind it, 
                         // otherwise use literal value
                         if (bindMatch = bindRegExp.exec(value)){
-                            el.setAttribute( this.camelCaseToHyphen(`${match[1]}.bind`), bindMatch[1]);
+                            el.setAttribute(window.TapFx.Utilities.camelCaseToHyphen(`${match[1]}.bind`), bindMatch[1]);
                         }else{
-                            el.setAttribute(this.camelCaseToHyphen(match[1]), node[prop]);
+                            el.setAttribute(window.TapFx.Utilities.camelCaseToHyphen(match[1]), node[prop]);
                         }
                     }
                     if (value && (match = eventRegExp.exec(prop))){
@@ -86,14 +86,5 @@ export class formParser{
 
         if (el)
             parent.appendChild(el);
-    }
-
-    private static camelCaseToHyphen(input: string): string {
-        input = input.charAt(0).toLowerCase() + input.slice(1);
-        if (/([A-Z]+)/.exec(input))
-            return input.replace(/([A-Z])/g, (g) => `-${g[0].toLowerCase()}`);
-        else
-            // If there are no capital letters, just return input
-            return input.toLowerCase();
     }
 }

@@ -49,6 +49,20 @@ class Utilities {
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
+    /**
+     * Convert a camel case string to a hyphen delimited string by replacing upper-case letters with a hyphen and their lower-case equivalent, also known as kebab-case.
+     * 
+     * Note that if the beginning character is upper-case, it is ignored. i.e. either 'camelCase' or 'CamelCase' will both return 'camel-case' from this function.
+     * @param str 
+     */
+    camelCaseToHyphen(str: string): string {
+        str = this.lowerCaseFirstChar(str);
+        if (/([A-Z]+)/.exec(str))
+            return str.replace(/([A-Z])/g, (g) => `-${g[0].toLowerCase()}`);
+        else
+            // If there are no capital letters, just return input
+            return str;
+    }
 }
 
 export default Utilities;

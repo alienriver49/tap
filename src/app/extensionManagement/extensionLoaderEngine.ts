@@ -40,9 +40,18 @@ class ExtensionLoaderEngine {
                     let scriptTag = iFrame.contentWindow.document.createElement('script');
                     scriptTag.setAttribute('type', 'text/javascript');
                     scriptTag.setAttribute('src', script);
-                    scriptTag.addEventListener('load', (e) => {
+
+                    // set up the funcs we will use for handling the load and error events from the script tags
+                    let onScriptLoad: EventListener = (e: Event): void => {
+                        scriptTag.removeEventListener('load', onScriptLoad);
+                        scriptTag.removeEventListener('error', onScriptError);
                         bootstrapScripts(scripts);
-                    });
+                    };
+                    let onScriptError: EventListener = (e: Event): void => {
+                        // TODO: implement error handling for scripts failing to load
+                    };
+                    scriptTag.addEventListener('load', onScriptLoad);
+                    scriptTag.addEventListener('error', onScriptError);
 
                     iFrame.contentWindow.document.body.appendChild(scriptTag);
                 } else {
@@ -51,10 +60,13 @@ class ExtensionLoaderEngine {
                     resolve('finished');
                 }
             };
+
             // add an event listener to the iframe to load the scripts on load of the iframe element (not sure this is completely necessary)
-            iFrame.addEventListener('load', (e) => {
+            let onIFrameLoad: EventListener = (e: Event): void => {
+                iFrame.removeEventListener('load', onIFrameLoad);
                 bootstrapScripts(extensionScripts);
-            }, false);
+            };
+            iFrame.addEventListener('load', onIFrameLoad, false);
             
             // append that iframe to our 'extension-iframes' element
             let iFramesEl = document.getElementById('extension-iframes');

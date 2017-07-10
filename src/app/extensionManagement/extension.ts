@@ -70,8 +70,8 @@ class Extension {
         }
     }
 
-    private _registerBladeBindings(bladeID: string, blade: PortalBlade): void {
-        this._bindingEngine.resolveId(blade, bladeID);
+    private _registerBladeBindings(bladeId: string, blade: PortalBlade): void {
+        this._bindingEngine.resolveId(blade, bladeId);
 
         for (let prop in blade) {
             // only register blade's own properties and not those on the prototype chain
@@ -94,7 +94,7 @@ class Extension {
         this._bindingEngine.unobserveAll();
     }
 
-    private _registerBladeFunctions(bladeID: string, blade: PortalBlade, functions: string[]) {
+    private _registerBladeFunctions(bladeId: string, blade: PortalBlade, functions: string[]) {
         console.log('[SHELL] Attaching blade functions: ', functions);
         // loop through all the passed functions and add them as a function to the serialized blade which will publish a message with the function data
         for (let func of functions) {
@@ -102,11 +102,11 @@ class Extension {
             blade[func] = function() {
                 // publish the function call to the extension
                 console.log('[SHELL] Publishing message from function: ' + func);
-                window.TapFx.Rpc.publish('tapfx.' + bladeID + '.' + func, extId, { functionArgs: [...arguments] });
+                window.TapFx.Rpc.publish('tapfx.' + bladeId + '.' + func, extId, { functionArgs: [...arguments] });
                 
                 // set up a subscription for any result from the calling of the function in the extension
                 let resultPromise = new DeferredPromise();
-                let subscription = window.TapFx.Rpc.subscribe('shell.' + bladeID + '.' + func, (data) => {
+                let subscription = window.TapFx.Rpc.subscribe('shell.' + bladeId + '.' + func, (data) => {
                     console.log('[SHELL] Receiving result from function: ' + func + ' result: ', data);
                     resultPromise.resolve(data);
 

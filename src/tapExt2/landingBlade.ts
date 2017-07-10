@@ -12,14 +12,29 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
     selectedCheckboxes = [this.checkboxes[0]];
 
     radios = [
-        {value: '1', label: 'Radio 1'},
-        {value: '2', label: 'Radio 2'},
-        {value: '3', label: 'Radio 3'},
+        {value: 1, label: 'Radio 1'},
+        {value: 2, label: 'Radio 2'},
+        {value: 3, label: 'Radio 3'},
     ];
     selectedRadio = this.radios[0];
 
     constructor() {
         super();
+
+        setTimeout(() => {
+            this.radios[1].value = 5;
+            this.radios[1].label = 'Radio 5';
+            console.log('[EXT-2] radio 2 changed');
+        }, 5000);
+
+        /*setInterval(() => {
+            let newValue = window.TapFx.Utilities.randomInteger(0, 100);
+
+            let randomInt = window.TapFx.Utilities.randomInteger(0, (this.radios.length - 1));
+            console.log(randomInt);
+            this.radios[randomInt].value = newValue;
+            this.radios[randomInt].label = 'Radio ' + newValue;
+        }, 1000);*/
     }
 
     activate() {
@@ -75,12 +90,14 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
     }
 
     onButtonClickMeClick(arg: any, arg2: any) {
-        //alert('Button clicked!\n\nReceived arg:\n' + arg + '\n\nReceived arg2:\n' + arg2);
         console.log('[EXT-2] onButtonClickMeClick arg 1: ' + arg + ' | arg 2: ' + arg2);
-        let random = (min: number, max: number) => { return Math.floor(Math.random() * (max - min + 1) + min); };
-        this.selectedOption = this.selectOptions[random(0, 2)];
-        this.selectedCheckboxes = [this.checkboxes[random(0, 2)]];
-        this.selectedRadio = this.radios[random(0, 2)];
+        //this.selectedOption = this.selectOptions[window.TapFx.Utilities.randomInteger(0, 2)];
+        //this.selectedCheckboxes = [this.checkboxes[window.TapFx.Utilities.randomInteger(0, 2)]];
+
+        let randomRadio = this.radios[window.TapFx.Utilities.randomInteger(0, 2)];
+        this.selectedRadio = randomRadio;
+        /*this.selectedRadio.label = randomRadio.label;
+        this.selectedRadio.value = randomRadio.value;*/
     }
 }
 

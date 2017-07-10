@@ -5,6 +5,17 @@ import RpcClient from './../rpc/client'
 import Utilities from './../utilities/utilities'
 import { InternalPropertyObserver, InternalCollectionObserver, Callable} from 'aurelia-binding'; // type
 
+/**
+ * Definition of the propertyBindingSync RPC message.
+ */
+export interface IPropertyBindingSync {
+    contextId: string;
+    property: string;
+    propertyPath: string;
+    newValue: any;
+    oldValue: any;
+}
+
 // first three properties are defined by Aurelia, last by us
 export interface IArrayChangedSplice {
     addedCount: number, 
@@ -13,9 +24,13 @@ export interface IArrayChangedSplice {
     added?: Object[]
 };
 
+/**
+ * Definition of the arrayBindingSync RPC message.
+ */
 export interface IArrayBindingSync {
-    contextID: string,
+    contextId: string,
     property: string,
+    propertyPath: string,
     splices: IArrayChangedSplice[],
 }
 
@@ -25,10 +40,11 @@ export class ProxiedObservable implements Callable {
         private _observerLocator: ObserverLocator,
         private _rpc: RpcClient,
         private _utilities: Utilities,
-        private _contextID: string,
+        private _contextId: string,
         private _context: Object,
         private _property: string,
-        private _extensionId: string
+        private _extensionId: string,
+        private _propertyPath: string
     ) { 
     }
 
@@ -36,31 +52,44 @@ export class ProxiedObservable implements Callable {
     private _collectionObserver: InternalCollectionObserver;
     private _className: string = (this as Object).constructor.name;
     private _boundPropertyChanged = this._propertyChanged.bind(this) as (newValue: any, oldValue: any) => void;
-    private _boundArrayChanged = this._arrayChanged.bind(this) as (splices: any) => void;
+    private _boundArrayChanged = this._arrayChanged.bind(this) as (splices: IArrayChangedSplice[]) => void;
     private _canObserveArray: boolean = true;
     private _canObserveProperty: boolean = true;
 
-    private _propertyChanged(newValue: any, oldValue: any) {
+    property(): string {
+        return this._property;
+    }
+
+    propertyPath(): string {
+        return this._propertyPath;
+    }
+
+    private _propertyChanged(newValue: any, oldValue: any): void {
         if (!this._canObserveProperty)
             return;
         if (newValue === oldValue) return;
-        // TODO: observing / syncing of objects
-        if (JSON.stringify(newValue) === JSON.stringify(oldValue)) return; // temp, for object observation to stop an infinite loop from happening. only works if the order of properties is always the same
+        // TODO: should we check if objects have changed?
+        //if (this._utilities.classOf(oldValue) === '[object Object]' && JSON.stringify(newValue) === JSON.stringify(oldValue)) return;
 
         console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Property has changed from: "${oldValue}" to: "${newValue}"`);
-        this._rpc.publish('tapfx.propertyBindingSync', this._extensionId, {
-            contextID: this._contextID,
+        let data: IPropertyBindingSync = {
+            contextId: this._contextId,
             property: this._property,
+            propertyPath: this._propertyPath,
             newValue: newValue,
             oldValue: oldValue
-        });
+        }
+        this._rpc.publish('tapfx.propertyBindingSync', this._extensionId, data);
 
-        // check for a convention function for handling property changed events. note: Aurelia can do this but requires an @observable decorator on the variable (creates a getter / setter) and that currently doesn't work with our function serialization
-        let propertyChangedHandler = `${this._property}Changed`;
-        if (propertyChangedHandler in this._context &&
-            this._utilities.classOf(this._context[propertyChangedHandler]) === '[object Function]'
-        ) {
-            this._context[propertyChangedHandler](newValue, oldValue);
+        // if the property path has a period in it, it means it's the property of any object in the context, so we won't check for the changed handler. this is so that an object with a property title wouldn't trigger the titleChanged property on the view
+        if (this._propertyPath.indexOf('.') === -1) {
+            // check for a convention function for handling property changed events. note: Aurelia can do this but requires an @observable decorator on the variable (creates a getter / setter) and that currently doesn't work with our function serialization
+            let propertyChangedHandler = `${this._property}Changed`;
+            if (propertyChangedHandler in this._context &&
+                this._utilities.classOf(this._context[propertyChangedHandler]) === '[object Function]'
+            ) {
+                this._context[propertyChangedHandler](newValue, oldValue);
+            }
         }
 
         // if the property is an array, need to unsubscribe collectionObserver
@@ -75,7 +104,7 @@ export class ProxiedObservable implements Callable {
      * https://ilikekillnerds.com/2015/10/observing-objects-and-arrays-in-aurelia/
      * @param splices 
      */
-    private _arrayChanged(splices: IArrayChangedSplice[]) {
+    private _arrayChanged(splices: IArrayChangedSplice[]): void {
         if (!this._canObserveArray)
             return;
 
@@ -91,15 +120,12 @@ export class ProxiedObservable implements Callable {
         console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Array has mutated`);
 
         var data: IArrayBindingSync = {
-            contextID: this._contextID,
+            contextId: this._contextId,
             property: this._property,
+            propertyPath: this._propertyPath,
             splices: splices,
         } 
         this._rpc.publish('tapfx.arrayBindingSync', this._extensionId, data);
-    }
-
-    property(): string {
-        return this._property;
     }
 
     observe(): void {
@@ -119,6 +145,11 @@ export class ProxiedObservable implements Callable {
         this._observer.subscribe(this._boundPropertyChanged);
     }
 
+    /**
+     * Set the value of the observer (context and property).
+     * @param value 
+     * @param disableObservation Whether to disable observations while the value is being set. Defaults to true.
+     */
     setValue(value: any, disableObservation: boolean = true): void {
         // If this was called due to an RPC message, we probably want to 
         // temporarily disable the observation while the value is being 
@@ -136,13 +167,14 @@ export class ProxiedObservable implements Callable {
         if (disableObservation){
             // Flush the recent changes and re-enable observation
             ((this._observer as any).taskQueue as TaskQueue).flushMicroTaskQueue();
-            this._canObserveProperty= true;
+            this._canObserveProperty = true;
         }
     }
 
     /**
-     * Add or remove elements to the observed array
+     * Add or remove elements to the observed array.
      * @param splice 
+     * @param disableObservation Whether to disable observations while the value is being set. Defaults to true.
      */
     updateArray(splice: IArrayChangedSplice, disableObservation: boolean = true): void {
         if (!(this._context[this._property] instanceof Array)) {

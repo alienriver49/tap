@@ -63,6 +63,15 @@ class Utilities {
             // If there are no capital letters, just return input
             return str;
     }
+
+    /**
+     * Return a random integer between the passed min and max numbers.
+     * @param min 
+     * @param max 
+     */
+    randomInteger(min: number, max: number) {
+        return Math.floor(Math.random() * (max - min + 1) + min);
+    }
 }
 
 export default Utilities;

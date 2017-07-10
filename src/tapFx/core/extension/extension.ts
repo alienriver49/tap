@@ -36,7 +36,7 @@ class Extension {
      */
     private _bladeSubscriptions: Map<string, RpcClientSubscription[]> = new Map();
     /**
-     * Same thing as the _contextIDMap in the bindingEngine.
+     * Same thing as the _contextIdMap in the bindingEngine.
      */
     private _bladeIdMap: Map<BaseBlade, string> = new Map();
     private _className: string = (this as Object).constructor.name;
@@ -240,8 +240,8 @@ class Extension {
     private _registerBladeBindings(blade: BaseBlade): any {
         let serializedBlade = {};
 
-        let bladeID = this._utilities.newGuid();
-        this._bindingEngine.resolveId(blade, bladeID);
+        let bladeId = this._utilities.newGuid();
+        this._bindingEngine.resolveId(blade, bladeId);
 
         for (let prop in blade) {
             // only register blade's own properties and not those on the prototype chain
@@ -258,7 +258,7 @@ class Extension {
         }
 
         return {
-            bladeId: bladeID,
+            bladeId: bladeId,
             serializedBlade: serializedBlade
         }
     }

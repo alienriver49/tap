@@ -5,7 +5,7 @@ import {DefaultLoader, TextTemplateLoader} from 'aurelia-loader-default';
 import {BindingLanguage, TemplateRegistryViewStrategy, ViewEngine, ModuleAnalyzer, ViewSlot, ViewLocator, ViewFactory, ViewResources, TemplatingEngine, CompositionTransaction, CompositionEngine, View, CompositionContext, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
 import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
-import BindingEngine from './../../tapFx/binding/bindingEngine'
+import {BindingEngine, IChildMetadata, ISerializedObject} from './../../tapFx/binding/bindingEngine'
 import DeferredPromise from './../deferredPromise'
 import ConventionEngine from './conventionEngine';
 import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
@@ -70,18 +70,38 @@ class Extension {
         }
     }
 
-    private _registerBladeBindings(bladeID: string, blade: PortalBlade): void {
-        this._bindingEngine.resolveId(blade, bladeID);
+    private _registerBladeBindings(objectID: string, obj: PortalBlade | ISerializedObject, parentID?: string): void {
+        this._bindingEngine.resolveId(obj, objectID);
 
-        for (let prop in blade) {
-            // only register blade's own properties and not those on the prototype chain
-            // anything starting with an underscore is treated as a private property and is not watched for changes
-            // skip Functions
-            if (blade.hasOwnProperty(prop) &&
-                prop.charAt(0) !== '_' &&
-                window.TapFx.Utilities.classOf(blade[prop]) !== '[object Function]'
-            ) {
-                this._bindingEngine.observe(blade, prop, this.id);
+        // Recursively register any child objects first
+        if (obj.hasOwnProperty('_childMetadata')){
+            let childMetadata: IChildMetadata[] = obj['_childMetadata'];
+            childMetadata.forEach((metadata) => {
+                // Check if there is already a mapped context with the passed Id
+                let existingChildObject = this._bindingEngine.getContextById(metadata.contextId);
+                if (existingChildObject){
+                    // If so, we assume it's being observed and assign that to the parent object
+                    obj[metadata.property] = existingChildObject;
+                }else{
+                    let childObject: ISerializedObject = metadata.value;
+                    this._registerBladeBindings(metadata.contextId, childObject, metadata.parentId);
+                    // And reinstantiate them on the parent object
+                    obj[metadata.property] = childObject;
+                }
+            });
+        }
+
+        if (!parentID){
+            for (let prop in obj) {
+                // only register blade's own properties and not those on the prototype chain
+                // anything starting with an underscore is treated as a private property and is not watched for changes
+                // skip Functions
+                if (obj.hasOwnProperty(prop) &&
+                    prop.charAt(0) !== '_' &&
+                    window.TapFx.Utilities.classOf(obj[prop]) !== '[object Function]'
+                ) {
+                    this._bindingEngine.observe(obj, prop, this.id);
+                }
             }
         }
     }

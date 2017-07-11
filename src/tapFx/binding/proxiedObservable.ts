@@ -6,6 +6,8 @@ import Utilities from './../utilities/utilities'
 import { InternalPropertyObserver, InternalCollectionObserver, Callable} from 'aurelia-binding'; // type
 
 // first three properties are defined by Aurelia, last by us
+// Note that these are not explicitly defined in any aurelia public interface,
+// but were found via the source code, so may change in the future
 export interface IArrayChangedSplice {
     addedCount: number, 
     index: number, 
@@ -13,12 +15,34 @@ export interface IArrayChangedSplice {
     added?: Object[]
 };
 
+/**
+ * When sending an RPC message to update the contents of a synced array, this will
+ * be the data cargo
+ */
 export interface IArrayBindingSync {
     contextID: string,
     property: string,
     splices: IArrayChangedSplice[],
 }
 
+/**
+ * When sending an RPC message to update a property on a synced object, this will
+ * be the data cargo
+ */
+export interface IPropertyBindingSync {
+    contextID: string,
+    property: string,
+    newValue: any,
+    oldValue: any,
+    syncObjectContextId: string
+}
+
+/**
+ * Built on the Aurelia ObserverLocator module, this class will watch:
+ * 1) a particular property for changes
+ * 2) If the property is an array, watch for changes to the array contents
+ * Any changes will trigger an RPC call to sync the changes to the other window
+ */
 @inject(ObserverLocator, RpcClient, Utilities)
 export class ProxiedObservable implements Callable {
     constructor(
@@ -28,10 +52,11 @@ export class ProxiedObservable implements Callable {
         private _contextID: string,
         private _context: Object,
         private _property: string,
-        private _extensionId: string
+        private _extensionId: string,
     ) { 
     }
 
+    private _bindingEngine = window.TapFx.BindingEngine;
     private _observer: InternalPropertyObserver;
     private _collectionObserver: InternalCollectionObserver;
     private _className: string = (this as Object).constructor.name;
@@ -40,20 +65,42 @@ export class ProxiedObservable implements Callable {
     private _canObserveArray: boolean = true;
     private _canObserveProperty: boolean = true;
 
+    public get extensionId(){
+        return this._extensionId;
+    }
+
     private _propertyChanged(newValue: any, oldValue: any) {
+        // Temporarily suspend observation handler when syncing changes 
         if (!this._canObserveProperty)
             return;
         if (newValue === oldValue) return;
         // TODO: observing / syncing of objects
-        if (JSON.stringify(newValue) === JSON.stringify(oldValue)) return; // temp, for object observation to stop an infinite loop from happening. only works if the order of properties is always the same
+        if (JSON.stringify(newValue) === JSON.stringify(oldValue)) 
+            return; // temp, for object observation to stop an infinite loop from happening. only works if the order of properties is always the same
 
         console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Property has changed from: "${oldValue}" to: "${newValue}"`);
-        this._rpc.publish('tapfx.propertyBindingSync', this._extensionId, {
+        var data: IPropertyBindingSync = {
             contextID: this._contextID,
             property: this._property,
             newValue: newValue,
-            oldValue: oldValue
-        });
+            oldValue: oldValue,
+            syncObjectContextId: ''
+        } 
+
+        // TODO: dispose of observers on properties where oldValue is an object
+
+        // If the new value is an object, we need to recursively observe it too
+        // and pass appropriate metadata
+        if (this._utilities.isObject(newValue)){
+            let syncValue = this._bindingEngine.observeObject(newValue, this._extensionId);
+            if (syncValue){
+                data.newValue = syncValue;
+                // Need to pass the context Id for the new object as well
+                data.syncObjectContextId = syncValue._syncObjectContextId;
+            }
+        }
+
+        this._rpc.publish('tapfx.propertyBindingSync', this._extensionId, data);
 
         // check for a convention function for handling property changed events. note: Aurelia can do this but requires an @observable decorator on the variable (creates a getter / setter) and that currently doesn't work with our function serialization
         let propertyChangedHandler = `${this._property}Changed`;
@@ -76,6 +123,7 @@ export class ProxiedObservable implements Callable {
      * @param splices 
      */
     private _arrayChanged(splices: IArrayChangedSplice[]) {
+        // Temporarily suspend observation handler when syncing changes 
         if (!this._canObserveArray)
             return;
 
@@ -98,17 +146,23 @@ export class ProxiedObservable implements Callable {
         this._rpc.publish('tapfx.arrayBindingSync', this._extensionId, data);
     }
 
-    property(): string {
+    public property(): string {
         return this._property;
     }
 
-    observe(): void {
+    public observe(): void {
         if (this._observer) throw new Error("Property is already being observed.");
-        if (this._context[this._property] instanceof Array) {
+        let value = this._context[this._property];
+
+        if (value instanceof Array) {
             // ArrayObserver only tracks modifications to an array
-            // getArrayObserver returns an instance of ModifyCollectionObserver, although that isn't exposed
+            // getArrayObserver returns an instance of ModifyCollectionObserver
+            // (with SubscriberCollection), although the full API for them 
+            // isn't shown in the documentation (officially the getArrayObserver
+            // just returns InternalCollectionObserver which only has a subscribe and
+            // unsubscribe on it)
             // 
-            this._collectionObserver = this._observerLocator.getArrayObserver(this._context[this._property]);
+            this._collectionObserver = this._observerLocator.getArrayObserver(value);
             this._collectionObserver.subscribe(this._boundArrayChanged);
 
             // Still need regular observer if array is completely replaced
@@ -116,6 +170,7 @@ export class ProxiedObservable implements Callable {
         } else {
             this._observer = this._observerLocator.getObserver(this._context, this._property);
         }
+
         this._observer.subscribe(this._boundPropertyChanged);
     }
 
@@ -135,6 +190,7 @@ export class ProxiedObservable implements Callable {
 
         if (disableObservation){
             // Flush the recent changes and re-enable observation
+            // We're using the unexposed taskQueue property on the ModifyCollectionObserver
             ((this._observer as any).taskQueue as TaskQueue).flushMicroTaskQueue();
             this._canObserveProperty= true;
         }
@@ -150,8 +206,8 @@ export class ProxiedObservable implements Callable {
         }
 
         // If this was called due to an RPC message, we probably want to 
-        // temporarily disable the observation while the value is being 
-        // set to avoid 'duplicate' messages back to the RPC message source
+        // temporarily disable the observation while the array contents are being 
+        // updated to avoid 'duplicate' messages back to the RPC message source
         if (disableObservation)
             this._canObserveArray = false;
 
@@ -168,6 +224,7 @@ export class ProxiedObservable implements Callable {
         
         if (disableObservation){
             // Flush the recent changes and re-enable observation
+            // We're using the unexposed taskQueue property on the SetterObserver 
             ((this._collectionObserver as any).taskQueue as TaskQueue).flushMicroTaskQueue();
             this._canObserveArray = true;
         }

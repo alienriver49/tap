@@ -15,7 +15,7 @@ class Utilities {
      */
     classOf(object: any): string {
         return ({}).toString.call(object);
-    }
+    } 
 
     /**
      * Converts a query string into an object and returns that object. Supports query strings beginning with ? or not.
@@ -63,6 +63,19 @@ class Utilities {
             // If there are no capital letters, just return input
             return str;
     }
+
+    /** 
+     * Test if the passed value is an object, but not an array or function
+     * There are some more Javascript types that are objects that should 
+     * probably be checked for as well
+     * @param obj 
+     */
+    isObject(obj: any): boolean {
+        return (obj === Object(obj) && 
+            !(obj instanceof Array) &&
+            this.classOf(obj) !== '[object Function]');
+    }
+
 }
 
 export default Utilities;

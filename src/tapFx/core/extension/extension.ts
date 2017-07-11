@@ -1,7 +1,7 @@
 import { inject } from 'aurelia-dependency-injection'
 import Utilities from './../../utilities/utilities'
 import { RpcClient, RpcClientSubscription } from './../../rpc/client'
-import BindingEngine from './../../binding/bindingEngine'
+import {BindingEngine, IChildMetadata, ISerializedObject} from './../../binding/bindingEngine'
 import {formParser} from './../../ux/form/formParser'
 import BaseBlade from './../../ux/viewModels/viewModels.baseBlade' // type only
 
@@ -238,10 +238,11 @@ class Extension {
     }
 
     private _registerBladeBindings(blade: BaseBlade): any {
-        let serializedBlade = {};
 
         let bladeID = this._utilities.newGuid();
         this._bindingEngine.resolveId(blade, bladeID);
+
+        let serializedBlade: ISerializedObject = {_childMetadata: [], _syncObjectContextId: ''};
 
         for (let prop in blade) {
             // only register blade's own properties and not those on the prototype chain
@@ -252,8 +253,16 @@ class Extension {
                 prop.charAt(0) !== '_' &&
                 this._utilities.classOf(blade[prop]) !== '[object Function]'
             ) {
-                this._bindingEngine.observe(blade, prop);
-                serializedBlade[prop] = blade[prop];
+                let childMetadata = this._bindingEngine.observe(blade, prop);
+
+                // If the property is an object, we should be back metadata
+                // and the property will be reinstantiated using the metadata 
+                // on the other side
+                if (childMetadata)
+                    serializedBlade._childMetadata.push(childMetadata);
+                else
+                    // otherwise we copy of property as is
+                    serializedBlade[prop] = blade[prop];
             }
         }
 

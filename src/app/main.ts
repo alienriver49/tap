@@ -1,6 +1,6 @@
 /// <reference path="./../typings.d.ts" />
 import { Aurelia, PLATFORM, FrameworkConfiguration } from 'aurelia-framework';
-import BindingEngine from './../tapFx/binding/bindingEngine'
+import {BindingEngine} from './../tapFx/binding/bindingEngine'
 import {RpcClient} from './../tapFx/rpc/client'
 import CommandManager from './commanding/commandManager'
 import ExtensionManager from './extensionManagement/extensionManager'

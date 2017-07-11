@@ -1,4 +1,4 @@
-import DeferredPromise from './../deferredPromise';
+import DeferredPromise from './../../tapFx/core/deferredPromise'
 
 /**
  * Class for storing and transferring the results of extension commands (load, unload, etc.).

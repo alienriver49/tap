@@ -94,6 +94,7 @@ class ExtensionManager {
     }
 
     /**
+     * TODO: determine if this function (RPC subscription) is even needed, because tap-fx now publishes removeBlade for each extension blade to ensure deactivation is hit. so this may not be needed.
      * Removes an extension from the shell.
      * @param data 
      */
@@ -104,7 +105,7 @@ class ExtensionManager {
         let defer = this._extensionCommandQueue.current.defer;
         if (extension) {
             // remove the extension's blades
-            extension.removeBlades();
+            //extension.removeBlades();
             // remove the extension
             this._performRemoveExtension(extension);
 

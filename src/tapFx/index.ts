@@ -2,7 +2,7 @@
 
 import Utilities from './utilities/utilities'
 import RpcClient from './rpc/client'
-import BindingEngine from './binding/bindingEngine'
+import {BindingEngine} from './binding/bindingEngine'
 import AuthorizationEngine from './core/authorizationEngine/authorizationEngine'
 import Extension from './core/extension/extension'
 import { Aurelia } from 'aurelia-framework'; // type only

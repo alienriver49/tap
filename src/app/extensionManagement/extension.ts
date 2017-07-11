@@ -5,7 +5,7 @@ import {DefaultLoader, TextTemplateLoader} from 'aurelia-loader-default';
 import {BindingLanguage, TemplateRegistryViewStrategy, ViewEngine, ModuleAnalyzer, ViewSlot, ViewLocator, ViewFactory, ViewResources, TemplatingEngine, CompositionTransaction, CompositionEngine, View, CompositionContext, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
 import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
-import BindingEngine from './../../tapFx/binding/bindingEngine'
+import {BindingEngine} from './../../tapFx/binding/bindingEngine'
 import DeferredPromise from './../deferredPromise'
 import ConventionEngine from './conventionEngine';
 import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'

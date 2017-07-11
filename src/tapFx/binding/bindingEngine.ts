@@ -4,7 +4,7 @@ import RpcClient from './../rpc/client'
 import {ProxiedObservable, IArrayBindingSync, IArrayChangedSplice} from './proxiedObservable'
 
 @inject(Utilities, RpcClient, Factory.of(ProxiedObservable))
-class BindingEngine {
+export class BindingEngine {
     constructor(
         private _utilities: Utilities,
         private _rpc: RpcClient,
@@ -113,5 +113,3 @@ class BindingEngine {
         this._contextIDMap.clear();
     }
 }
-
-export default BindingEngine;

@@ -6,6 +6,8 @@ import Utilities from './../utilities/utilities'
 import { InternalPropertyObserver, InternalCollectionObserver, Callable} from 'aurelia-binding'; // type
 
 // first three properties are defined by Aurelia, last by us
+// Note that these are not explicitly defined in any aurelia public interface,
+// but were found via the source code, so may change in the future
 export interface IArrayChangedSplice {
     addedCount: number, 
     index: number, 
@@ -13,12 +15,22 @@ export interface IArrayChangedSplice {
     added?: Object[]
 };
 
+/**
+ * When sending an RPC message to update the contents of a synced array, this will
+ * be the data cargo
+ */
 export interface IArrayBindingSync {
     contextID: string,
     property: string,
     splices: IArrayChangedSplice[],
 }
 
+/**
+ * Built on the Aurelia ObserverLocator module, this class will watch:
+ * 1) a particular property for changes
+ * 2) If the property is an array, watch for changes to the array contents
+ * Any changes will trigger an RPC call to sync the changes to the other window
+ */
 @inject(ObserverLocator, RpcClient, Utilities)
 export class ProxiedObservable implements Callable {
     constructor(

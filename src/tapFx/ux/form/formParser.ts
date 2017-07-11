@@ -22,11 +22,12 @@ export class formParser {
 
     public static parseNode(parent: Element, node: tapcBase): void {
         let attrRegExp: RegExp = /^attribute(.*)/;
+        let privateAttrRegExp: RegExp = /^_attribute(.*)/;
         let eventRegExp: RegExp = /^event(.*)/;
         let match: RegExpExecArray | null;
         let bindRegExp = /^@(.*)/;
         let bindMatch: RegExpExecArray | null;
-        let el: HTMLElement | null = null;
+        let el: HTMLElement | null = null; 
 
         if (node instanceof tapc.tapcDiv){
             el = document.createElement('div');
@@ -42,12 +43,17 @@ export class formParser {
         }
         if (node instanceof tapc.tapcText){
             let textNode = document.createTextNode(node.attributeText);
+            if (bindMatch = bindRegExp.exec(node.attributeText))
+                textNode.data = window.TapFx.Utilities.camelCaseToHyphen('${'+ bindMatch[1] + '}');
             parent.appendChild(textNode);
         }
         if (node instanceof tapc.tapcTapTestComponent){
             el = document.createElement('tap-test-component');
         }
         if (node instanceof tapc.tapcDataTable){
+            let dataTable = node as tapc.tapcDataTable;
+            if (!dataTable.attributeColumnConfiguration)
+                throw new Error(`Column configuration must be set on tapcDataTable`);
             el = document.createElement('tap-data-table');
         }
         if (node instanceof tapc.tapcMdcCheckbox){
@@ -61,6 +67,7 @@ export class formParser {
             for (let prop in node) {
                 if (node.hasOwnProperty(prop)){
                     let value = node[prop];
+                    //if (value && ((match = attrRegExp.exec(prop)) || (match = privateAttrRegExp.exec(prop)) )){
                     if (value && (match = attrRegExp.exec(prop))){
                         // If the attribute value starts with '@', then bind it, 
                         // otherwise use literal value
@@ -74,6 +81,31 @@ export class formParser {
                         el.setAttribute(`${match[1]}.delegate`, node[prop]);
                     }
                 }
+            }
+
+            // Also check the prototype because getters are defined there
+            if (Object.getPrototypeOf(node)){
+                Object.getOwnPropertyNames(Object.getPrototypeOf(node)).forEach((prop) => {
+                    el = el as HTMLElement;
+                    if (Reflect.has(node, prop)){
+                        let value = node[prop];
+                        //if (value && ((match = attrRegExp.exec(prop)) || (match = privateAttrRegExp.exec(prop)) )){
+                        if (value && (match = attrRegExp.exec(prop))){
+                            // If the attribute value starts with '@', then bind it, 
+                            // otherwise use literal value
+                            if (bindMatch = bindRegExp.exec(value)){
+                                el.setAttribute( window.TapFx.Utilities.camelCaseToHyphen(`${match[1]}.bind`), bindMatch[1]);
+                            }else{
+                                el.setAttribute(window.TapFx.Utilities.camelCaseToHyphen(match[1]), node[prop]);
+                            }
+                        }
+                        if (value && (match = eventRegExp.exec(prop))){
+                            el.setAttribute(`${match[1]}.delegate`, node[prop]);
+                        }
+
+                    }
+                });
+
             }
 
             // Recursively parse any content

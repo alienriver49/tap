@@ -23,12 +23,12 @@ export interface IPortalBladeConfig {
 export class PortalBlade extends Blade {
     constructor(
         private _extension: Extension,
-        public config: IPortalBladeConfig
+        private _config: IPortalBladeConfig
     ) { 
         super();
         this._extensionResources = _extension.getResources();
         // set this from the config
-        this.bladeId = config.bladeId;
+        this.bladeId = _config.bladeId;
     }
 
     private _extensionResources: IExtensionResources;
@@ -53,7 +53,7 @@ export class PortalBlade extends Blade {
     public addView(): void {
         // Assume we get the directory based on the Extension routing
         let viewPath = this._extension.name + "/"; 
-        let viewWithPath = `${viewPath}${this.config.viewName}`;
+        let viewWithPath = `${viewPath}${this._config.viewName}`;
         console.log('[SHELL] addView, loading ', viewWithPath);
 
         // Insert the blade view at the element with the matching prefix + extension Id
@@ -83,13 +83,13 @@ export class PortalBlade extends Blade {
                     // Delete the link element, otherwise if this blade/view is re-imported, the compiler will fail because it will
                     // be a duplicate link element
                     // Don't really need to delete it anymore since we're using cached viewFactories, but doesn't hurt to clean up
-                    let linkToDelete = document.querySelector(`link[rel="import"][href="${viewPath}${this.config.viewName}"]`);
+                    let linkToDelete = document.querySelector(`link[rel="import"][href="${viewPath}${this._config.viewName}"]`);
                     if (linkToDelete)
                         linkToDelete.remove();
 
                     // attempt to attach conventions before compiling the view
                     let docFragment = (templateRegistryEntry.template as HTMLTemplateElement).content;
-                    if (this.config.functions.length > 0) this._extensionResources.conventionEngine.attachFunctions(docFragment, this.config.functions);
+                    if (this._config.functions.length > 0) this._extensionResources.conventionEngine.attachFunctions(docFragment, this._config.functions);
 
                     // this._viewEngine.importViewResources(["webComponents/tapComponents/tap-test-component"], ["tap-test-component"], this._viewResources).then((viewResources) => {
                     //     var dmf = viewResources;
@@ -136,7 +136,7 @@ export class PortalBlade extends Blade {
     public addView2(): void {
         // Assume we get the directory based on the Extension routing
         let viewPath = this._extension.name + "/"; 
-        let viewWithPath = `${viewPath}${this.config.viewName}`;
+        let viewWithPath = `${viewPath}${this._config.viewName}`;
         console.log('[SHELL] addView, loading ', viewWithPath);
 
         // Insert the blade view at the element with the matching prefix + extension Id
@@ -161,7 +161,7 @@ export class PortalBlade extends Blade {
                 this._extensionResources.viewResources = new ViewResources(this._extensionResources.viewResources, templateRegistryEntry.address);
                 this._extensionResources.viewResources.bindingLanguage = this._extensionResources.container.get(TemplatingBindingLanguage);
                 let viewCompiler = new ViewCompiler(this._extensionResources.container.get(TemplatingBindingLanguage) as BindingLanguage, this._extensionResources.viewResources)
-                viewFactory = viewCompiler.compile(this.config.serializedView, this._extensionResources.viewResources, ViewCompileInstruction.normal);
+                viewFactory = viewCompiler.compile(this._config.serializedView, this._extensionResources.viewResources, ViewCompileInstruction.normal);
                 templateRegistryEntry.factory = viewFactory;
             }
             this._createBindView(viewFactory, baseElement);
@@ -230,7 +230,7 @@ export class PortalBlade extends Blade {
     private _createBindView(viewFactory: ViewFactory, baseElement: Element): void {
         // create a new view and store it
         this._view = viewFactory.create(this._extensionResources.container, undefined, baseElement);
-        console.log(`[SHELL] addView: created view ${this.config.viewName} `);
+        console.log(`[SHELL] addView: created view ${this._config.viewName} `);
         // add the needed HTML nodes for the view to a bade element
         this._view.appendNodesTo(baseElement);
         // trigger an attach

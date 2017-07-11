@@ -1,7 +1,7 @@
 import { inject } from 'aurelia-dependency-injection'
 import Utilities from './../../utilities/utilities'
 import { RpcClient, RpcClientSubscription } from './../../rpc/client'
-import BindingEngine from './../../binding/bindingEngine'
+import {BindingEngine} from './../../binding/bindingEngine'
 import {formParser} from './../../ux/form/formParser'
 import BaseBlade from './../../ux/viewModels/viewModels.baseBlade' // type only
 

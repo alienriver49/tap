@@ -4,15 +4,16 @@
         <table border="1">
             <thead>
                 <tr>
-                    <th repeat.for='header of headers'>${header.header}</th>
+                    <th repeat.for='column of columnConfiguration'>${column.header}</th>
                 </tr>
             </thead>
             <tbody>
                 <tr repeat.for='row of data'>
-                    <td>${row[0]}</td>
-                    <td if.bind='row[1]'>${row[1]}</td>
-                    <td if.bind='row[2]'>${row[2]}</td>
-                    <td if.bind='row[3]'>${row[3]}</td>
+                    <td if.bind='row[columnConfiguration[0].property] !== void(0)'>${row[columnConfiguration[0].property]}</td>
+                    <td if.bind='row[columnConfiguration[1].property] !== void(0)'>${row[columnConfiguration[1].property]}</td>
+                    <td if.bind='row[columnConfiguration[2].property] !== void(0)'>${row[columnConfiguration[2].property]}</td>
+                    <td if.bind='row[columnConfiguration[3].property] !== void(0)'>${row[columnConfiguration[3].property]}</td>
+                    <td if.bind='row[columnConfiguration[4].property] !== void(0)'>${row[columnConfiguration[4].property]}</td>
                 </tr>
             </tbody>
         <table>

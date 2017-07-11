@@ -3,7 +3,6 @@ import Utilities from './../tapFx/utilities/utilities'
 import {ITapDataTableColumnConfiguration} from './../webComponents/dataTable/tap-data-table'
 import {School} from './school'
 import {Address} from './address'
-/// <reference path="node_modules/ts-nameof/ts-nameof.d.ts" />
 
 class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
     title: string;

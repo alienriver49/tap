@@ -3,23 +3,23 @@
 import Utilities from './utilities/utilities'
 import RpcClient from './rpc/client'
 import {BindingEngine} from './binding/bindingEngine'
-import AuthorizationEngine from './core/authorizationEngine/authorizationEngine'
 import Extension from './core/extension/extension'
 import { Aurelia } from 'aurelia-framework'; // type only
 import BaseBlade from './ux/viewModels/viewModels.baseBlade'
 import { bootstrap } from 'aurelia-bootstrapper'
 import {BindingLanguage } from 'aurelia-templating';
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
+import Auth from './security/auth'
 
 // Bootstrap function is called before any Aurelia 'configure' convention startup
 bootstrap((aurelia: Aurelia) => {
     aurelia.container.registerSingleton(Utilities, Utilities);
     aurelia.container.registerSingleton(RpcClient, RpcClient);
     aurelia.container.registerSingleton(BindingEngine, BindingEngine);
-    aurelia.container.registerSingleton(AuthorizationEngine, AuthorizationEngine);
     aurelia.container.registerSingleton(Extension, Extension);
     aurelia.container.registerSingleton(BindingLanguage, TemplatingBindingLanguage);
     aurelia.container.registerAlias(BindingLanguage, TemplatingBindingLanguage);
+    aurelia.container.registerSingleton(Auth, Auth);
 
     let tapFx = {
         Utilities: aurelia.container.get(Utilities),
@@ -30,6 +30,7 @@ bootstrap((aurelia: Aurelia) => {
         },
         Extension: aurelia.container.get(Extension),
         Aurelia: aurelia,
+        Auth: aurelia.container.get(Auth),
     };
     window.TapFx = tapFx;
 

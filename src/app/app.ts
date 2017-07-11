@@ -16,11 +16,10 @@ export class App {
             console.log('[SHELL] Window onload triggered.')
             this.router.activate();
         }
-
         this.fetchConfig = fetchConfig;
     } 
 
-    activate(){
+    activate() {
         this.fetchConfig.configure();
     }
 }

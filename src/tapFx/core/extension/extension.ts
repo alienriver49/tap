@@ -1,5 +1,6 @@
 import { inject } from 'aurelia-dependency-injection'
 import BladeEngine from './bladeEngine'
+import DeferredPromise from './../../core/deferredPromise'
 import Utilities from './../../utilities/utilities'
 import { RpcClient, RpcClientSubscription } from './../../rpc/client'
 import {BindingEngine} from './../../binding/bindingEngine'
@@ -60,23 +61,49 @@ class Extension {
     private _onRemoveExtension(data: any): void {
         console.log('[TAP-FX] Removing extension with id of: ' + this._rpc.InstanceId);
 
-        // TODO: need to make sure these are done in sequence (so the most recent blade is removed before the next blade)
+        // the removal chain keeps track of the removal of blades in sequential order
+        let removalChain = Promise.resolve<boolean>(true);
         // loop through the blade mappings in order of the blade sequence
-        var bladeMappings = [...this._bladeInfoMap.entries()].sort((a, b) => { return a[1].bladeSequence - b[1].bladeSequence; });
+        let bladeMappings = [...this._bladeInfoMap.entries()].sort((a, b) => { return b[1].bladeSequence - a[1].bladeSequence; });
         bladeMappings.forEach((bladeMapping) => {
-            this.removeBlade(bladeMapping[0]);
+            console.log(bladeMapping[1]);
+            removalChain = removalChain.then((result) => {
+                // if the result was true, means the last blade was removed
+                if (result)
+                    return this._removeBlade(bladeMapping[0]);
+                else
+                    return result;
+            });
         });
 
-        // TODO: this should only happen once the last blade is removed
-        this._rpcSubscriptions.forEach((subscription) => {
-            subscription.unsubscribe();
-        });
+        // after the final blade
+        removalChain = removalChain.then((result) => {
+            // if all blades were removed we will unsubscribe from 
+            if (result) {
+                this._rpcSubscriptions.forEach((subscription) => {
+                    subscription.unsubscribe();
+                });
 
-        // publish to the shell that this extension is ready to be removed
+                // publish to the shell that this extension is ready to be removed.
+                let returnData: Object = {
+                    extensionId: this._rpc.InstanceId
+                };
+                this._rpc.publish('shell.removeExtension', '', returnData);
+            } else
+                this._removeExtensionFailed();
+            
+            return result;
+        });
+    }
+
+    /**
+     * Publish to the shell that the removing of the extension failed.
+     */
+    private _removeExtensionFailed() {
         let returnData: Object = {
             extensionId: this._rpc.InstanceId
         };
-        this._rpc.publish('shell.removeExtension', '', returnData);
+        this._rpc.publish('shell.removeExtensionFailed', '', returnData);
     }
 
     /**
@@ -88,7 +115,7 @@ class Extension {
     }
 
     /**
-     * Attempts to add a blade to an extension. Uses the bladeEngine to perform blade activation.
+     * Attempts to add a blade to an extension. Calls activation lifecycle hooks.
      * @param blade 
      * @param viewName 
      */
@@ -129,22 +156,30 @@ class Extension {
 
     /**
      * Function which handles when an add blade event has failed. Publishes back to the shell that the add of a blade failed.
-     * @param message 
      */
-    private _addBladeFailed(message?: string): void {
+    private _addBladeFailed(): void {
         let returnData: Object = {
             extensionId: this._rpc.InstanceId
         };
-        if (message)
-            console.log(`[addBladeFailed]: message`)
         this._rpc.publish('shell.addBladeFailed', '', returnData);
     }
 
     /**
-     * Attempts to remove a blade from an extension. Uses the bladeEngine to perform blade deactivation.
+     * Attempts to remove a blade from an extension. Calls deactivation lifecycle hooks.
      * @param blade
      */
     removeBlade(blade: BaseBlade): void {
+        this._removeBlade(blade); 
+    }
+
+    /**
+     * Attempts to remove a blade from an extension. Wrapped by removeBlade as to not expose too much functionality to the extension developer.
+     * @param blade
+     * @param manualRemoval Whether the blade is being removed manually (by user interaction).
+     */
+    private _removeBlade(blade: BaseBlade, manualRemoval: boolean = false): Promise<boolean> {
+        let defer = new DeferredPromise<boolean>();
+
         let bladeInfo = this._bladeInfoMap.get(blade);
         if (!bladeInfo)
             throw Error("Couldn't find blade id associated with passed blade.");
@@ -153,19 +188,23 @@ class Extension {
         let canDeactivate = this._bladeEngine.canDeactivate(blade);
         canDeactivate.then((result) => {
             if (result) {
-                this._performRemoveBlade(blade, bladeId);
+                this._performRemoveBlade(blade, bladeId, manualRemoval);
             } else {
                 this._removeBladeFailed();
             }
+            defer.resolve(result);
         });
+
+        return defer.promise;
     }
 
     /**
      * Function which performs the removal of a blade (since deactivation was successful). Publishes back to the shell that the blade was removed.
      * @param blade 
      * @param bladeId 
+     * @param manualRemoval 
      */
-    private _performRemoveBlade(blade: BaseBlade, bladeId: string) {
+    private _performRemoveBlade(blade: BaseBlade, bladeId: string, manualRemoval: boolean) {
         // unobserve this blade
         this._bindingEngine.unobserve(blade);
 
@@ -180,7 +219,8 @@ class Extension {
         // publish to the shell that this blade is ready to be removed
         let returnData: Object = {
             extensionId: this._rpc.InstanceId,
-            bladeId: bladeId
+            bladeId: bladeId,
+            manualRemoval: manualRemoval
         };
         this._rpc.publish('shell.removeBlade', '', returnData);
     }
@@ -257,11 +297,12 @@ class Extension {
         // convention - add a subscription for the onButtonRemoveClick which calls the removeBlade function
         let funcName = 'onButtonRemoveClick'
         let subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + funcName, (data) => {
-            // call the function and get the result
+            // call the _removeBlade function as a manual removal
             console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + funcName);
-            let result = this.removeBlade(blade);
+            this._removeBlade(blade, true);
 
-            // publish the result back to the shell
+            // publish a void result back to the shell so it doesn't keep listening
+            let result = undefined;
             console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Publishing result from function: ` + funcName);
             this._rpc.publish('shell.' + bladeId + '.' + funcName, '', result);
         });
@@ -295,7 +336,8 @@ class Extension {
      * Get the next sequence for blade ordering.
      */
     private _getNextBladeSequence(): number {
-        return Math.max.apply(null, [...this._bladeInfoMap.values()].map((bi) => { return bi.bladeSequence })) + 1;
+        let bladeMappings = [...this._bladeInfoMap.values()];
+        return bladeMappings.length > 0 ? (Math.max.apply(null, bladeMappings.map((bi) => { return bi.bladeSequence })) + 1) : 1;
     }
 }
 

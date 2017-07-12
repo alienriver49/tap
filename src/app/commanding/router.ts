@@ -14,19 +14,32 @@ class Router {
         private _eventAggregator: EventAggregator,
         private _commandManager: CommandManager
     ) {
+        this._reset();
     }
 
     /**
-     * Rerouting subscription which allows other parts of the shell to reroute.
+     * Root url fragment.
      */
-    private _rerouteSubscription: Subscription;
+    private _rootUrlFragment = '/';
 
     /**
      * Flag for if the router active.
      */
-    isActive: boolean = false;
-    private _prevUrlFragment: string = '/';
-    private _currUrlFragment: string = '/';
+    isActive: boolean;
+
+    /**
+     * Previous url fragment.
+     */
+    private _prevUrlFragment: string;
+    /**
+     * Current url fragment.
+     */
+    private _currUrlFragment: string;
+
+    /**
+     * Subscriptions which the router is subscribed to.
+     */
+    private _subscriptions: Subscription[];
 
     /**
      * Activate the router.
@@ -41,22 +54,26 @@ class Router {
         this._history.activate({routeHandler: this._loadUrl.bind(this)});
         this._history.setTitle('Titanium Application Portal');
 
-        this._rerouteSubscription = this._eventAggregator.subscribe('shell.router.reroute', (response: IRouterReroute) => {
+        // create a reroute subscription
+        let subscription = this._eventAggregator.subscribe('shell.router.reroute', (response: IRouterReroute) => {
             console.log('[SHELL] Router rerouting to url fragment: ' + response.urlFragment);
-            // overwrite these for now
-            this._prevUrlFragment = this._currUrlFragment = response.urlFragment;
-            // navigate to the urlFragment and don't trigger the routeHandler (which would trigger our _loadUrl function)
-            this._history.navigate(response.urlFragment, { trigger: false });
+            // overwrite these to the root since we want to reroute from root
+            this._prevUrlFragment = this._currUrlFragment = this._rootUrlFragment;
+            // navigate to the urlFragment and don't trigger the routeHandler by default (which would trigger our _loadUrl function)
+            let triggerRouter = false;
+            this._history.navigate(response.urlFragment, { trigger: triggerRouter });
         });
+        this._subscriptions.push(subscription);
     }
 
     /**
      * Deactivate the router.
      */
     deactivate(): void {
-        this.isActive = false;
+        this._reset();
+
         this._history.deactivate();
-        this._rerouteSubscription.dispose();
+        this._subscriptions.forEach((subscription) => { subscription.dispose(); });
     }
 
     /**
@@ -71,6 +88,15 @@ class Router {
         this._commandManager.handleRouteChange(this._prevUrlFragment, this._currUrlFragment);
 
         return true;
+    }
+
+    /**
+     * Reset the router variables.
+     */
+    private _reset(): void {
+        this.isActive = false;
+        this._prevUrlFragment = this._currUrlFragment = this._rootUrlFragment;
+        this._subscriptions = [];
     }
 }
 

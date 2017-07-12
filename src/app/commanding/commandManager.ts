@@ -67,7 +67,7 @@ class CommandManager {
     }
 
     /**
-     * Returns a promise which will load an extension using the passed command.
+     * Call the extension manager to load an extension using the passed command.
      * @param command 
      */
     private _loadExtension(command: Command): void {
@@ -76,7 +76,7 @@ class CommandManager {
     }
 
     /**
-     * Returns a promise which will update an extension's parameters using the passed command.
+     * Call the extension manager to update an extension's parameters using the passed command.
      * @param command 
      */
     private _updateExtensionParams(command: Command): void {
@@ -85,7 +85,7 @@ class CommandManager {
     }
 
     /**
-     * Returns a promise which will unload an extension using the passed command.
+     * Call the extension manager to unload an extension using the passed command.
      * @param command 
      */
     private _unloadExtension(command: Command): void {

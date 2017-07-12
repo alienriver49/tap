@@ -7,7 +7,7 @@ class ExtensionLoaderEngine {
      * Function for getting an extension JS bundle based on convention and the IIS file layout.
      * @param extensionName 
      */
-    private getExtensionBundle(extensionName: string): string {
+    private _getExtensionBundle(extensionName: string): string {
         return 'tap' + window.TapFx.Utilities.upperCaseFirstChar(extensionName) + '-bundle.js';
     }
 
@@ -22,7 +22,7 @@ class ExtensionLoaderEngine {
             let extensionScripts = [
                 'common-bundle.js',
                 'tapFx-bundle.js',
-                this.getExtensionBundle(extensionName)
+                this._getExtensionBundle(extensionName)
             ];
 
             // create an iframe element for the extension

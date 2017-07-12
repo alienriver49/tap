@@ -3,7 +3,6 @@ import { EventAggregator } from 'aurelia-event-aggregator';
 import { ExtensionCommandResult, ExtensionCommandQueue }  from './extensionCommandQueue'
 import ExtensionLoaderEngine from './extensionLoaderEngine'
 import Extension from './extension'
-//import DeferredPromise from './../deferredPromise'
 import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
 
 @inject(EventAggregator, ExtensionCommandQueue, ExtensionLoaderEngine, Factory.of(Extension))
@@ -21,6 +20,9 @@ class ExtensionManager {
         this._rpcSubscriptions.push(subscription);
 
         subscription = window.TapFx.Rpc.subscribe('shell.removeExtension', this._onRemoveExtension.bind(this));
+        this._rpcSubscriptions.push(subscription);
+
+        subscription = window.TapFx.Rpc.subscribe('shell.removeExtensionFailed', this._onRemoveExtensionFailed.bind(this));
         this._rpcSubscriptions.push(subscription);
 
         subscription = window.TapFx.Rpc.subscribe('shell.removeBlade', this._onRemoveBlade.bind(this));
@@ -87,14 +89,15 @@ class ExtensionManager {
                 if (defer) defer.resolve({ successful: false, message: 'extension load failed'});
 
                 // since the extension failed to load we will clear the queue and reroute to the portal index. note: this could go to the previous extension in the future
+                let urlFragment = '/';
                 this._extensionCommandQueue.clear();
-                this._eventAggregator.publish('shell.router.reroute', { urlFragment: '/' });
+                this._eventAggregator.publish('shell.router.reroute', { urlFragment: urlFragment });
             }
         }
     }
 
     /**
-     * Removes an extension from the shell.
+     * Function called from the remove extension RPC subscription. This is called when a extension has been successfully removed from tap-fx.
      * @param data 
      */
     private _onRemoveExtension(data: any): void {
@@ -103,13 +106,33 @@ class ExtensionManager {
         let extension = this._findExtension(extensionId);
         let defer = this._extensionCommandQueue.current.defer;
         if (extension) {
-            // remove the extension's blades
-            extension.removeBlades();
-            // remove the extension
+            // remove the extension (blades are taken care of by tap-fx and the remove blade RPC subscription)
             this._performRemoveExtension(extension);
 
             console.log('[SHELL] Finish unloading extension: ' + extension.name);
             if (defer) defer.resolve({ successful: true, message: 'extension unloaded'});
+        } else {
+            if (defer) defer.resolve({ successful: false, message: 'extension unload failed: extension not found'});
+        }
+    }
+
+    /**
+     * Function called from the remove extension failed RPC subscription. This is called when a extension failed to be removed from tap-fx.
+     * @param data 
+     */
+    private _onRemoveExtensionFailed(data: any): void {
+        console.log('[SHELL] Received removeExtensionFailed message: ', data);
+        let extensionId = data.extensionId;
+        let extension = this._findExtension(extensionId);
+        let defer = this._extensionCommandQueue.current.defer;
+        if (extension) {
+            // TODO: this needs to redirect to the previous URL since the extension didn't unload (so the URL needs to reflect the correct location)
+            //let urlFragment = '/';
+            this._extensionCommandQueue.clear();
+            //this._eventAggregator.publish('shell.router.reroute', { urlFragment: urlFragment });
+
+            console.log('[SHELL] Failed unloading extension: ' + extension.name);
+            if (defer) defer.resolve({ successful: false, message: 'extension unload failed'});
         } else {
             if (defer) defer.resolve({ successful: false, message: 'extension unload failed: extension not found'});
         }
@@ -129,13 +152,13 @@ class ExtensionManager {
 
             console.log('[SHELL] Finish removing blade for extension: ' + extension.name);
             // if there are no more blades, remove the extension
-            if (extension.blades.length === 0) {
+            if (data.manualRemoval && extension.blades.length === 0) {
                 console.log('[SHELL] No more blades left - unloading extension: ' + extension.name);
                 // remove the extension
                 this._performRemoveExtension(extension);
 
                 this._extensionCommandQueue.clear();
-                this._eventAggregator.publish('shell.router.reroute', { urlFragment: '/' })
+                this._eventAggregator.publish('shell.router.reroute', { urlFragment: '/' });
             }
         } else {
             // 
@@ -193,6 +216,12 @@ class ExtensionManager {
         }
     }
 
+    /**
+     * Queues an update extension params command.
+     * @param extensionId 
+     * @param params 
+     * @param queryParams 
+     */
     private _queueUpdateExtensionParams(extensionId: string, params: any[], queryParams: Object): void {
         this._extensionCommandQueue.queueCommand(extensionId, () => {
             // update params for that extension
@@ -209,7 +238,7 @@ class ExtensionManager {
      * Unload an extension.
      * @param extensionName 
      */
-    unloadExtension(extensionName: string):void {
+    unloadExtension(extensionName: string): void {
         let extensionId = this._extensionIdMap.get(extensionName);
         if (extensionId) {
             this._extensionCommandQueue.queueCommand(extensionId, () => {

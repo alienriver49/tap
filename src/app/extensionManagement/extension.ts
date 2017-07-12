@@ -6,7 +6,7 @@ import {BindingLanguage, TemplateRegistryViewStrategy, ViewEngine, ModuleAnalyze
 import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 import {BindingEngine, IChildMetadata, ISerializedObject} from './../../tapFx/binding/bindingEngine'
-import DeferredPromise from './../deferredPromise'
+import DeferredPromise from './../../tapFx/core/deferredPromise'
 import ConventionEngine from './conventionEngine';
 import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
 

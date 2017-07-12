@@ -4,6 +4,7 @@ export interface IAddressConfig {
     town?: string;
     state?: string;
     zip?: string; 
+    address?: Address;
 }
 
 export class Address {
@@ -12,6 +13,7 @@ export class Address {
     public town: string;
     public state: string;
     public zip: string; 
+    public address: Address;
 
     constructor(config?: IAddressConfig) {
         if (config === void 0) { config = {}; }

@@ -233,10 +233,10 @@ class Extension {
 
     private _registerBladeBindings(blade: BaseBlade): any {
 
-        let bladeID = this._utilities.newGuid();
-        this._bindingEngine.resolveId(blade, bladeID);
+        let bladeId = this._bindingEngine.resolveId(blade);
 
         let serializedBlade: ISerializedObject = {_childMetadata: [], _syncObjectContextId: ''};
+        let refIds: Set<string> = new Set<string>(); 
 
         for (let prop in blade) {
             // only register blade's own properties and not those on the prototype chain
@@ -244,10 +244,11 @@ class Extension {
             // skip Functions
             if (blade.hasOwnProperty(prop) &&
                 prop !== 'form' &&  // don't observe form
+                !(blade[prop] instanceof Map) && !(blade[prop] instanceof Set) &&  // skip Maps and Sets for now
                 prop.charAt(0) !== '_' &&
                 this._utilities.classOf(blade[prop]) !== '[object Function]'
             ) {
-                let childMetadata = this._bindingEngine.observe(blade, prop);
+                let childMetadata = this._bindingEngine.observe(blade, prop, refIds);
 
                 // If the property is an object, we should be back metadata
                 // and the property will be reinstantiated using the metadata 
@@ -261,7 +262,7 @@ class Extension {
         }
 
         return {
-            bladeId: bladeID,
+            bladeId: bladeId,
             serializedBlade: serializedBlade
         }
     }

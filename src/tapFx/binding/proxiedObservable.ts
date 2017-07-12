@@ -74,11 +74,7 @@ export class ProxiedObservable implements Callable {
         if (!this._canObserveProperty)
             return;
         if (newValue === oldValue) return;
-        // TODO: observing / syncing of objects
-        if (JSON.stringify(newValue) === JSON.stringify(oldValue)) 
-            return; // temp, for object observation to stop an infinite loop from happening. only works if the order of properties is always the same
 
-        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Property has changed from: "${oldValue}" to: "${newValue}"`);
         var data: IPropertyBindingSync = {
             contextID: this._contextID,
             property: this._property,
@@ -88,11 +84,21 @@ export class ProxiedObservable implements Callable {
         } 
 
         // TODO: dispose of observers on properties where oldValue is an object
-
         // If the new value is an object, we need to recursively observe it too
         // and pass appropriate metadata
         if (this._utilities.isObject(newValue)){
-            let syncValue = this._bindingEngine.observeObject(newValue, this._extensionId);
+            // Check if objects have changed
+            // The old value should have an existing context Id, so if the new value
+            // is the same object, it should have the same context Id and no change
+            if (this._utilities.isObject(oldValue)){
+                let oldContextId = this._bindingEngine.getIdByContext(oldValue);
+                let newContextId = this._bindingEngine.getIdByContext(newValue);
+                if (oldContextId && newContextId && oldContextId === newContextId)
+                    return;
+            }
+
+            let refIds: Set<string> = new Set<string>();
+            let syncValue = this._bindingEngine.observeObject(newValue, this._contextID, refIds, this._extensionId);
             if (syncValue){
                 data.newValue = syncValue;
                 // Need to pass the context Id for the new object as well
@@ -100,6 +106,7 @@ export class ProxiedObservable implements Callable {
             }
         }
 
+        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Property has changed from: "${oldValue}" to: "${newValue}"`);
         this._rpc.publish('tapfx.propertyBindingSync', this._extensionId, data);
 
         // check for a convention function for handling property changed events. note: Aurelia can do this but requires an @observable decorator on the variable (creates a getter / setter) and that currently doesn't work with our function serialization
@@ -191,6 +198,7 @@ export class ProxiedObservable implements Callable {
         if (disableObservation){
             // Flush the recent changes and re-enable observation
             // We're using the unexposed taskQueue property on the ModifyCollectionObserver
+            // TODO add checks to ensure there is a taskQueue on the _observer 
             ((this._observer as any).taskQueue as TaskQueue).flushMicroTaskQueue();
             this._canObserveProperty= true;
         }
@@ -225,6 +233,7 @@ export class ProxiedObservable implements Callable {
         if (disableObservation){
             // Flush the recent changes and re-enable observation
             // We're using the unexposed taskQueue property on the SetterObserver 
+            // TODO add checks to ensure there is a taskQueue on the _collectionObserver
             ((this._collectionObserver as any).taskQueue as TaskQueue).flushMicroTaskQueue();
             this._canObserveArray = true;
         }

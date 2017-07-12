@@ -5,8 +5,8 @@ import {DefaultLoader, TextTemplateLoader} from 'aurelia-loader-default';
 import {BindingLanguage, TemplateRegistryViewStrategy, ViewEngine, ModuleAnalyzer, ViewSlot, ViewLocator, ViewFactory, ViewResources, TemplatingEngine, CompositionTransaction, CompositionEngine, View, CompositionContext, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
 import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
-import {BindingEngine, IChildMetadata, ISerializedObject} from './../../tapFx/binding/bindingEngine'
 import DeferredPromise from './../../tapFx/core/deferredPromise'
+import {BindingEngine, IChildMetadata, ISerializedObject, IUnresolvedRef} from './../../tapFx/binding/bindingEngine'
 import ConventionEngine from './conventionEngine';
 import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
 
@@ -20,7 +20,6 @@ export interface IExtensionResources {
     defaultLoader: DefaultLoader;
     conventionEngine: ConventionEngine;
 }
-
 
 @inject(Container, ViewResources, Loader, TextTemplateLoader, BindingEngine, ConventionEngine, Factory.of(PortalBlade))
 class Extension {
@@ -70,8 +69,21 @@ class Extension {
         }
     }
 
-    private _registerBladeBindings(objectID: string, obj: PortalBlade | ISerializedObject, parentID?: string): void {
-        this._bindingEngine.resolveId(obj, objectID);
+    private _seen: Object[] = [];
+    private _seenFlag: string = '$$__checked__$$';
+    private _unresolvedRefs: IUnresolvedRef[] = [];
+
+    private _registerBladeBindings(objectID: string, obj: PortalBlade | ISerializedObject, parentContextId?: string): void {
+        if (!parentContextId){
+            this._seen = [];
+            this._unresolvedRefs = [];
+        }
+        
+        // If this object has already been seen, don't dive in again
+        if (obj.hasOwnProperty(this._seenFlag))
+            return ;        
+
+        this._bindingEngine.resolveId(obj, objectID, parentContextId);
 
         // Recursively register any child objects first
         if (obj.hasOwnProperty('_childMetadata')){
@@ -83,15 +95,38 @@ class Extension {
                     // If so, we assume it's being observed and assign that to the parent object
                     obj[metadata.property] = existingChildObject;
                 }else{
-                    let childObject: ISerializedObject = metadata.value;
-                    this._registerBladeBindings(metadata.contextId, childObject, metadata.parentId);
-                    // And reinstantiate them on the parent object
-                    obj[metadata.property] = childObject;
+                    // If there is a value for the object, assign it
+                    if (metadata.value){
+                        let childObject: ISerializedObject = metadata.value;
+                        // Must be an object, so add a temporary flag property to objects to prevent infinite loop from circular references
+                        obj[this._seenFlag] = true;
+                        this._seen.push(obj);
+
+                        this._registerBladeBindings(metadata.contextId, childObject, metadata.parentId);
+                        // And reinstantiate them on the parent object
+                        obj[metadata.property] = childObject;
+                    }else{
+                        // Otherwise reference will be resolved later
+                        this._unresolvedRefs.push({context: obj, property: metadata.property, refId: metadata.contextId});
+                    }
                 }
             });
         }
 
-        if (!parentID){
+        if (!parentContextId){
+            // First resolve the unresolved references
+            this._unresolvedRefs.forEach((ref) => {
+                let existingObject = this._bindingEngine.getContextById(ref.refId);
+                if (!existingObject)
+                    throw new Error(`SHELL: Cannot resolve a reference for context Id: ${ref.refId}`);
+                ref.context[ref.property] = existingObject;
+            })
+            // Remove the temporary flags from the objects
+            this._seen.forEach((o) => {
+                delete o[this._seenFlag];
+            });
+
+            let refIds: Set<string> = new Set<string>(); 
             for (let prop in obj) {
                 // only register blade's own properties and not those on the prototype chain
                 // anything starting with an underscore is treated as a private property and is not watched for changes
@@ -100,7 +135,7 @@ class Extension {
                     prop.charAt(0) !== '_' &&
                     window.TapFx.Utilities.classOf(obj[prop]) !== '[object Function]'
                 ) {
-                    this._bindingEngine.observe(obj, prop, this.id);
+                    this._bindingEngine.observe(obj, prop, refIds, this.id, parentContextId);
                 }
             }
         }

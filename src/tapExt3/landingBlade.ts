@@ -9,7 +9,8 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
     display: string;
     raised: boolean = false;
     clearText: boolean = false;
-    address: Address = new Address({line1: '100 Main St', town: 'Portland', state: 'ME', zip: '04102'});
+    address: Address;
+    address2: Address;
     columnConfig: ITapDataTableColumnConfiguration[] = [
         {header: 'School', property: 'name'},
         {header: 'Grades', property: 'grades'},
@@ -21,6 +22,10 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         super();
         this._buildForm();
         this._changeDataSet();
+        this.address = new Address({line1: '100 Main St', town: 'Portland', state: 'ME', zip: '04102'});
+        this.address2 = this.address; 
+        this.address.address = this.address2;
+        this.address2.address = this.address;
     }
 
     private _buildForm(): void {
@@ -62,13 +67,21 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         this.form.content.push(testComp);
         this.form.content.push(new tapfx.tapcLineBreak());
 
-        this.form.content.push(new tapfx.tapcText({text: 'Test Address child object'}));
+        this.form.content.push(new tapfx.tapcText({text: 'Test Address1 child object'}));
         this.form.content.push(new tapfx.tapcLineBreak());
         this.form.content.push(new tapfx.tapcText({text: '@address.line1'}));
         this.form.content.push(new tapfx.tapcLineBreak());
         this.form.content.push(new tapfx.tapcText({text: '@address.town'}));
         this.form.content.push(new tapfx.tapcText({text: '@address.state'}));
         this.form.content.push(new tapfx.tapcText({text: '@address.zip'}));
+        this.form.content.push(new tapfx.tapcLineBreak());
+        this.form.content.push(new tapfx.tapcText({text: 'Test Address2 child object (same object as Address1)'}));
+        this.form.content.push(new tapfx.tapcLineBreak());
+        this.form.content.push(new tapfx.tapcText({text: '@address2.line1'}));
+        this.form.content.push(new tapfx.tapcLineBreak());
+        this.form.content.push(new tapfx.tapcText({text: '@address2.town'}));
+        this.form.content.push(new tapfx.tapcText({text: '@address2.state'}));
+        this.form.content.push(new tapfx.tapcText({text: '@address2.zip'}));
         this.form.content.push(new tapfx.tapcLineBreak());
         let updateChildObject = new tapfx.tapcButton({
             id: 'update-child-button',
@@ -225,10 +238,13 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
 
     _childObjToggle: boolean = true;
     public onChangeChildObjectClick(): void {
-        if (this._childObjToggle)
-            this.address = new Address({line1: '370 US Route 1', town: 'Falmouth', state: 'ME', zip: '04096'});
-        else
-            this.address = new Address({line1: '100 Main St', town: 'Portland', state: 'ME', zip: '04102'});
+        if (this._childObjToggle){
+            this.address2 = new Address({line1: '370 US Route 1', town: 'Falmouth', state: 'ME', zip: '04096'});
+            this.address = this.address2;
+        }else{
+            this.address2 = new Address({line1: '100 Main St', town: 'Portland', state: 'ME', zip: '04102'});
+            this.address = this.address2;
+        }
         this._childObjToggle = !this._childObjToggle;
     }
 }

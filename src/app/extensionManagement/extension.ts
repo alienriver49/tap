@@ -7,7 +7,7 @@ import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 import DeferredPromise from './../../tapFx/core/deferredPromise'
 import {BindingEngine, IChildMetadata, ISerializedObject, IUnresolvedRef} from './../../tapFx/binding/bindingEngine'
-import ConventionEngine from './conventionEngine';
+import ConventionEngine from './../../tapFx/ux/conventionEngine';
 import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
 
 export interface IExtensionResources {
@@ -22,7 +22,7 @@ export interface IExtensionResources {
 }
 
 @inject(Container, ViewResources, Loader, TextTemplateLoader, BindingEngine, ConventionEngine, Factory.of(PortalBlade))
-class Extension {
+export class Extension {
     constructor(
         _globalContainer: Container,
         _globalViewResources: ViewResources,

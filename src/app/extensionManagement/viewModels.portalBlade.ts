@@ -1,6 +1,5 @@
 import { inject, PLATFORM, Aurelia} from 'aurelia-framework';
-import ConventionEngine from './conventionEngine';
-import {IExtensionResources } from './extension';
+import {IExtensionResources, Extension } from './extension';
 import {Container, Factory} from 'aurelia-dependency-injection';
 import {Loader, TemplateRegistryEntry} from 'aurelia-loader';
 import {BindingLanguage, TemplateRegistryViewStrategy, ViewEngine, ViewSlot, ViewLocator, ViewFactory, ViewResources, TemplatingEngine, CompositionTransaction, CompositionEngine, View, CompositionContext, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
@@ -8,9 +7,7 @@ import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 import {TextTemplateLoader, DefaultLoader} from 'aurelia-loader-default'
 import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 
-import Blade from './../../tapFx/ux/viewModels/viewModels.baseBlade' 
-import Extension from './extension'
-
+import Blade from './../../tapFx/ux/viewModels/viewModels.baseBlade'
 
 export interface IPortalBladeConfig {
     bladeId: string;

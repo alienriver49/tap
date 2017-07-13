@@ -1,5 +1,5 @@
 import {tapcBase, ITapcBase} from './tapcBase'
-import {ITapDataTableColumnConfiguration} from './../../../../webComponents/dataTable/tap-data-table'
+import {ITapDataTableColumnConfiguration} from './../../../webComponents/dataTable/tap-data-table'
 
 export interface ITapcDataTableConfig extends ITapcBase {
     attributeData?: string;

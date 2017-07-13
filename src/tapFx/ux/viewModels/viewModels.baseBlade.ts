@@ -1,11 +1,11 @@
-import {tapcForm} from './../form/tapcForm'
+import {tapcBase} from './../components/tapcBase'
 
 class BaseBlade {
     constructor() { }
 
     title: string;
     subtitle: string;
-    form: tapcForm;
+    content: tapcBase[] = [];
 
     canActivate?(): boolean|Promise<boolean>/*|PromiseLike<boolean>*/;
     activate?(): Promise<void>/*|PromiseLike<void>|IObservable*/|void;

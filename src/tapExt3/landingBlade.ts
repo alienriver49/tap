@@ -1,4 +1,4 @@
-import * as tapfx from './../tapFx/ux/form/formModules'
+import * as tapfx from './../tapFx/ux/tapcModules'
 import Utilities from './../tapFx/utilities/utilities'
 import {ITapDataTableColumnConfiguration} from './../webComponents/dataTable/tap-data-table'
 import {School} from './school'
@@ -20,7 +20,7 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
 
     constructor() {
         super();
-        this._buildForm();
+        this._buildContent();
         this._changeDataSet();
         this.address = new Address({line1: '100 Main St', town: 'Portland', state: 'ME', zip: '04102'});
         this.address2 = this.address; 
@@ -36,9 +36,8 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         this.titleChanged(this.title, "");
     }
 
-    private _buildForm(): void {
-        this.form =  new tapfx.tapcForm();
-        this.form.content.push(new tapfx.tapcLineBreak());
+    private _buildContent(): void {
+        this.content.push(new tapfx.tapcLineBreak());
         let div = new tapfx.tapcDiv({id: 'ext3-div'});
         div.content.push(new tapfx.tapcLabel(
             {content: [new tapfx.tapcText({text: 'Extension 3 with common and material components'})]}
@@ -55,8 +54,8 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
             }
         ));
         div.content.push(inputDiv);
-         this.form.content.push(div);
-        this.form.content.push(new tapfx.tapcLineBreak());
+        this.content.push(div);
+        this.content.push(new tapfx.tapcLineBreak());
 
         let label2 = new tapfx.tapcLabel();
         label2.content.push(new tapfx.tapcMdcCheckbox({
@@ -65,32 +64,32 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         label2.content.push(new tapfx.tapcDiv({
             content: [new tapfx.tapcText({text: 'Raise button'})]
         }));
-        this.form.content.push(label2);
+        this.content.push(label2);
         
         let testComp = new tapfx.tapcTapTestComponent({
             display: '@display',
             clearText: '@clearText',
             raised: '@raised'
         });
-        this.form.content.push(testComp);
-        this.form.content.push(new tapfx.tapcLineBreak());
+        this.content.push(testComp);
+        this.content.push(new tapfx.tapcLineBreak());
 
-        this.form.content.push(new tapfx.tapcText({text: 'Test Address1 child object'}));
-        this.form.content.push(new tapfx.tapcLineBreak());
-        this.form.content.push(new tapfx.tapcText({text: '@address.line1'}));
-        this.form.content.push(new tapfx.tapcLineBreak());
-        this.form.content.push(new tapfx.tapcText({text: '@address.town'}));
-        this.form.content.push(new tapfx.tapcText({text: '@address.state'}));
-        this.form.content.push(new tapfx.tapcText({text: '@address.zip'}));
-        this.form.content.push(new tapfx.tapcLineBreak());
-        this.form.content.push(new tapfx.tapcText({text: 'Test Address2 child object (same object as Address1)'}));
-        this.form.content.push(new tapfx.tapcLineBreak());
-        this.form.content.push(new tapfx.tapcText({text: '@address2.line1'}));
-        this.form.content.push(new tapfx.tapcLineBreak());
-        this.form.content.push(new tapfx.tapcText({text: '@address2.town'}));
-        this.form.content.push(new tapfx.tapcText({text: '@address2.state'}));
-        this.form.content.push(new tapfx.tapcText({text: '@address2.zip'}));
-        this.form.content.push(new tapfx.tapcLineBreak());
+        this.content.push(new tapfx.tapcText({text: 'Test Address1 child object'}));
+        this.content.push(new tapfx.tapcLineBreak());
+        this.content.push(new tapfx.tapcText({text: '@address.line1'}));
+        this.content.push(new tapfx.tapcLineBreak());
+        this.content.push(new tapfx.tapcText({text: '@address.town'}));
+        this.content.push(new tapfx.tapcText({text: '@address.state'}));
+        this.content.push(new tapfx.tapcText({text: '@address.zip'}));
+        this.content.push(new tapfx.tapcLineBreak());
+        this.content.push(new tapfx.tapcText({text: 'Test Address2 child object (same object as Address1)'}));
+        this.content.push(new tapfx.tapcLineBreak());
+        this.content.push(new tapfx.tapcText({text: '@address2.line1'}));
+        this.content.push(new tapfx.tapcLineBreak());
+        this.content.push(new tapfx.tapcText({text: '@address2.town'}));
+        this.content.push(new tapfx.tapcText({text: '@address2.state'}));
+        this.content.push(new tapfx.tapcText({text: '@address2.zip'}));
+        this.content.push(new tapfx.tapcLineBreak());
         let updateChildObject = new tapfx.tapcButton({
             id: 'update-child-button',
             type: 'button',
@@ -106,8 +105,8 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         let div3 = new tapfx.tapcDiv({
             content: [updateChildObject, changeChildObject]
         })
-        this.form.content.push(div3);
-        this.form.content.push(new tapfx.tapcLineBreak());
+        this.content.push(div3);
+        this.content.push(new tapfx.tapcLineBreak());
 
         let addButton = new tapfx.tapcButton({
             id: 'add-button',
@@ -136,15 +135,15 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         let div2 = new tapfx.tapcDiv({
             content: [addButton, removeButton, changeData, testButton]
         })
-        this.form.content.push(new tapfx.tapcText({text: 'Test syncing changing array contents and changing array'}));
-        this.form.content.push(div2);
+        this.content.push(new tapfx.tapcText({text: 'Test syncing changing array contents and changing array'}));
+        this.content.push(div2);
 
         let dataTable = new tapfx.tapcDataTable({
             id: 'test-table',
             attributeData: '@data'
         })
         dataTable.setColumnConfiguration(this.columnConfig, '@columnConfig');
-        this.form.content.push(dataTable);
+        this.content.push(dataTable);
     }
 
     private _updateDisplay() {

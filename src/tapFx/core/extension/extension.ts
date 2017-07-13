@@ -1,11 +1,11 @@
 import { inject } from 'aurelia-dependency-injection'
 import BladeEngine from './bladeEngine'
-import DeferredPromise from './../../core/deferredPromise'
 import Utilities from './../../utilities/utilities'
 import { RpcClient, RpcClientSubscription } from './../../rpc/client'
 import {BindingEngine, IChildMetadata, ISerializedObject} from './../../binding/bindingEngine'
-import {formParser} from './../../ux/form/formParser'
-import BaseExtension from './baseExtension'
+import DeferredPromise from './../../core/deferredPromise'
+import {BladeParser} from './../../ux/bladeParser'
+import BaseExtension from './baseExtension' // type only
 import BaseBlade from './../../ux/viewModels/viewModels.baseBlade' // type only
 
 /**
@@ -21,13 +21,14 @@ interface IBladeInfo {
     bladeSequence: number;
 }
 
-@inject(BladeEngine, Utilities, RpcClient, BindingEngine)
+@inject(BladeEngine, Utilities, RpcClient, BindingEngine, BladeParser)
 class Extension extends BaseExtension {
     constructor(
         private _bladeEngine: BladeEngine,
         private _utilities: Utilities,
         private _rpc: RpcClient,
-        private _bindingEngine: BindingEngine
+        private _bindingEngine: BindingEngine,
+        private _bladeParser: BladeParser
     ) {
         super();
         let subscription = this._rpc.subscribe('tapfx.removeExtension', this._onRemoveExtension.bind(this));
@@ -138,16 +139,16 @@ class Extension extends BaseExtension {
         bladeInfo.extensionId = this._rpc.InstanceId;
         bladeInfo.viewName = viewName;
         bladeInfo.functions = this._registerBladeFunctions(blade, bladeInfo.bladeId);
-        bladeInfo.view = this._parseBladeForm(blade);
+        bladeInfo.view = this._parseBladeForm(blade, bladeInfo.functions);
         
         this._bladeInfoMap.set(blade, { bladeId: bladeInfo.bladeId, bladeSequence: this._getNextBladeSequence() } );
         this._rpc.publish('shell.addBlade', "", bladeInfo);
     }
 
-    private _parseBladeForm(blade: BaseBlade): string {
-        if (!blade.form)
+    private _parseBladeForm(blade: BaseBlade, bladeFunctions: string[]): string {
+        if (!blade.content || blade.content.length === 0)
             return '';
-        let viewHTML = formParser.parseFormToHTML(blade.form);
+        let viewHTML = this._bladeParser.parseBladeToHTML(blade, bladeFunctions);
         return viewHTML;
     }
 

@@ -1,16 +1,16 @@
 /// <reference path="./../typings.d.ts" />
 import { Aurelia, PLATFORM, FrameworkConfiguration } from 'aurelia-framework';
-import {BindingEngine} from './../tapFx/binding/bindingEngine'
-import {RpcClient} from './../tapFx/rpc/client'
+import {LogManager} from "aurelia-framework";
+import {ConsoleAppender} from "aurelia-logging-console";
+import {AuthService} from "aurelia-auth";
+import {BindingEngine} from './../tapFx/binding/bindingEngine' // TODO: remove
+import {RpcClient} from './../tapFx/rpc/client' // TODO: remove
 import CommandManager from './commanding/commandManager'
 import ExtensionManager from './extensionManagement/extensionManager'
 import ExtensionLoaderEngine from './extensionManagement/extensionLoaderEngine'
-import ConventionEngine from './extensionManagement/conventionEngine'
-import {LogManager} from "aurelia-framework";
-import {ConsoleAppender} from "aurelia-logging-console";
-import config from './authConfig';
-import {AuthService} from "aurelia-auth";
 import AuthorizationEngine from './authorization/authorizationEngine'
+import config from './authConfig';
+
 //import 'material-components-web'
 
 // LogManager.addAppender(new ConsoleAppender());
@@ -60,11 +60,9 @@ function initialize(aurelia: Aurelia) : void {
     aurelia.host = document.body;
     // The app and tapFx have separate instances of Aurelia,
     // Use singletons from TapFx in the app
-    aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
     aurelia.container.registerSingleton(CommandManager, CommandManager);
     aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
     aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
-    aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
     aurelia.container.registerSingleton(AuthorizationEngine, AuthorizationEngine);
 
     aurelia.use
@@ -90,11 +88,6 @@ function initialize(aurelia: Aurelia) : void {
             auth.authenticate('TylerId', false, {});
         }
     });
-
-    // aurelia.container.registerSingleton(CommandManager, CommandManager);
-    // aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
-    // aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
-    // aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
 
     //window.TapFx.BootstrapResolve(undefined);
 }

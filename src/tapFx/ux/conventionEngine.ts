@@ -10,7 +10,7 @@ class ConventionEngine {
     onClickRegex: RegExp = /onButton([A-Za-z0-9]*)Click/; // note: not currently pulling out the element type so 'onButton' may just become 'on'. if we do want to pull out the element type we may have to change our convention
     onClickAttribute = 'click.delegate'; // note: we may want to add a check for an isDisabledAttribute ('disabled.bind' for Aurelia) and if present use 'click.trigger' instead. See http://aurelia.io/hub.html#/doc/article/aurelia/binding/latest/binding-delegate-vs-trigger/1 or https://stackoverflow.com/questions/33904248/aurelia-delegate-vs-trigger-how-do-you-know-when-to-use-delegate-or-trigger
     
-    attachFunctions(docFragment: DocumentFragment, functions: string[]) {
+    public attachFunctions(docFragment: DocumentFragment | Element/*NodeSelector*/, functions: string[]): void {
         console.log('[SHELL] Attaching functions via convention');
         for (let func of functions) {
             // let's check if this function matches our click regex convention

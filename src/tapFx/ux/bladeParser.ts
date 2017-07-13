@@ -1,26 +1,63 @@
-import * as tapc from './formModules'
+import { inject } from 'aurelia-framework'
+import BaseBlade from './viewModels/viewModels.baseBlade'
+import * as tapc from './tapcModules'
 import {tapcBase} from './components/tapcBase'
 import {tapcBaseContainer} from './components/tapcBaseContainer'
+import ConventionEngine from './conventionEngine'
 
-export class formParser {
+@inject(ConventionEngine)
+export class BladeParser {
     constructor(
+        private _conventionEngine: ConventionEngine
     ) {
 
     }
 
-    public static parseFormToHTML(form: tapc.tapcForm): string {
-        let htmlForm: HTMLTemplateElement = document.createElement("template");
+    /**
+     * Parse the passed blade into an HTML template.
+     * @param blade 
+     * @param bladeFunctions 
+     */
+    public parseBladeToHTML(blade: BaseBlade, bladeFunctions: string[]): string {
         // Can't get innerHtml or outerHtml property from template element,
         // so use a temp div element as the parent
         let parent: HTMLDivElement = document.createElement('div');
-        for(let i = 0; i < form.content.length; i++){
-            let el = this.parseNode(parent, form.content[i]);
+
+        // add a border to the blade
+        let styleAttr = document.createAttribute('style');
+        styleAttr.value = 'border: 2px solid black; padding: 10px;';
+        parent.attributes.setNamedItem(styleAttr);
+
+        // add a remove blade button
+        let removeBladeButton = document.createElement('button');
+        styleAttr = document.createAttribute('style');
+        styleAttr.value = 'float: right;';
+        removeBladeButton.name = 'remove';
+        removeBladeButton.textContent = 'Remove';
+        removeBladeButton.attributes.setNamedItem(styleAttr);
+        parent.appendChild(removeBladeButton);
+
+
+        // POC: Could render different types of blades differently
+        /*if (blade instanceof FormBlade) {
+
+        }*/
+        
+        for(let i = 0; i < blade.content.length; i++){
+            let el = this.parseNode(parent, blade.content[i]);
         }
 
-        return `<template>${parent.innerHTML}</template>`;
+        this._conventionEngine.attachFunctions(parent, bladeFunctions);
+
+        return `<template>${parent.outerHTML}</template>`;
     }
 
-    public static parseNode(parent: Element, node: tapcBase): void {
+    /**
+     * Parse a tap component node and add the appropriate element to the passed parent.
+     * @param parent 
+     * @param node 
+     */
+    public parseNode(parent: Element, node: tapcBase): void {
         let attrRegExp: RegExp = /^attribute(.*)/;
         let privateAttrRegExp: RegExp = /^_attribute(.*)/;
         let eventRegExp: RegExp = /^event(.*)/;
@@ -120,3 +157,5 @@ export class formParser {
             parent.appendChild(el);
     }
 }
+
+export default BladeParser;

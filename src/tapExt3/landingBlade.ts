@@ -27,6 +27,14 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         this.address.address = this.address2;
         this.address2.address = this.address;
     }
+    
+    /**
+     * Blade activation (initialization);
+     */
+    activate(): void {
+        this.title = 'Title';
+        this.titleChanged(this.title, "");
+    }
 
     private _buildForm(): void {
         this.form =  new tapfx.tapcForm();

@@ -7,6 +7,16 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
     constructor() {
         super();
     }
+
+    /**
+     * Blade activation (initialization);
+     */
+    activate() {
+        this.title = 'Title';
+        this.subtitle = 'Subtitle';
+        this.display = this.title + ' - ' + this.subtitle;
+    }
+
     private _updateDisplay() {
         this.display = this.title === this.subtitle ? 'MATCHING' : `${this.title} - ${this.subtitle}`
     }

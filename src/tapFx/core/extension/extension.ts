@@ -5,6 +5,7 @@ import Utilities from './../../utilities/utilities'
 import { RpcClient, RpcClientSubscription } from './../../rpc/client'
 import {BindingEngine, IChildMetadata, ISerializedObject} from './../../binding/bindingEngine'
 import {formParser} from './../../ux/form/formParser'
+import BaseExtension from './baseExtension'
 import BaseBlade from './../../ux/viewModels/viewModels.baseBlade' // type only
 
 /**
@@ -21,13 +22,14 @@ interface IBladeInfo {
 }
 
 @inject(BladeEngine, Utilities, RpcClient, BindingEngine)
-class Extension {
+class Extension extends BaseExtension {
     constructor(
         private _bladeEngine: BladeEngine,
         private _utilities: Utilities,
         private _rpc: RpcClient,
         private _bindingEngine: BindingEngine
     ) {
+        super();
         let subscription = this._rpc.subscribe('tapfx.removeExtension', this._onRemoveExtension.bind(this));
         this._rpcSubscriptions.push(subscription);
 
@@ -48,11 +50,6 @@ class Extension {
      */
     private _bladeInfoMap: Map<BaseBlade, IBladeInfo> = new Map();
     private _className: string = (this as Object).constructor.name;
-
-    /**
-     * To be implemented by the extension developer.
-     */
-    public updateParams?(params: any[], queryParams: Object): void;
 
     /**
      * Function called from the remove extension RPC call. Loops through the blades of the extension in descending order to remove them (calling deactivate for each).

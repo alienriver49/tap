@@ -3,10 +3,10 @@ import LandingBlade from './landingBlade'
 import SecondBlade from './secondBlade'
 import BaseBlade from './../tapFx/ux/viewModels/viewModels.baseBlade'
 
-export class Index {
+export class Index extends window.TapFx.BaseExtension {
     constructor(
     ) {
-        
+        super();
     }
 
     private _secondBlade: SecondBlade | null;
@@ -14,9 +14,6 @@ export class Index {
     public init(): void {
         console.log('[EXT-1] Index.init');
         let blade = new LandingBlade();
-        blade.title = 'Title';
-        blade.subtitle = 'Subtitle';
-        blade.display = blade.title + ' - ' + blade.subtitle;
         this.addBlade(blade, "landingBlade.html");
     }
 
@@ -26,7 +23,6 @@ export class Index {
         if (params.length > 0) {
             if (!this._secondBlade) {
                 this._secondBlade = new SecondBlade();
-                this._secondBlade.title = 'Second Blade';
                 this._secondBlade.subtitle = 'Params: ' + params.join(', ');
                 this._secondBlade.display = this._secondBlade.title + ' - ' + this._secondBlade.subtitle;
                 this._secondBlade.queryParams = JSON.stringify(queryParams);

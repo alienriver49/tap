@@ -26,6 +26,7 @@ function startExtension(aurelia: Aurelia) : void {
     let index = aurelia.container.get(Index);
     index.init();
 
+    window.TapFx.Extension.journeyOn = index.journeyOn;
     // if they have implemented update params, hook into it
     if (index.updateParams) window.TapFx.Extension.updateParams = index.updateParams;
 }

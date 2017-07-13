@@ -2,17 +2,15 @@
 import LandingBlade from './landingBlade'
 import BaseBlade from './../tapFx/ux/viewModels/viewModels.baseblade'
 
-export class Index {
+export class Index extends window.TapFx.BaseExtension {
     constructor(
     ) {
-        
+        super();
     }
 
     public init(): void {
         console.log('[EXT-2] Index.init');
         let blade = new LandingBlade();
-        blade.title = 'Extension 2';
-        blade.subtitle = 'Static Title and Subtitle';
         this.addBlade(blade, "landingBlade.html");
     }
 

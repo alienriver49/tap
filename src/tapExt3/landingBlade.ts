@@ -130,7 +130,7 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
             id: 'test-button',
             type: 'button',
             click: 'onTestClick()',
-            content: [new tapfx.tapcText({text: 'Test something'})]
+            content: [new tapfx.tapcText({text: 'Test random array modification by index'})]
         });
         let div2 = new tapfx.tapcDiv({
             content: [addButton, removeButton, changeData, testButton]
@@ -231,7 +231,25 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
     }
 
     public onTestClick(): void {
-        this.data[0].name = 'TEST';
+        let random = (min: number, max: number) => { return Math.floor(Math.random() * (max - min + 1) + min); };
+        let index = random(0, this.data.length-1);
+        console.log('Array index change');
+        this.data[index] = 
+                new School({
+                    name: 'Test School ' + random(1,100),
+                    grades: [9,10,11,12],
+                    hasPool: false 
+                });
+        console.log('Array push');
+        this.data.push(new School({ name: 'Push School ' + random(1,100), grades: [9,10,11,12], hasPool: false }));
+        console.log('Array pop');
+        this.data.pop();
+        // console.log('Array unshift');
+        // this.data.unshift(new School({ name: 'Push School ' + random(1,100), grades: [9,10,11,12], hasPool: false }));
+        // console.log('Array shift');
+        // this.data.shift();
+        // console.log('Array splice');
+        // this.data.splice(1, 1, new School({ name: 'Push School ' + random(1,100), grades: [9,10,11,12], hasPool: false }));
     }
 
     _childPropToggle: boolean = true;

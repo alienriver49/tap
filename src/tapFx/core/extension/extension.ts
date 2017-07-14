@@ -204,7 +204,7 @@ class Extension extends BaseExtension {
      */
     private _performRemoveBlade(blade: BaseBlade, bladeId: string, manualRemoval: boolean) {
         // unobserve this blade
-        this._bindingEngine.unobserve(blade);
+        this._bindingEngine.unobserveBlade(blade);
 
         // unsubscribe from any blade events
         (this._bladeSubscriptions.get(bladeId) || []).forEach((subscription) => {
@@ -251,11 +251,16 @@ class Extension extends BaseExtension {
                 // If the property is an object, we should be back metadata
                 // and the property will be reinstantiated using the metadata 
                 // on the other side
-                if (childMetadata)
+                if (childMetadata && !(blade[prop] instanceof Array)){
                     serializedBlade._childMetadata.push(childMetadata);
-                else
-                    // otherwise we copy of property as is
-                    serializedBlade[prop] = blade[prop];
+                }else{
+                    // Switch context to use proxy array
+                    if (blade[prop] instanceof Array && childMetadata && childMetadata.originalValue)
+                        serializedBlade[prop] = childMetadata.originalValue;
+                    else
+                        // otherwise we copy of property as is
+                        serializedBlade[prop] = blade[prop];
+                }
             }
         }
 

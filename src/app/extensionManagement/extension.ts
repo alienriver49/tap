@@ -142,7 +142,7 @@ export class Extension {
     }
 
     private _unregisterBladeBindings(blade: PortalBlade): void {
-        this._bindingEngine.unobserve(blade);
+        this._bindingEngine.unobserveBlade(blade);
     }
 
     private _unregisterAllBladeBindings(): void {

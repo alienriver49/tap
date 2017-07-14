@@ -8,6 +8,7 @@ export interface IChildMetadata {
     contextId: string;
     parentId: string;
     value: any;
+    originalValue: any;
 }
 
 export interface ISerializedObject {
@@ -66,6 +67,18 @@ export class BindingEngine {
         if (observer){
             // If the new value is an object, recursively register it for observation
             if (this._utilities.isObject(data.newValue)){
+
+                // If the old value was an object, dispose of any observers
+                let context = this.getContextById(data.contextID);
+                if (context && context[data.property] && this._utilities.isObject(context[data.property])){
+                    let oldValueContext = context[data.property];
+                    let oldValueContextId = this.getIdByContext(oldValueContext);
+                    // If oldValue is an object mapped in the BindingEngine, then
+                    // dispose of any observers on it
+                    if (oldValueContextId)
+                        this._unobserve(oldValueContext, data.contextID, oldValueContextId);
+                }
+
                 // The sender should have passed a contextID for the new object, so use that as the shared context key
                 if (!data.syncObjectContextId)
                     console.error(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Sync object missing syncObjectContextId.`, data);
@@ -86,7 +99,6 @@ export class BindingEngine {
                     }
                 }
             }
-            // TODO Dispose of observers on oldValue object in setValue function
             observer.setValue(data.newValue, true);
         }
     }
@@ -241,7 +253,16 @@ export class BindingEngine {
 
         if (existingObserverIndex === -1) {
             let observer = this._proxiedObservableFactory(contextID, context, property, extensionId);
-            observer.observe();
+            let originalArray = observer.observe();
+            if (originalArray){
+                metadata =  {
+                    property: '',
+                    contextId: '',
+                    parentId: '',
+                    value: null,
+                    originalValue: originalArray
+                };
+            }
 
             // keep track of the current observer            
             bindingMap.observers.push(observer);
@@ -261,6 +282,7 @@ export class BindingEngine {
                     contextId: existingContextId,
                     parentId: contextID,
                     value: null,
+                    originalValue: null 
                 };
             }else{
                 let newContextId = this.resolveId(context[property], existingContextId, parentContextId);
@@ -271,6 +293,7 @@ export class BindingEngine {
                     contextId: newContextId,
                     parentId: contextID,
                     value: serializedObject,
+                    originalValue: null 
                 };
             }
         }
@@ -403,25 +426,75 @@ export class BindingEngine {
 
     // }
 
+    
+    public unobserveBlade(context: Object): void {
+        this._unobserve(context, '');
+    }
+
     /**
      * Unobserve a specific context.
      * @param context 
      */
-    unobserve(context: Object): void {
-        // get this context from the map
-        let contextId = this._contextIDMap.get(context);
-        if (!contextId) {
-            throw new Error("Couldn't find content ID when unobserving context.")
+    public _unobserve(context: Object, parentContextId: string, contextId: string = '', inRecursion: boolean = false): void {
+        if (!contextId){
+            // get this context from the map
+            let foundContextId = this._contextIDMap.get(context);
+            if (!foundContextId) {
+                throw new Error("Couldn't find context ID when unobserving context.")
+            }
+            contextId = foundContextId;
         }
 
-        // dispose of any observers
-        let bindingMap = this._contextBindingMap.get(contextId);
-        ((bindingMap && bindingMap.observers) || []).forEach((proxiedObservable) => {
-            proxiedObservable.dispose();
-        });
+        if (!inRecursion){
+            this._seen = [];
+        }
 
-        // remove the context from the map
-        this._contextIDMap.delete(context);
+        // Verify that the context isn't being referenced by other parent objects
+        // before disposing of the observers
+        let bindingMap = this._contextBindingMap.get(contextId);
+        if (!bindingMap){
+            throw new Error(`Couldn't find binding map when unobserving context: ${contextId}`)
+        }
+        // If parent of the context (and contexts can have zero, one or more parents) doesn't exist
+        // AND the context doesn't have any parent references (or has one parent reference, which we can
+        // assume is for the current call), then it's safe to unobserve
+        // OR
+        // If there is a parent of the context and it matches the passed parent and it's the only parent reference, 
+        // then it's safe to unobserve
+        if ((!parentContextId && (bindingMap.isRoot || bindingMap.parentContextIds.size <= 1)) ||
+           (parentContextId && bindingMap.parentContextIds.has(parentContextId) && bindingMap.parentContextIds.size === 1))
+        {
+            // Must be an object, so add a temporary flag property to objects to prevent infinite loop from circular references
+            context[this._seenFlag] = true;
+            this._seen.push(context);
+
+            // First recursively dispose of child objects
+            // Search for child objects by finding all contexts which have a parent reference to the current context
+            this._contextBindingMap.forEach((bindingMap, key) => {
+                if (bindingMap.parentContextIds.has(contextId)){
+                    let childObject = this.getContextById(key);
+                    // If the child object has already been checked, skip it to prevent infinite loops
+                    if (childObject != null && !childObject.hasOwnProperty(this._seenFlag)){
+                        this._unobserve(childObject, contextId as string, key, true);
+                    }
+                }
+            });
+
+            ((bindingMap && bindingMap.observers) || []).forEach((proxiedObservable) => {
+                proxiedObservable.dispose();
+            });
+
+            // remove the context from the map
+            this._contextIDMap.delete(context);
+            this._contextBindingMap.delete(contextId);
+        }
+
+        if (!inRecursion){
+            // Remove the temporary flags from the objects
+            this._seen.forEach((o) => {
+                delete o[this._seenFlag];
+            });
+        }
     }
 
     /**
@@ -434,5 +507,6 @@ export class BindingEngine {
         });
 
         this._contextIDMap = new Map();
+        this._contextBindingMap.clear();
     }
 }

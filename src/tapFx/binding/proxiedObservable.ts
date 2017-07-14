@@ -53,6 +53,7 @@ export class ProxiedObservable implements Callable {
         private _context: Object,
         private _property: string,
         private _extensionId: string,
+        private _parentContextId
     ) { 
     }
 
@@ -64,6 +65,7 @@ export class ProxiedObservable implements Callable {
     private _boundArrayChanged = this._arrayChanged.bind(this) as (splices: any) => void;
     private _canObserveArray: boolean = true;
     private _canObserveProperty: boolean = true;
+    private _isProxy = Symbol("is-proxy");
 
     public get extensionId(){
         return this._extensionId;
@@ -79,11 +81,18 @@ export class ProxiedObservable implements Callable {
             contextID: this._contextID,
             property: this._property,
             newValue: newValue,
-            oldValue: oldValue,
+            oldValue: null,  // Not used 
             syncObjectContextId: ''
         } 
 
-        // TODO: dispose of observers on properties where oldValue is an object
+        if (this._utilities.isObject(oldValue)){
+            let oldContextId = this._bindingEngine.getIdByContext(oldValue);
+            // If oldValue is an object mapped in the BindingEngine, then
+            // dispose of any observers on it
+            if (oldContextId)
+                this._bindingEngine._unobserve(oldValue, '', oldContextId);
+        }
+
         // If the new value is an object, we need to recursively observe it too
         // and pass appropriate metadata
         if (this._utilities.isObject(newValue)){
@@ -109,6 +118,11 @@ export class ProxiedObservable implements Callable {
         console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Property has changed from: "${oldValue}" to: "${newValue}"`);
         this._rpc.publish('tapfx.propertyBindingSync', this._extensionId, data);
 
+        // if the property is an array, need to unsubscribe collectionObserver
+        // and resubscribe to new array (for locally initiated changes) 
+        // RPC initiated changes are handled in setValue 
+        this._updateCollectionObserver(newValue);
+
         // check for a convention function for handling property changed events. note: Aurelia can do this but requires an @observable decorator on the variable (creates a getter / setter) and that currently doesn't work with our function serialization
         let propertyChangedHandler = `${this._property}Changed`;
         if (propertyChangedHandler in this._context &&
@@ -117,10 +131,6 @@ export class ProxiedObservable implements Callable {
             this._context[propertyChangedHandler](newValue, oldValue);
         }
 
-        // if the property is an array, need to unsubscribe collectionObserver
-        // and resubscribe to new array (for locally initiated changes) 
-        // RPC initiated changes are handled in setValue 
-        this._updateCollectionObserver(newValue);
     }
 
     /**
@@ -138,9 +148,18 @@ export class ProxiedObservable implements Callable {
         splices.forEach((splice: IArrayChangedSplice) => {
             if (splice.addedCount){
                 let currentArray = this._context[this._property];
-                if (currentArray.length >= splice.index + splice.addedCount)
+                if (currentArray.length >= splice.index + splice.addedCount){
                     // TODO slice just creates a shallow copy, but we'll need full
                     splice.added = currentArray.slice(splice.index, (splice.index + splice.addedCount));
+                    // let addedItems: any = currentArray.slice(splice.index, (splice.index + splice.addedCount));
+                    // let refIds: Set<string> = new Set<string>();
+                    // let syncValue = this._bindingEngine.observeObject(newValue, this._contextID, refIds, this._extensionId);
+                    // if (syncValue){
+                    //     data.newValue = syncValue;
+                    //     // Need to pass the context Id for the new object as well
+                    //     data.syncObjectContextId = syncValue._syncObjectContextId;
+                    // }
+                }
             }
         })
         console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Array has mutated`);
@@ -157,20 +176,21 @@ export class ProxiedObservable implements Callable {
         return this._property;
     }
 
-    public observe(): void {
-        if (this._observer) throw new Error("Property is already being observed.");
-        let value = this._context[this._property];
+    /**
+     * If property is an array, it's original value is returned for serializing purposes
+     * postMessage has trouble if there is a Proxy in the passed data
+     */
+    public observe(): null | any[] {
+        if (this._observer) 
+        throw new Error("Property is already being observed.");
 
-        if (value instanceof Array) {
-            // ArrayObserver only tracks modifications to an array
-            // getArrayObserver returns an instance of ModifyCollectionObserver
-            // (with SubscriberCollection), although the full API for them 
-            // isn't shown in the documentation (officially the getArrayObserver
-            // just returns InternalCollectionObserver which only has a subscribe and
-            // unsubscribe on it)
-            // 
-            this._collectionObserver = this._observerLocator.getArrayObserver(value);
-            this._collectionObserver.subscribe(this._boundArrayChanged);
+        let originalArray: any[] | null = null;
+        let originalValue = this._context[this._property];
+
+        if (originalValue instanceof Array) {
+            originalArray = originalValue;
+
+            this._updateCollectionObserver(originalValue);
 
             // Still need regular observer if array is completely replaced
             this._observer = this._observerLocator.getObserver(this._context, this._property);
@@ -179,6 +199,8 @@ export class ProxiedObservable implements Callable {
         }
 
         this._observer.subscribe(this._boundPropertyChanged);
+
+        return originalArray;
     }
 
     setValue(value: any, disableObservation: boolean = true): void {
@@ -191,14 +213,16 @@ export class ProxiedObservable implements Callable {
         // if the property is an array, need to unsubscribe collectionObserver
         // and resubscribe to new array (for changes via RPC) 
         // Locally initiated changes are handled in _propertyChanged 
-        this._updateCollectionObserver(value);
+        let propertyWasUpdatedToArrayProxy = this._updateCollectionObserver(value);
 
-        this._observer.setValue(value);
+        if (!propertyWasUpdatedToArrayProxy)
+            this._observer.setValue(value);
 
         if (disableObservation){
             // Flush the recent changes and re-enable observation
             // We're using the unexposed taskQueue property on the ModifyCollectionObserver
-            // TODO add checks to ensure there is a taskQueue on the _observer 
+            if (this._observer['taskQueue'] === void(0))
+                throw new Error(`Observer object is missing the taskQueue property.  Aurelia (non-public) API may have changed!`);
             ((this._observer as any).taskQueue as TaskQueue).flushMicroTaskQueue();
             this._canObserveProperty= true;
         }
@@ -220,20 +244,17 @@ export class ProxiedObservable implements Callable {
             this._canObserveArray = false;
 
         let syncArray = this._context[this._property];
-        if (splice.addedCount && splice.added){
-            // Use Function.apply to pass an array to splice
-            var args: any[] = [splice.index, 0];
-            args = args.concat(splice.added);
-            Array.prototype.splice.apply(syncArray, args);
-        }
-        if (splice.removed && splice.removed.length){
-           syncArray.splice(splice.index, splice.removed.length);
-        }
+        let removedCount = splice.removed && splice.removed.length ? splice.removed.length : 0;
+        let addedItems = splice.addedCount && splice.added ? splice.added : [];
+        var args: any[] = [splice.index, removedCount];
+        args = args.concat(addedItems);
+        Array.prototype.splice.apply(syncArray, args);
         
         if (disableObservation){
             // Flush the recent changes and re-enable observation
             // We're using the unexposed taskQueue property on the SetterObserver 
-            // TODO add checks to ensure there is a taskQueue on the _collectionObserver
+            if (this._collectionObserver['taskQueue'] === void(0))
+                throw new Error(`Collection observer object is missing the taskQueue property.  Aurelia (non-public) API may have changed!`);
             ((this._collectionObserver as any).taskQueue as TaskQueue).flushMicroTaskQueue();
             this._canObserveArray = true;
         }
@@ -251,18 +272,144 @@ export class ProxiedObservable implements Callable {
      * If the property being watched is an array and is changed (not contents modified),
      * then this should be called to dispose of subscriber on old array and begin 
      * observing the new array
-     * @param value Current array value
+     * It returns whether or not the context[property] was updated to an array proxy
+     * @param originalValue Current array value
      */
-    private _updateCollectionObserver(value: any){
-        if (value instanceof Array){
+    private _updateCollectionObserver(originalValue: any): boolean {
+        let wasUpdated = false;
+
+        if (originalValue instanceof Array){
             this._disposeCollectionObserver();
+
+            // This proxy is just used to watch for array changes using array indexes
+            // for example, a[2] = 10
+            let value = new Proxy(originalValue, {
+                set: this.proxyArraySet.bind(this),
+                get: this.proxyArrayGet.bind(this)
+            });
+            // Update the property to use the array proxy (temporarily disabling observer)
+            let _canObservePropertyState = this._canObserveProperty
+            this._canObserveProperty = false;
+
+            this._context[this._property] = value;
+            wasUpdated = true;
+
+            // Flush the property changed queue, if possible
+            if (this._observer){
+                if (this._observer['taskQueue'] === void(0))
+                    throw new Error(`Observer object is missing the taskQueue property.  Aurelia (non-public) API may have changed!`);
+                ((this._observer as any).taskQueue as TaskQueue).flushMicroTaskQueue();
+            } 
+            this._canObserveProperty = _canObservePropertyState;
+
+            // ArrayObserver only tracks modifications to an array through array methods
+            // getArrayObserver returns an instance of ModifyCollectionObserver
+            // (with SubscriberCollection), although the full API for them 
+            // isn't shown in the documentation (officially the getArrayObserver
+            // just returns InternalCollectionObserver which only has a subscribe and
+            // unsubscribe on it)
+
             this._collectionObserver = this._observerLocator.getArrayObserver(this._context[this._property]);
             this._collectionObserver.subscribe(this._boundArrayChanged);
         }
-
+        return wasUpdated;
     }
 
-    dispose(): void {
+    proxyArraySet(target: any[], property: PropertyKey, newValue: any, receiver: any): boolean {
+        if (this._arrayChanging)
+            // Called via an array method, so just assign property
+            target[property] = newValue;
+        else{
+            // Called via index assignment, so just remap the assignment to an array 'splice' call
+            let index = parseInt(property as string);
+            if (Number.isNaN(index))
+                target[property] = newValue;
+            else{
+                this._arrayChanging = false;
+                target.splice(Number(property), 1, newValue);
+            }
+        }
+        
+        return true;
+    }
+
+    // Getter method allows us to modify the array methods and provide a 
+    // way to test if the array is a proxy
+    // if obj[this._isProxy] === true, then it's a proxy
+    proxyArrayGet (target: any[], key: PropertyKey): any {
+        // When modifying the array, use our custom proxy functions
+        if (key === 'push')
+            return this.proxyArrayPush.bind(this);
+        if (key === 'pop')
+            return this.proxyArrayPop.bind(this);
+        if (key === 'reverse')
+            return this.proxyArrayReverse.bind(this);
+        if (key === 'shift')
+            return this.proxyArrayShift.bind(this);
+        if (key === 'sort')
+            return this.proxyArraySort.bind(this);
+        if (key === 'splice')
+            return this.proxyArraySplice.bind(this);
+        if (key === 'unshift')
+            return this.proxyArrayUnshift.bind(this);
+        if (!target[this._isProxy]){
+            return target[key];
+        }
+        return true;
+    }
+
+    private _arrayChanging: boolean = false;
+    private proxyArrayPush(): any {
+        this._arrayChanging = true; 
+        let obj = this._context[this._property];
+        let methodCallResult = Array.prototype.push.apply(obj, arguments);
+        this._arrayChanging = false;
+        return methodCallResult;
+    }
+    private proxyArrayPop(): any {
+        this._arrayChanging = true; 
+        let obj = this._context[this._property];
+        let methodCallResult = Array.prototype.pop.apply(obj, arguments);
+        this._arrayChanging = false;
+        return methodCallResult;
+    }
+    private proxyArrayReverse(): any {
+        this._arrayChanging = true; 
+        let obj = this._context[this._property];
+        let methodCallResult = Array.prototype.reverse.apply(obj, arguments);
+        this._arrayChanging = false;
+        return methodCallResult;
+    }
+    private proxyArrayShift(): any {
+        this._arrayChanging = true; 
+        let obj = this._context[this._property];
+        let methodCallResult = Array.prototype.shift.apply(obj, arguments);
+        this._arrayChanging = false;
+        return methodCallResult;
+    }
+    private proxyArraySort(): any {
+        this._arrayChanging = true; 
+        let obj = this._context[this._property];
+        let methodCallResult = Array.prototype.sort.apply(obj, arguments);
+        this._arrayChanging = false;
+        return methodCallResult;
+    }
+    private proxyArraySplice(): any {
+        this._arrayChanging = true; 
+        let obj = this._context[this._property];
+        let methodCallResult = Array.prototype.splice.apply(obj, arguments);
+        this._arrayChanging = false;
+        return methodCallResult;
+    }
+    private proxyArrayUnshift(): any {
+        this._arrayChanging = true; 
+        let obj = this._context[this._property];
+        let methodCallResult = Array.prototype.unshift.apply(obj, arguments);
+        this._arrayChanging = false;
+        return methodCallResult;
+    }
+
+    public dispose(): void {
         if (this._observer) {
             this._observer.unsubscribe(this._boundPropertyChanged);
             delete this._observer;

@@ -19,7 +19,8 @@ class Utilities {
 
     /**
      * Converts a query string into an object and returns that object. Supports query strings beginning with ? or not.
-     * note: Doesn't handle all situations, like foo=bar&foo=foo for an array
+     * note: Doesn't handle all situations, i.e. ?foo=bar&foo=foo for an array
+     * TODO: firm up implementation and add error checking, i.e. ?for=bar?foo=bar will error
      * @param queryString 
      */
     convertQueryStringToObject(queryString: string): Object {

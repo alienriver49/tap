@@ -28,6 +28,13 @@ class Router {
     isActive: boolean;
 
     /**
+     * Get the current url.
+     */
+    get currentUrl(): string {
+        return this._currUrlFragment;
+    }
+
+    /**
      * Previous url fragment.
      */
     private _prevUrlFragment: string;

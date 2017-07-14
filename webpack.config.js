@@ -4,7 +4,7 @@ const { AureliaPlugin, ModuleDependenciesPlugin } = require('aurelia-webpack-plu
 const { optimize: { CommonsChunkPlugin }, ProvidePlugin } = require('webpack')
 const { TsConfigPathsPlugin, CheckerPlugin } = require('awesome-typescript-loader');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const CleanWebpackPlugin = require('clean-webpack-plugin')
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 const outDir = path.resolve(__dirname, 'dist');
 const srcDir = path.resolve(__dirname, 'src');
@@ -55,9 +55,25 @@ module.exports = {
     },
     module: {
         rules: [
+            // CSS required in JS/TS files should use the style-loader that auto-injects it into the website
+            // only when the issuer is a .js/.ts file, so the loaders are not applied inside html templates
+            {
+                test: /\.css$/i,
+                issuer: [{ not: [{ test: /\.html$/i }] }],
+                use:['style-loader', 'css-loader'],
+            },
+            // CSS required in templates cannot be extracted safely because Aurelia would try to require it again in runtime
+            {
+                test: /\.css$/i,
+                issuer: [{ test: /\.html$/i }],
+                use:['css-loader']
+            },
             { test: /\.ts$/i, loader: 'awesome-typescript-loader', exclude: nodeModulesDir },
             { test: /\.html$/, loader: 'html-loader' },
-            { test: /\.css$/, loader: "style-loader!css-loader" }
+            { test: /\.woff2(\?v=[0-9]\.[0-9]\.[0-9])?$/i, loader: 'url-loader', options: { limit: 10000, mimetype: 'application/font-woff2' } },
+            { test: /\.woff(\?v=[0-9]\.[0-9]\.[0-9])?$/i, loader: 'url-loader', options: { limit: 10000, mimetype: 'application/font-woff' } },
+            // load these fonts normally, as files:
+            { test: /\.(ttf|eot|svg|otf)(\?v=[0-9]\.[0-9]\.[0-9])?$/i, loader: 'file-loader' },
         ]
     },
     plugins: [

@@ -1,32 +1,27 @@
 <template>
-    <style>
-        .extension-iframes {
-            display: none;
-        }
-    </style>
+    <header>
+        <div style="display: inline-block; vertical-align: middle;" class="logo"></div>
+        <div style="display: inline-block; vertical-align: top;" class="title">Titanium Application Portal (TapFx)</div>
+    </header>
 
-    <h1>TapFx</h1>
-
-    <div>
-        <a href="#">Unload Extension</a>
-    </div>
-    <br />
-    <div>
-        <a href="#ext1">Load / Update Extension 1 (without Params)</a> &bull;
-        <a href="#ext1/param1/param2/param3">Load / Update Extension 1 (with Params)</a>
-    </div>
-    <br />
-    <div>
-        <a href="#ext2">Load / Update Extension 2 (without Params)</a> &bull;
-        <a href="#ext2/param1">Load / Update Extension 2 (with Params)</a>
-    </div>
-    <br />
-    <div>
-        <a href="#ext3">Load / Update Extension 3 (without Params)</a> &bull;
-        <a href="#ext3/param1">Load / Update Extension 3 (with Params)</a>
-    </div>
-
-    <br /><br />
+    <!-- For demoing purposes we will show these as tabs. -->
+    <nav class="navbar navbar-default">
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav">
+            <li role="presentation"><a href="#">Home</a></li>
+            <li role="presentation"><a href="#ext1">Extension 1</a></li>
+            <li role="presentation"><a href="#ext2">Extension 2</a></li>
+            <li role="presentation"><a href="#ext3">Extension 3</a></li>
+        </ul>
+        
+        <!-- TODO: I think the router needs an API exposed for managing some of this stuff (like setting / adding query params to a URL) -->
+        <ul class="nav navbar-nav navbar-right">
+            <li role="presentation"><a href="#${router.currentUrl}/param1">Add param1</a></li>
+            <li role="presentation"><a href="#${router.currentUrl}/param2">Add param2</a></li>
+            <li role="presentation"><a href="#${router.currentUrl}/param3">Add param3</a></li>
+            <li role="presentation"><a href="#${router.currentUrl}${router.currentUrl.indexOf('?') === -1 ? '?' : '&'}qp=1">Add Query Param</a></li>
+        </ul>
+    </nav>
 
     <div id="extension-containers" class="extension-containers">
         <div repeat.for="extension of extensionManager.extensions">

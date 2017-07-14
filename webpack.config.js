@@ -107,7 +107,8 @@ module.exports = {
             { from: tapExt1SrcDir+"/*.html", to: outDir+"/ext1", flatten: "Y"},
             { from: tapExt2SrcDir+"/*.html", to: outDir+"/ext2", flatten: "Y"},
             { from: tapExt3SrcDir+"/*.html", to: outDir+"/ext3", flatten: "Y"},
-            { from: "node_modules/webcomponents.js/webcomponents-lite.js", to: outDir, flatten: "Y"}
+            { from: "node_modules/webcomponents.js/webcomponents-lite.js", to: outDir, flatten: "Y"},
+            { from: 'favicon.ico', to: outDir+'/favicon.ico' }
         ]),
     ]
 };

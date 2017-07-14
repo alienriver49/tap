@@ -5,8 +5,8 @@ import { RpcClient, RpcClientSubscription } from './../../rpc/client'
 import {BindingEngine, IChildMetadata, ISerializedObject} from './../../binding/bindingEngine'
 import DeferredPromise from './../../core/deferredPromise'
 import {BladeParser} from './../../ux/bladeParser'
-import BaseExtension from './baseExtension' // type only
-import BaseBlade from './../../ux/viewModels/viewModels.baseBlade' // type only
+import BaseExtension from './baseExtension'; // type only
+import BaseBlade from './../../ux/viewModels/viewModels.baseBlade'; // type only
 
 /**
  * Interface defining a function. Includes the name and the property descriptor.

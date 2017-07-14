@@ -9,7 +9,7 @@ export class Index extends window.TapFx.BaseExtension {
         super();
     }
 
-    private _secondBlade: SecondBlade | null;
+    private _blades: SecondBlade[] = [];
 
     public init(): void {
         console.log('[EXT-1] Index.init');
@@ -19,24 +19,36 @@ export class Index extends window.TapFx.BaseExtension {
 
     public updateParams(params: any[], queryParams: Object): void {
         console.log('[EXT-1] Updating extension parameters.');
-        // TODO: develop a way to assist the developer with blade management
-        if (params.length > 0) {
-            if (!this._secondBlade) {
-                this._secondBlade = new SecondBlade();
-                this._secondBlade.subtitle = 'Params: ' + params.join(', ');
-                this._secondBlade.display = this._secondBlade.title + ' - ' + this._secondBlade.subtitle;
-                this._secondBlade.queryParams = JSON.stringify(queryParams);
-                this.addBlade(this._secondBlade, "secondBlade.html");
-            } else {
-                this._secondBlade.subtitle = 'Params: ' + params.join(', ');
-                this._secondBlade.display = this._secondBlade.title + ' - ' + this._secondBlade.subtitle;
-                this._secondBlade.queryParams = JSON.stringify(queryParams);
+
+        // if the length of blades is greater than the params, remove those blades
+        while (this._blades.length > params.length) {
+            let blade = this._blades.pop();
+            if (blade) window.TapFx.Extension.removeBlade(blade);
+        }
+
+        // update blades with any params
+        params.forEach((param, index) => {
+            let blade = this._blades[index];
+            if (blade) {
+                blade.subtitle = 'Param: ' + param;
+                blade.display = blade.title + ' - ' + blade.subtitle;
+                blade.queryParams = JSON.stringify(queryParams);
             }
-        } else {
-            if (this._secondBlade) {
-                window.TapFx.Extension.removeBlade(this._secondBlade);
-                this._secondBlade = null;
-            }
+        });
+
+        // if the length of blades is less than the params, add new blades
+        let i = 0;
+        while (this._blades.length < params.length) {
+            let blade = new SecondBlade();
+            blade.subtitle = 'Param: ' + params[this._blades.length];
+            blade.display = blade.title + ' - ' + blade.subtitle;
+            blade.queryParams = JSON.stringify(queryParams);
+            this._blades.push(blade);
+            // this timeout is to ensure blades are added in correct order. TODO: this should be built into the framework or shell
+            setTimeout(() => {
+                this.addBlade(blade, "secondBlade.html");
+            }, i * 100);
+            i++;
         }
     }
 

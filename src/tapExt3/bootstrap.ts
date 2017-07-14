@@ -28,5 +28,5 @@ function startExtension(aurelia: Aurelia) : void {
 
     window.TapFx.Extension.journeyOn = index.journeyOn;
     // if they have implemented update params, hook into it
-    if (index.updateParams) window.TapFx.Extension.updateParams = index.updateParams;
+    if (index.updateParams) window.TapFx.Extension.updateParams = index.updateParams.bind(index);
 }

@@ -4,6 +4,7 @@ class SecondBlade extends window.TapFx.ViewModels.BaseBlade {
     subtitle: string;
     display: string;
     queryParams: string;
+    canClose: boolean;
 
     constructor() {
         super();
@@ -15,6 +16,11 @@ class SecondBlade extends window.TapFx.ViewModels.BaseBlade {
     activate(): void {
         this.title = 'Second Blade';
         this.display = this.title + ' - ' + this.subtitle;
+        this.canClose = true;
+    }
+
+    canDeactivate(): boolean {
+        return this.canClose;
     }
 
     private _updateDisplay() {

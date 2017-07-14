@@ -63,12 +63,14 @@ class Extension extends BaseExtension {
         let removalChain = Promise.resolve<boolean>(true);
         // loop through the blade mappings in order of the blade sequence
         let bladeMappings = [...this._bladeInfoMap.entries()].sort((a, b) => { return b[1].bladeSequence - a[1].bladeSequence; });
+        // is this the current blade, for now it's the first in sequence. note: in the future this could be part of the blade info and be set when a blade is focused (even though it might not be the first in sequence)
         bladeMappings.forEach((bladeMapping) => {
-            console.log(bladeMapping[1]);
+            let blade = bladeMapping[0];
+            let bladeInfo = bladeMapping[1];
             removalChain = removalChain.then((result) => {
                 // if the result was true, means the last blade was removed
                 if (result)
-                    return this._removeBlade(bladeMapping[0]);
+                    return this._removeBlade(blade);
                 else
                     return result;
             });
@@ -118,9 +120,8 @@ class Extension extends BaseExtension {
      * @param viewName 
      */
     addBlade(blade: BaseBlade, viewName: string): void {
-        let canActivate = this._bladeEngine.canActivate(blade);
-        canActivate.then((result) => {
-            if (result) {
+        this._bladeEngine.performActivation(blade).then((canActivate) => {
+            if (canActivate) {
                 this._performAddBlade(blade, viewName);
             } else {
                 this._addBladeFailed();
@@ -183,14 +184,13 @@ class Extension extends BaseExtension {
             throw Error("Couldn't find blade id associated with passed blade.");
 
         let bladeId = bladeInfo.bladeId;
-        let canDeactivate = this._bladeEngine.canDeactivate(blade);
-        canDeactivate.then((result) => {
-            if (result) {
+        this._bladeEngine.performDeactivation(blade).then((canDeactivate) => {
+            if (canDeactivate) {
                 this._performRemoveBlade(blade, bladeId, manualRemoval);
             } else {
                 this._removeBladeFailed();
             }
-            defer.resolve(result);
+            defer.resolve(canDeactivate);
         });
 
         return defer.promise;
@@ -341,11 +341,18 @@ class Extension extends BaseExtension {
     }
 
     /**
+     * Get the max blade sequence in our current blade info map. If no mappings are found, 0 is returned.
+     */
+    private _getMaxBladeSequence(): number {
+        let bladeMappings = [...this._bladeInfoMap.values()];
+        return bladeMappings.length > 0 ? (Math.max.apply(null, bladeMappings.map((bi) => { return bi.bladeSequence }))) : 0;
+    }
+
+    /**
      * Get the next sequence for blade ordering.
      */
     private _getNextBladeSequence(): number {
-        let bladeMappings = [...this._bladeInfoMap.values()];
-        return bladeMappings.length > 0 ? (Math.max.apply(null, bladeMappings.map((bi) => { return bi.bladeSequence })) + 1) : 1;
+        return this._getMaxBladeSequence() + 1;
     }
 }
 

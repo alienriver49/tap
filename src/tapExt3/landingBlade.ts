@@ -240,10 +240,10 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
                     grades: [9,10,11,12],
                     hasPool: false 
                 });
-        console.log('Array push');
-        this.data.push(new School({ name: 'Push School ' + random(1,100), grades: [9,10,11,12], hasPool: false }));
-        console.log('Array pop');
-        this.data.pop();
+        // console.log('Array push');
+        // this.data.push(new School({ name: 'Push School ' + random(1,100), grades: [9,10,11,12], hasPool: false }));
+        // console.log('Array pop');
+        // this.data.pop();
         // console.log('Array unshift');
         // this.data.unshift(new School({ name: 'Push School ' + random(1,100), grades: [9,10,11,12], hasPool: false }));
         // console.log('Array shift');

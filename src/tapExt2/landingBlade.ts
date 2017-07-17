@@ -1,5 +1,6 @@
+let tapFx = window.TapFx;
 
-class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
+class LandingBlade extends tapFx.ViewModels.BaseBlade {
     title: string;
     subtitle: string;
 
@@ -92,7 +93,7 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         this.selectedCheckboxes = [this.checkboxes[random(0, 2)]];
         this.selectedRadio = this.radios[random(0, 2)];
 
-        window.TapFx.Http.fetchRequest('https://jsonplaceholder.typicode.com/users/7', {}).then(response => {
+        tapFx.Http.fetchRequest('https://jsonplaceholder.typicode.com/users/7', {}).then(response => {
             console.log('[EXT-2] response: ', response);
         });
     }

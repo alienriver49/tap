@@ -22,7 +22,7 @@ interface IBladeInfo {
 }
 
 @inject(BladeEngine, Utilities, RpcClient, BindingEngine, BladeParser)
-class Extension extends BaseExtension {
+export class Extension extends BaseExtension {
     constructor(
         private _bladeEngine: BladeEngine,
         private _utilities: Utilities,
@@ -63,7 +63,7 @@ class Extension extends BaseExtension {
         let removalChain = Promise.resolve<boolean>(true);
         // loop through the blade mappings in order of the blade sequence
         let bladeMappings = [...this._bladeInfoMap.entries()].sort((a, b) => { return b[1].bladeSequence - a[1].bladeSequence; });
-        // is this the current blade, for now it's the first in sequence. note: in the future this could be part of the blade info and be set when a blade is focused (even though it might not be the first in sequence)
+        // TODO: this chain should only fail if the first blade in the sequence can't be removed (deactivated), for the time being, as the business use case would make sense since any prior blades should have finished their tasks. also, it would be difficult to figure out which URL to redirect to if any blade in the set failed to be removed.
         bladeMappings.forEach((bladeMapping) => {
             let blade = bladeMapping[0];
             let bladeInfo = bladeMapping[1];

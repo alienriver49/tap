@@ -7,7 +7,7 @@ import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 import {TextTemplateLoader, DefaultLoader} from 'aurelia-loader-default'
 import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 
-import Blade from './../../tapFx/ux/viewModels/viewModels.baseBlade'
+let tapFx = window.TapFx;
 
 export interface IPortalBladeConfig {
     bladeId: string;
@@ -17,7 +17,7 @@ export interface IPortalBladeConfig {
     functions: string[]
 }
 
-export class PortalBlade extends Blade {
+export class PortalBlade extends tapFx.ViewModels.BaseBlade {
     constructor(
         private _extension: Extension,
         private _config: IPortalBladeConfig
@@ -86,7 +86,7 @@ export class PortalBlade extends Blade {
 
                     // attempt to attach conventions before compiling the view
                     let docFragment = (templateRegistryEntry.template as HTMLTemplateElement).content;
-                    if (this._config.functions.length > 0) this._extensionResources.conventionEngine.attachFunctions(docFragment, this._config.functions);
+                    if (this._config.functions.length > 0) tapFx.ConventionEngine.attachFunctions(docFragment, this._config.functions);
 
                     // this._viewEngine.importViewResources(["webComponents/tapComponents/tap-test-component"], ["tap-test-component"], this._viewResources).then((viewResources) => {
                     //     var dmf = viewResources;

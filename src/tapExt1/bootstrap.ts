@@ -1,32 +1,21 @@
-/// <reference path="./../typings.d.ts" />
-import {Aurelia} from 'aurelia-framework'
 import {Index} from './index'
+import {init} from './../tapFx'
 
-// Bootstrap the extension after tapFx is loaded
-(function (tapFx) {
-    if (!tapFx)
-        document.addEventListener("TapFxReady", (e) => {
-            startExtension(window.TapFx.Aurelia);
-            delete(window.TapFx.Aurelia);
-        });
-    else {
-        startExtension(window.TapFx.Aurelia);
-        delete(window.TapFx.Aurelia);
-    }
-
-})(window.TapFx)
-
-function startExtension(aurelia: Aurelia) : void {
+init.then(() => {
     console.log('[EXT-BOOTSTRAP] startExtension');
 
-    // call this to set the instance id for the extension (since it will be in an iframe)
-    window.TapFx.Rpc.setInstanceId();
+    let tapFx = window.TapFx;
 
-    aurelia.container.registerSingleton(Index, Index);
-    let index = aurelia.container.get(Index);
+    // call this to set the instance id for the extension (since it will be in an iframe)
+    tapFx.Rpc.setInstanceId();
+
+    tapFx.Aurelia.container.registerSingleton(Index, Index);
+    let index = tapFx.Aurelia.container.get(Index);
     index.init();
 
-    window.TapFx.Extension.journeyOn = index.journeyOn;
+    tapFx.Extension.journeyOn = index.journeyOn;
     // if they have implemented update params, hook into it
-    if (index.updateParams) window.TapFx.Extension.updateParams = index.updateParams.bind(index);
-}
+    if (index.updateParams) tapFx.Extension.updateParams = index.updateParams.bind(index);
+
+    delete(tapFx.Aurelia);
+});

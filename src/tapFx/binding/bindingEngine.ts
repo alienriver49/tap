@@ -172,7 +172,7 @@ export class BindingEngine {
                 if (obj.hasOwnProperty(prop) &&
                     prop.charAt(0) !== '_' &&
                     !(obj[prop] instanceof Map) && !(obj[prop] instanceof Set) &&  // skip Maps and Sets for now
-                    window.TapFx.Utilities.classOf(obj[prop]) !== '[object Function]'
+                    this._utilities.classOf(obj[prop]) !== '[object Function]'
                 ) {
                     // Don't really care about the childMetadata created by observe at this point, but oh well
                     this.observe(obj, prop, refIds, extensionId, parentContextId);
@@ -462,7 +462,7 @@ export class BindingEngine {
         // If there is a parent of the context and it matches the passed parent and it's the only parent reference, 
         // then it's safe to unobserve
         if ((!parentContextId && (bindingMap.isRoot || bindingMap.parentContextIds.size <= 1)) ||
-           (parentContextId && bindingMap.parentContextIds.has(parentContextId) && bindingMap.parentContextIds.size === 1))
+        (parentContextId && bindingMap.parentContextIds.has(parentContextId) && bindingMap.parentContextIds.size === 1))
         {
             // Must be an object, so add a temporary flag property to objects to prevent infinite loop from circular references
             context[this._seenFlag] = true;
@@ -510,3 +510,5 @@ export class BindingEngine {
         this._contextBindingMap.clear();
     }
 }
+
+export default BindingEngine;

@@ -1,9 +1,11 @@
 /// <reference path="./../typings.d.ts" />
 import LandingBlade from './landingBlade'
 import SecondBlade from './secondBlade'
-import BaseBlade from './../tapFx/ux/viewModels/viewModels.baseBlade'
+import BaseBlade from './../tapFx/ux/viewModels/viewModels.baseBlade' // TODO: remove this and use a typing
 
-export class Index extends window.TapFx.BaseExtension {
+let tapFx = window.TapFx;
+
+export class Index extends tapFx.BaseExtension {
     constructor(
     ) {
         super();
@@ -23,7 +25,7 @@ export class Index extends window.TapFx.BaseExtension {
         // if the length of blades is greater than the params, remove those blades
         while (this._blades.length > params.length) {
             let blade = this._blades.pop();
-            if (blade) window.TapFx.Extension.removeBlade(blade);
+            if (blade) tapFx.Extension.removeBlade(blade);
         }
 
         // update blades with any params
@@ -54,6 +56,6 @@ export class Index extends window.TapFx.BaseExtension {
 
     public addBlade(blade: BaseBlade, viewName: string): void {
         console.log('[EXT-1] Attempting to add blade.');
-        window.TapFx.Extension.addBlade(blade, viewName);
+        tapFx.Extension.addBlade(blade, viewName);
     }
 }

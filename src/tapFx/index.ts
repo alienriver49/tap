@@ -2,11 +2,9 @@
 
 import { bootstrap } from 'aurelia-bootstrapper'
 import { Aurelia } from 'aurelia-framework';
-import { BindingLanguage } from 'aurelia-templating'; // TODO: can this be removed?
-import { TemplatingBindingLanguage } from 'aurelia-templating-binding' // TODO: can this be removed?
 import Utilities from './utilities/utilities'
 import RpcClient from './rpc/client'
-import {BindingEngine} from './binding/bindingEngine'
+import BindingEngine from './binding/bindingEngine'
 import BaseBlade from './ux/viewModels/viewModels.baseBlade'
 import BaseExtension from './core/extension/baseExtension'
 import Extension from './core/extension/extension'
@@ -15,22 +13,28 @@ import ConventionEngine from './ux/conventionEngine'
 import Http from './core/http/http'
 import Security from './security/security'
 
-// Bootstrap function is called before any Aurelia 'configure' convention startup
-bootstrap((aurelia: Aurelia) => {
-    aurelia.container.registerSingleton(BindingLanguage, TemplatingBindingLanguage);
-    aurelia.container.registerAlias(BindingLanguage, TemplatingBindingLanguage);
+/**
+ * Storage of the tapFx resources set during bootstrapping.
+ */
+let tapFx: ITapFx;
+
+/**
+ * Bootstrap the tap framework.
+ */
+export let init = bootstrap((aurelia: Aurelia) => {
+    console.log('[TAP-FX] Bootstrapping framework');
+
     aurelia.container.registerSingleton(Utilities, Utilities);
     aurelia.container.registerSingleton(RpcClient, RpcClient);
     aurelia.container.registerSingleton(BindingEngine, BindingEngine);
     aurelia.container.registerSingleton(Extension, Extension);
     aurelia.container.registerSingleton(BladeParser, BladeParser);
     aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
-    aurelia.container.registerSingleton(BindingLanguage, TemplatingBindingLanguage);
-    aurelia.container.registerAlias(BindingLanguage, TemplatingBindingLanguage);
     aurelia.container.registerSingleton(Http, Http);
     aurelia.container.registerSingleton(Security, Security);
 
-    let tapFx = {
+    // TODO: how can we expose things to the shell, but not extensions? i.e. things like Rpc, BindingEngine, ConventionEngine shouldn't be exposed to extension developers right away
+    tapFx = {
         Utilities: aurelia.container.get(Utilities),
         Rpc: aurelia.container.get(RpcClient),
         BindingEngine: aurelia.container.get(BindingEngine),
@@ -39,17 +43,21 @@ bootstrap((aurelia: Aurelia) => {
         },
         BaseExtension: BaseExtension,
         Extension: aurelia.container.get(Extension),
+        ConventionEngine: aurelia.container.get(ConventionEngine),
         Aurelia: aurelia,
         Http: aurelia.container.get(Http),
         Security: aurelia.container.get(Security)
     };
-    window.TapFx = tapFx;
 
-    // Once window.TapFx is initialized, dispatch the TapFxReady event
-    // The main app should check for the existence of window.TapFx or listen for this event
-    document.dispatchEvent(
-        new CustomEvent('TapFxReady', {
-            bubbles: true
-        })
-    );
+    window.TapFx = tapFx;
 });
+
+/**
+ * Set the tap framework for use on the global scope.
+ */
+/*export function getTapFx(): ITapFx {
+    if (!tapFx)
+        throw Error('TapFx not yet bootstrapped, please call this function within init().then resolution.');
+
+    return tapFx;
+}*/

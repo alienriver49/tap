@@ -1,5 +1,6 @@
+let tapFx = window.TapFx;
 
-class SecondBlade extends window.TapFx.ViewModels.BaseBlade {
+class SecondBlade extends tapFx.ViewModels.BaseBlade {
     title: string;
     subtitle: string;
     display: string;

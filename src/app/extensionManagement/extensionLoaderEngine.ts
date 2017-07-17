@@ -1,3 +1,5 @@
+let tapFx = window.TapFx;
+
 class ExtensionLoaderEngine {
     constructor(
     ) {
@@ -8,7 +10,7 @@ class ExtensionLoaderEngine {
      * @param extensionName 
      */
     private _getExtensionBundle(extensionName: string): string {
-        return 'tap' + window.TapFx.Utilities.upperCaseFirstChar(extensionName) + '-bundle.js';
+        return 'tap' + tapFx.Utilities.upperCaseFirstChar(extensionName) + '-bundle.js';
     }
 
     /**

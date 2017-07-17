@@ -1,8 +1,13 @@
+import { inject } from 'aurelia-dependency-injection'
+import Utilities from './../utilities/utilities';
+
 /**
  * Engine for processing TAP conventions.
  */
+@inject(Utilities)
 class ConventionEngine {
     constructor(
+        private _utilities: Utilities
     ) {
         
     }
@@ -20,7 +25,7 @@ class ConventionEngine {
             if (result && result[1]) {
                 // grab the result name and format it to our convention, i.e. Convention becomes convention, ClickMe becomes clickMe 
                 let resultName = result[1];
-                let name = window.TapFx.Utilities.lowerCaseFirstChar(resultName);
+                let name = this._utilities.lowerCaseFirstChar(resultName);
                 // query the document fragment for the convention name
                 let element = docFragment.querySelector('[name="' + name + '"]');
                 // if there is an element and the click attribute hasn't been set yet

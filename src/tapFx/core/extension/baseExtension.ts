@@ -1,6 +1,6 @@
 import BaseBlade from './../../ux/viewModels/viewModels.baseBlade' // type only
 
-class BaseExtension {
+export class BaseExtension {
     constructor() { }
 
     /**

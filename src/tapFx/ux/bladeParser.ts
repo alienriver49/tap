@@ -1,14 +1,16 @@
 import { inject } from 'aurelia-framework'
-import BaseBlade from './viewModels/viewModels.baseBlade'
 import * as tapc from './tapcModules'
 import {tapcBase} from './components/tapcBase'
 import {tapcBaseContainer} from './components/tapcBaseContainer'
+import BaseBlade from './viewModels/viewModels.baseBlade'
 import ConventionEngine from './conventionEngine'
+import Utilities from './../utilities/utilities'
 
-@inject(ConventionEngine)
+@inject(ConventionEngine, Utilities)
 export class BladeParser {
     constructor(
-        private _conventionEngine: ConventionEngine
+        private _conventionEngine: ConventionEngine,
+        private _utilities: Utilities
     ) {
 
     }
@@ -81,7 +83,7 @@ export class BladeParser {
         if (node instanceof tapc.tapcText){
             let textNode = document.createTextNode(node.attributeText);
             if (bindMatch = bindRegExp.exec(node.attributeText))
-                textNode.data = window.TapFx.Utilities.camelCaseToHyphen('${'+ bindMatch[1] + '}');
+                textNode.data = this._utilities.camelCaseToHyphen('${'+ bindMatch[1] + '}');
             parent.appendChild(textNode);
         }
         if (node instanceof tapc.tapcTapTestComponent){
@@ -109,9 +111,9 @@ export class BladeParser {
                         // If the attribute value starts with '@', then bind it, 
                         // otherwise use literal value
                         if (bindMatch = bindRegExp.exec(value)){
-                            el.setAttribute(window.TapFx.Utilities.camelCaseToHyphen(`${match[1]}.bind`), bindMatch[1]);
+                            el.setAttribute(this._utilities.camelCaseToHyphen(`${match[1]}.bind`), bindMatch[1]);
                         }else{
-                            el.setAttribute(window.TapFx.Utilities.camelCaseToHyphen(match[1]), node[prop]);
+                            el.setAttribute(this._utilities.camelCaseToHyphen(match[1]), node[prop]);
                         }
                     }
                     if (value && (match = eventRegExp.exec(prop))){
@@ -131,9 +133,9 @@ export class BladeParser {
                             // If the attribute value starts with '@', then bind it, 
                             // otherwise use literal value
                             if (bindMatch = bindRegExp.exec(value)){
-                                el.setAttribute( window.TapFx.Utilities.camelCaseToHyphen(`${match[1]}.bind`), bindMatch[1]);
+                                el.setAttribute(this._utilities.camelCaseToHyphen(`${match[1]}.bind`), bindMatch[1]);
                             }else{
-                                el.setAttribute(window.TapFx.Utilities.camelCaseToHyphen(match[1]), node[prop]);
+                                el.setAttribute(this._utilities.camelCaseToHyphen(match[1]), node[prop]);
                             }
                         }
                         if (value && (match = eventRegExp.exec(prop))){

@@ -1,8 +1,11 @@
-import DeferredPromise from './../../tapFx/core/deferredPromise'
+import DeferredPromise from './../../tapFx/core/deferredPromise' // TODO - expose this via global scope
+
+let tapFx = window.TapFx;
 
 /**
  * Class for storing and transferring the results of extension commands (load, unload, etc.).
  */
+
 export class ExtensionCommandResult {
     constructor() { }
 
@@ -48,7 +51,7 @@ export class ExtensionCommandQueue {
      */
     queueCommand(extensionId: string, commandCall: Function): void {
         // create a command id to be associated with this
-        let commandId = window.TapFx.Utilities.newGuid();
+        let commandId = tapFx.Utilities.newGuid();
         // new up a deferred promise
         let defer: DeferredPromise<ExtensionCommandResult> = new DeferredPromise<ExtensionCommandResult>();
 

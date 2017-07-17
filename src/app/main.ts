@@ -2,10 +2,9 @@
 import { Aurelia, PLATFORM, FrameworkConfiguration } from 'aurelia-framework';
 import {LogManager} from "aurelia-framework";
 import {ConsoleAppender} from "aurelia-logging-console";
-import config from './../tapFx/security/authConfig';
 import {AuthService} from "aurelia-auth";
-import {BindingEngine} from './../tapFx/binding/bindingEngine' // TODO: remove
-import {RpcClient} from './../tapFx/rpc/client' // TODO: remove
+import {init} from './../tapFx';
+import config from './../tapFx/security/authConfig';
 import CommandManager from './commanding/commandManager'
 import ExtensionManager from './extensionManagement/extensionManager'
 import ExtensionLoaderEngine from './extensionManagement/extensionLoaderEngine'
@@ -43,7 +42,7 @@ import AuthorizationEngine from './authorization/authorizationEngine'
 
 // Attempt to share just one instance of Aurelia with Tap-Fx
 // (It never quite worked)
-(function (tapFx){
+/*(function (tapFx){
     if (!tapFx)
         document.addEventListener("TapFxReady", (e) => {
             initialize(window.TapFx.Aurelia);
@@ -54,40 +53,42 @@ import AuthorizationEngine from './authorization/authorizationEngine'
         delete(window.TapFx.Aurelia);
     }
 
-})(window.TapFx)
+})(window.TapFx)*/
 
-function initialize(aurelia: Aurelia) : void {
-    aurelia.host = document.body;
-    // The app and tapFx have separate instances of Aurelia,
-    // Use singletons from TapFx in the app
-    aurelia.container.registerSingleton(CommandManager, CommandManager);
-    aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
-    aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
-    aurelia.container.registerSingleton(AuthorizationEngine, AuthorizationEngine);
+export function configure(aurelia: Aurelia) {
+    console.log('[TAP-SHELL] Configuring shell');
+    init.then(() => {
+        aurelia.host = document.body;
+        // The app and tapFx have separate instances of Aurelia,
+        // Use singletons from TapFx in the app
+        aurelia.container.registerSingleton(CommandManager, CommandManager);
+        aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
+        aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
+        aurelia.container.registerSingleton(AuthorizationEngine, AuthorizationEngine);
 
-    aurelia.use
-        .standardConfiguration()
-        .history()
-        // Register the components globally so we don't need to
-        // 'require' them in each html (useful when dynamically creating views)
-        .feature(PLATFORM.moduleName('webComponents/index'))        
-        .developmentLogging()
-        .plugin(PLATFORM.moduleName('aurelia-auth'), (baseConfig) => {
-            baseConfig.configure(config);
+        aurelia.use
+            .standardConfiguration()
+            .history()
+            // Register the components globally so we don't need to
+            // 'require' them in each html (useful when dynamically creating views)
+            .feature(PLATFORM.moduleName('webComponents/index'))        
+            .developmentLogging()
+            .plugin(PLATFORM.moduleName('aurelia-auth'), (baseConfig) => {
+                baseConfig.configure(config);
+            });
+
+        let auth: AuthService = aurelia.container.get(AuthService);
+        aurelia.start().then(() => {
+            if (auth.isAuthenticated()) {
+                console.log('[SHELL] Authenticated! ', auth.getTokenPayload());
+                aurelia.setRoot(PLATFORM.moduleName('app/app'));
+            }
+            else {
+                console.log('[SHELL] Not authenticated!');
+                auth.authenticate('TylerId', false, {});
+            }
+
+            delete(window.TapFx.Aurelia);
         });
-
-    let auth: AuthService = aurelia.container.get(AuthService);
-    
-    aurelia.start().then(() => {
-        if (auth.isAuthenticated()) {
-            console.log('[SHELL] Authenticated! ', auth.getTokenPayload());
-            aurelia.setRoot(PLATFORM.moduleName('app/app'));
-        }
-        else {
-            console.log('[SHELL] Not authenticated!');
-            auth.authenticate('TylerId', false, {});
-        }
     });
-
-    //window.TapFx.BootstrapResolve(undefined);
 }

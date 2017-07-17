@@ -1,6 +1,6 @@
 import {tapcBase} from './../components/tapcBase'
 
-class BaseBlade {
+export class BaseBlade {
     constructor() { }
 
     title: string;

@@ -4,7 +4,9 @@ import {ITapDataTableColumnConfiguration} from './../webComponents/dataTable/tap
 import {School} from './school'
 import {Address} from './address'
 
-class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
+let tapFx = window.TapFx;
+
+class LandingBlade extends tapFx.ViewModels.BaseBlade {
     title: string;
     display: string;
     raised: boolean = false;

@@ -1,6 +1,6 @@
 import BaseBlade from './../../ux/viewModels/viewModels.baseBlade' // type only
 
-class BladeEngine {
+export class BladeEngine {
     constructor() {
 
     }

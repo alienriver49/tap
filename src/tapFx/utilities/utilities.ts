@@ -1,4 +1,4 @@
-class Utilities {
+export class Utilities {
     /**
      * Returns a new GUID.
      */

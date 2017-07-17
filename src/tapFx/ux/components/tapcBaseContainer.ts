@@ -6,7 +6,7 @@ export interface ITapcBaseContainer extends ITapcBase {
 
 export class tapcBaseContainer extends tapcBase{
 
-    constructor(config?: ITapcBaseContainer){
+    constructor(config?: ITapcBaseContainer) {
         if (config === void 0) { config = {}; }
         super(config);
         this.content = config.content || [];

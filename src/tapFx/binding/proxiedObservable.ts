@@ -3,7 +3,7 @@ import { ObserverLocator} from 'aurelia-binding';
 import { TaskQueue } from 'aurelia-task-queue';
 import RpcClient from './../rpc/client'
 import Utilities from './../utilities/utilities'
-import { InternalPropertyObserver, InternalCollectionObserver, Callable} from 'aurelia-binding'; // type
+import { InternalPropertyObserver, InternalCollectionObserver, Callable } from 'aurelia-binding'; // type
 
 // first three properties are defined by Aurelia, last by us
 // Note that these are not explicitly defined in any aurelia public interface,
@@ -57,7 +57,6 @@ export class ProxiedObservable implements Callable {
     ) { 
     }
 
-    private _bindingEngine = window.TapFx.BindingEngine;
     private _observer: InternalPropertyObserver;
     private _collectionObserver: InternalCollectionObserver;
     private _className: string = (this as Object).constructor.name;
@@ -85,7 +84,8 @@ export class ProxiedObservable implements Callable {
             syncObjectContextId: ''
         } 
 
-        if (this._utilities.isObject(oldValue)){
+        // TODO: Re-add this functionality, though we need to remove the dependancy on _bindingEngine due to issues with DI (and circular dependancies). Could communicate to the binding engine via RPC or move this logic to the binding engine
+        /*if (this._utilities.isObject(oldValue)){
             let oldContextId = this._bindingEngine.getIdByContext(oldValue);
             // If oldValue is an object mapped in the BindingEngine, then
             // dispose of any observers on it
@@ -113,7 +113,7 @@ export class ProxiedObservable implements Callable {
                 // Need to pass the context Id for the new object as well
                 data.syncObjectContextId = syncValue._syncObjectContextId;
             }
-        }
+        }*/
 
         console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Property has changed from: "${oldValue}" to: "${newValue}"`);
         this._rpc.publish('tapfx.propertyBindingSync', this._extensionId, data);

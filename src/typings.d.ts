@@ -4,7 +4,8 @@ import {BindingEngine} from './tapFx/binding/bindingEngine'
 import BaseExtension from './tapFx/core/extension/baseExtension'
 import BaseBlade from './tapFx/ux/viewModels/viewModels.baseBlade'
 import Extension from './tapFx/core/extension/extension'
-import Auth from './tapFx/security/auth'
+import Http from './tapFx/core/http/http'
+import Security from './tapFx/security/security'
 import { Aurelia, PLATFORM } from 'aurelia-framework';
 
 declare global {
@@ -19,7 +20,8 @@ declare global {
             Extension: Extension,
             BindingEngine: BindingEngine,
             Aurelia: Aurelia,
-            Auth: Auth,
+            Http: Http,
+            Security: Security
         }
     }
 }

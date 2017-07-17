@@ -75,6 +75,9 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         var origSubtitle = this.subtitle;
         this.subtitle = origSubtitle + ' - Convention Button Clicked!';
         this.buttonConventionDisabled = true;
+
+        //window.TapFx.Security.getUserInfo();
+
         setTimeout(() => {
             this.subtitle = origSubtitle;
             this.buttonConventionDisabled = false;
@@ -89,7 +92,7 @@ class LandingBlade extends window.TapFx.ViewModels.BaseBlade {
         this.selectedCheckboxes = [this.checkboxes[random(0, 2)]];
         this.selectedRadio = this.radios[random(0, 2)];
 
-        window.TapFx.Auth.fetchRequest('https://jsonplaceholder.typicode.com/users/7', {}).then(response => {
+        window.TapFx.Http.fetchRequest('https://jsonplaceholder.typicode.com/users/7', {}).then(response => {
             console.log('[EXT-2] response: ', response);
         });
     }

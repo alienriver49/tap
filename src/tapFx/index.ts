@@ -10,9 +10,10 @@ import {BindingEngine} from './binding/bindingEngine'
 import BaseBlade from './ux/viewModels/viewModels.baseBlade'
 import BaseExtension from './core/extension/baseExtension'
 import Extension from './core/extension/extension'
-import Auth from './security/auth'
 import BladeParser from './ux/bladeParser'
 import ConventionEngine from './ux/conventionEngine'
+import Http from './core/http/http'
+import Security from './security/security'
 
 // Bootstrap function is called before any Aurelia 'configure' convention startup
 bootstrap((aurelia: Aurelia) => {
@@ -22,9 +23,12 @@ bootstrap((aurelia: Aurelia) => {
     aurelia.container.registerSingleton(RpcClient, RpcClient);
     aurelia.container.registerSingleton(BindingEngine, BindingEngine);
     aurelia.container.registerSingleton(Extension, Extension);
-    aurelia.container.registerSingleton(Auth, Auth);
     aurelia.container.registerSingleton(BladeParser, BladeParser);
     aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
+    aurelia.container.registerSingleton(BindingLanguage, TemplatingBindingLanguage);
+    aurelia.container.registerAlias(BindingLanguage, TemplatingBindingLanguage);
+    aurelia.container.registerSingleton(Http, Http);
+    aurelia.container.registerSingleton(Security, Security);
 
     let tapFx = {
         Utilities: aurelia.container.get(Utilities),
@@ -36,7 +40,8 @@ bootstrap((aurelia: Aurelia) => {
         BaseExtension: BaseExtension,
         Extension: aurelia.container.get(Extension),
         Aurelia: aurelia,
-        Auth: aurelia.container.get(Auth),
+        Http: aurelia.container.get(Http),
+        Security: aurelia.container.get(Security)
     };
     window.TapFx = tapFx;
 

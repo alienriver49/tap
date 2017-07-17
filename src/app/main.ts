@@ -2,6 +2,7 @@
 import { Aurelia, PLATFORM, FrameworkConfiguration } from 'aurelia-framework';
 import {LogManager} from "aurelia-framework";
 import {ConsoleAppender} from "aurelia-logging-console";
+import config from './../tapFx/security/authConfig';
 import {AuthService} from "aurelia-auth";
 import {BindingEngine} from './../tapFx/binding/bindingEngine' // TODO: remove
 import {RpcClient} from './../tapFx/rpc/client' // TODO: remove
@@ -9,7 +10,6 @@ import CommandManager from './commanding/commandManager'
 import ExtensionManager from './extensionManagement/extensionManager'
 import ExtensionLoaderEngine from './extensionManagement/extensionLoaderEngine'
 import AuthorizationEngine from './authorization/authorizationEngine'
-import config from './authConfig';
 
 //import 'material-components-web'
 
@@ -77,7 +77,7 @@ function initialize(aurelia: Aurelia) : void {
         });
 
     let auth: AuthService = aurelia.container.get(AuthService);
-
+    
     aurelia.start().then(() => {
         if (auth.isAuthenticated()) {
             console.log('[SHELL] Authenticated! ', auth.getTokenPayload());

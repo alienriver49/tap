@@ -1,7 +1,10 @@
-// Settigns for authentication 
+// Settings for authentication 
 
 var config = {
-  loginRedirect: '/',  
+  loginRedirect: '/',
+  tokenPrefix: 'TylerId',  
+  baseUrl: 'https://fdvmdevtid1.tylertech.com/app/IDPTokenServer/identity',
+  profileUrl: '/connect/userinfo',
 	providers: {
     TylerId : {
       name: 'TylerId',

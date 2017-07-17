@@ -11,10 +11,6 @@ class AuthorizationEngine {
         this.authService = authService;
     }
 
-    getTokenPayload() : any {
-        return this.authService.getTokenPayload();
-    }
-
     canLoadExtension(resource: String) : Promise<boolean> {
         // Check access for the specific resource being requested
         // This permission service is stubbed out, but in the future will be a service call

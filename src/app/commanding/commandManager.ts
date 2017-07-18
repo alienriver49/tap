@@ -1,12 +1,12 @@
 import { inject } from 'aurelia-framework'
 import ExtensionManager from './../extensionManagement/extensionManager'
 import Command from './command'
-let tapFx = window.TapFx;
 
-@inject(ExtensionManager)
+@inject(ExtensionManager, 'TapFx')
 class CommandManager {
     constructor(
-        private _extensionManager: ExtensionManager
+        private _extensionManager: ExtensionManager,
+        private _tapFx: ITapFx,
     ) { }
 
     /**
@@ -62,7 +62,7 @@ class CommandManager {
         let command = new Command();
         command.extensionName = fragmentArr[0];
         command.params = (fragmentArr.length > 1 ? fragmentArr.slice(1) : []);
-        command.queryParams = (queryString.length > 0 ? tapFx.Utilities.convertQueryStringToObject(queryString) : {});
+        command.queryParams = (queryString.length > 0 ? this._tapFx.Utilities.convertQueryStringToObject(queryString) : {});
 
         return command;
     }

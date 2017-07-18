@@ -2,14 +2,12 @@ import { inject, Factory} from 'aurelia-framework'
 import {Container} from 'aurelia-dependency-injection';
 import {Loader, TemplateRegistryEntry} from 'aurelia-loader';
 import {DefaultLoader, TextTemplateLoader} from 'aurelia-loader-default';
-import {BindingLanguage, TemplateRegistryViewStrategy, ViewEngine, ModuleAnalyzer, ViewSlot, ViewLocator, ViewFactory, ViewResources, TemplatingEngine, CompositionTransaction, CompositionEngine, View, CompositionContext, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
+import {BindingLanguage, ViewEngine, ModuleAnalyzer, ViewResources, View, ViewCompiler } from 'aurelia-templating';
 import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
 import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
-import DeferredPromise from './../../tapFx/core/deferredPromise'
+import DeferredPromise from './../../tapFx/core/deferredPromise'; // TODO: add to tapFx object
 import {IChildMetadata, ISerializedObject, IUnresolvedRef} from './../../tapFx/binding/bindingEngine'; // TODO: move these to typings
-
-let tapFx = window.TapFx;
 
 export interface IExtensionResources {
     container: Container;
@@ -21,14 +19,15 @@ export interface IExtensionResources {
     defaultLoader: DefaultLoader;
 }
 
-@inject(Container, ViewResources, Loader, TextTemplateLoader, Factory.of(PortalBlade))
+@inject(Container, ViewResources, Loader, TextTemplateLoader, Factory.of(PortalBlade), 'TapFx')
 export class Extension {
     constructor(
-        _globalContainer: Container,
-        _globalViewResources: ViewResources,
+        private _globalContainer: Container,
+        private _globalViewResources: ViewResources,
         private _defaultLoader: DefaultLoader,
-        _textTemplateLoader: TextTemplateLoader,
-        private _portalBladeFactory: (...args: any[]) => PortalBlade, 
+        private _textTemplateLoader: TextTemplateLoader,
+        private _portalBladeFactory: (...args: any[]) => PortalBlade,
+        private _tapFx: ITapFx,
         public id: string,
         public name: string
     ) { 
@@ -49,7 +48,6 @@ export class Extension {
     public blades: PortalBlade[] = [];
     private _container: Container;
     private _viewResources: ViewResources;
-    private _textTemplateLoader: TextTemplateLoader;
     private _htmlImportLoader: HTMLImportTemplateLoader;
     private _viewCompiler: ViewCompiler;
     private _viewEngine: ViewEngine; 
@@ -80,14 +78,14 @@ export class Extension {
         if (obj.hasOwnProperty(this._seenFlag))
             return ;        
 
-        tapFx.BindingEngine.resolveId(obj, objectID, parentContextId);
+        this._tapFx.BindingEngine.resolveId(obj, objectID, parentContextId);
 
         // Recursively register any child objects first
         if (obj.hasOwnProperty('_childMetadata')){
             let childMetadata: IChildMetadata[] = obj['_childMetadata'];
             childMetadata.forEach((metadata) => {
                 // Check if there is already a mapped context with the passed Id
-                let existingChildObject = tapFx.BindingEngine.getContextById(metadata.contextId);
+                let existingChildObject = this._tapFx.BindingEngine.getContextById(metadata.contextId);
                 if (existingChildObject){
                     // If so, we assume it's being observed and assign that to the parent object
                     obj[metadata.property] = existingChildObject;
@@ -113,7 +111,7 @@ export class Extension {
         if (!parentContextId){
             // First resolve the unresolved references
             this._unresolvedRefs.forEach((ref) => {
-                let existingObject = tapFx.BindingEngine.getContextById(ref.refId);
+                let existingObject = this._tapFx.BindingEngine.getContextById(ref.refId);
                 if (!existingObject)
                     throw new Error(`SHELL: Cannot resolve a reference for context Id: ${ref.refId}`);
                 ref.context[ref.property] = existingObject;
@@ -130,20 +128,20 @@ export class Extension {
                 // skip Functions
                 if (obj.hasOwnProperty(prop) &&
                     prop.charAt(0) !== '_' &&
-                    tapFx.Utilities.classOf(obj[prop]) !== '[object Function]'
+                    this._tapFx.Utilities.classOf(obj[prop]) !== '[object Function]'
                 ) {
-                    tapFx.BindingEngine.observe(obj, prop, refIds, this.id, parentContextId);
+                    this._tapFx.BindingEngine.observe(obj, prop, refIds, this.id, parentContextId);
                 }
             }
         }
     }
 
     private _unregisterBladeBindings(blade: PortalBlade): void {
-        tapFx.BindingEngine.unobserveBlade(blade);
+        this._tapFx.BindingEngine.unobserveBlade(blade);
     }
 
     private _unregisterAllBladeBindings(): void {
-        tapFx.BindingEngine.unobserveAll();
+        this._tapFx.BindingEngine.unobserveAll();
     }
 
     private _registerBladeFunctions(bladeID: string, blade: PortalBlade, functions: string[]) {
@@ -154,11 +152,11 @@ export class Extension {
             blade[func] = function() {
                 // publish the function call to the extension
                 console.log('[SHELL] Publishing message from function: ' + func);
-                tapFx.Rpc.publish('tapfx.' + bladeID + '.' + func, extId, { functionArgs: [...arguments] });
+                this._tapFx.Rpc.publish('tapfx.' + bladeID + '.' + func, extId, { functionArgs: [...arguments] });
                 
                 // set up a subscription for any result from the calling of the function in the extension
                 let resultPromise = new DeferredPromise();
-                let subscription = tapFx.Rpc.subscribe('shell.' + bladeID + '.' + func, (data) => {
+                let subscription = this._tapFx.Rpc.subscribe('shell.' + bladeID + '.' + func, (data) => {
                     console.log('[SHELL] Receiving result from function: ' + func + ' result: ', data);
                     resultPromise.resolve(data);
 
@@ -176,7 +174,9 @@ export class Extension {
      * @param config
      */
     addBlade(config: IPortalBladeConfig): PortalBlade {
-        let blade = new PortalBlade(this, config) 
+        console.log(this);
+        // TODO: Figure this out using this._portalBladeFactory
+        let blade = new PortalBlade(this._tapFx, this, config) /*this._portalBladeFactory(this, config)*/;
         // Should we move these functions to PortalBlade?
         Object.assign(blade, config.serializedBlade);
         this._registerBladeBindings(config.bladeId, blade);

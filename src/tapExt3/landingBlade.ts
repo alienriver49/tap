@@ -1,12 +1,10 @@
 import * as tapfx from './../tapFx/ux/tapcModules'
-import Utilities from './../tapFx/utilities/utilities'
 import {ITapDataTableColumnConfiguration} from './../webComponents/dataTable/tap-data-table'
 import {School} from './school'
 import {Address} from './address'
+import {ViewModels} from './../tapFx'
 
-let tapFx = window.TapFx;
-
-class LandingBlade extends tapFx.ViewModels.BaseBlade {
+class LandingBlade extends ViewModels.BaseBlade {
     title: string;
     display: string;
     raised: boolean = false;

@@ -1,10 +1,8 @@
 import {Index} from './index'
 import {init} from './../tapFx'
 
-init.then(() => {
+init().then((tapFx) => {
     console.log('[EXT-BOOTSTRAP] startExtension');
-
-    let tapFx = window.TapFx;
 
     // call this to set the instance id for the extension (since it will be in an iframe)
     tapFx.Rpc.setInstanceId();
@@ -17,5 +15,5 @@ init.then(() => {
     // if they have implemented update params, hook into it
     if (index.updateParams) tapFx.Extension.updateParams = index.updateParams.bind(index);
 
-    delete(tapFx.Aurelia);
+    //delete(tapFx.Aurelia);
 });

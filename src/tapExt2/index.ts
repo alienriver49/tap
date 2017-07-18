@@ -1,13 +1,15 @@
 import LandingBlade from './landingBlade'
 import BaseBlade from './../tapFx/ux/viewModels/viewModels.baseblade'; // TODO: remove this and use a typing
+import {getTapFx, BaseExtension} from './../tapFx'
 
-let tapFx = window.TapFx;
-
-export class Index extends tapFx.BaseExtension {
+export class Index extends BaseExtension {
     constructor(
     ) {
         super();
+        this._tapFx = getTapFx();
     }
+
+    private _tapFx: ITapFx;
 
     public init(): void {
         console.log('[EXT-2] Index.init');
@@ -21,6 +23,6 @@ export class Index extends tapFx.BaseExtension {
 
     public addBlade(blade: BaseBlade, viewName: string): void {
         console.log('[EXT-2] Attempting to add blade.');
-        tapFx.Extension.addBlade(blade, viewName);
+        this._tapFx.Extension.addBlade(blade, viewName);
     }
 }

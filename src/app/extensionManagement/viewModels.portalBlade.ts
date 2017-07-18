@@ -1,13 +1,8 @@
-import { inject, PLATFORM, Aurelia} from 'aurelia-framework';
-import {IExtensionResources, Extension } from './extension';
-import {Container, Factory} from 'aurelia-dependency-injection';
+import { inject } from 'aurelia-framework';
 import {Loader, TemplateRegistryEntry} from 'aurelia-loader';
-import {BindingLanguage, TemplateRegistryViewStrategy, ViewEngine, ViewSlot, ViewLocator, ViewFactory, ViewResources, TemplatingEngine, CompositionTransaction, CompositionEngine, View, CompositionContext, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
+import { BindingLanguage, ViewSlot, ViewFactory, ViewResources, View, ViewCompiler, ViewCompileInstruction } from 'aurelia-templating';
 import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
-import {TextTemplateLoader, DefaultLoader} from 'aurelia-loader-default'
-import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
-
-let tapFx = window.TapFx;
+import {IExtensionResources, Extension } from './extension';
 
 export interface IPortalBladeConfig {
     bladeId: string;
@@ -17,12 +12,13 @@ export interface IPortalBladeConfig {
     functions: string[]
 }
 
-export class PortalBlade extends tapFx.ViewModels.BaseBlade {
+//@inject('TapFx')
+export class PortalBlade /*extends BaseBlade*/ {
     constructor(
+        private _tapFx: ITapFx,
         private _extension: Extension,
-        private _config: IPortalBladeConfig
+        private _config: IPortalBladeConfig,
     ) { 
-        super();
         this._extensionResources = _extension.getResources();
         // set this from the config
         this.bladeId = _config.bladeId;
@@ -86,7 +82,7 @@ export class PortalBlade extends tapFx.ViewModels.BaseBlade {
 
                     // attempt to attach conventions before compiling the view
                     let docFragment = (templateRegistryEntry.template as HTMLTemplateElement).content;
-                    if (this._config.functions.length > 0) tapFx.ConventionEngine.attachFunctions(docFragment, this._config.functions);
+                    if (this._config.functions.length > 0) this._tapFx.ConventionEngine.attachFunctions(docFragment, this._config.functions);
 
                     // this._viewEngine.importViewResources(["webComponents/tapComponents/tap-test-component"], ["tap-test-component"], this._viewResources).then((viewResources) => {
                     //     var dmf = viewResources;

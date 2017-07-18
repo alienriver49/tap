@@ -5,29 +5,28 @@ import ExtensionLoaderEngine from './extensionLoaderEngine'
 import Extension from './extension'
 import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
 
-let tapFx = window.TapFx;
-
-@inject(EventAggregator, ExtensionCommandQueue, ExtensionLoaderEngine, Factory.of(Extension))
+@inject(EventAggregator, ExtensionCommandQueue, ExtensionLoaderEngine, Factory.of(Extension), 'TapFx')
 class ExtensionManager {
     constructor(
         private _eventAggregator: EventAggregator,
         private _extensionCommandQueue: ExtensionCommandQueue,
         private _extensionLoaderEngine: ExtensionLoaderEngine,
-        private _extensionFactory: (...args: any[]) => Extension
+        private _extensionFactory: (...args: any[]) => Extension,
+        private _tapFx: ITapFx
     ) {
-        let subscription = tapFx.Rpc.subscribe('shell.addBlade', this._onAddBlade.bind(this));
+        let subscription = this._tapFx.Rpc.subscribe('shell.addBlade', this._onAddBlade.bind(this));
         this._rpcSubscriptions.push(subscription);
 
-        subscription = tapFx.Rpc.subscribe('shell.addBladeFailed', this._onAddBladeFailed.bind(this));
+        subscription = this._tapFx.Rpc.subscribe('shell.addBladeFailed', this._onAddBladeFailed.bind(this));
         this._rpcSubscriptions.push(subscription);
 
-        subscription = tapFx.Rpc.subscribe('shell.removeExtension', this._onRemoveExtension.bind(this));
+        subscription = this._tapFx.Rpc.subscribe('shell.removeExtension', this._onRemoveExtension.bind(this));
         this._rpcSubscriptions.push(subscription);
 
-        subscription = tapFx.Rpc.subscribe('shell.removeExtensionFailed', this._onRemoveExtensionFailed.bind(this));
+        subscription = this._tapFx.Rpc.subscribe('shell.removeExtensionFailed', this._onRemoveExtensionFailed.bind(this));
         this._rpcSubscriptions.push(subscription);
 
-        subscription = tapFx.Rpc.subscribe('shell.removeBlade', this._onRemoveBlade.bind(this));
+        subscription = this._tapFx.Rpc.subscribe('shell.removeBlade', this._onRemoveBlade.bind(this));
         this._rpcSubscriptions.push(subscription);
     }
 
@@ -188,7 +187,7 @@ class ExtensionManager {
      */
     loadExtension(extensionName: string, params: any[], queryParams: Object): void {
         // get a new extension id
-        let extensionId = tapFx.Utilities.newGuid();
+        let extensionId = this._tapFx.Utilities.newGuid();
         this._extensionIdMap.set(extensionName, extensionId);
 
         // queue the load command
@@ -227,7 +226,7 @@ class ExtensionManager {
     private _queueUpdateExtensionParams(extensionId: string, params: any[], queryParams: Object): void {
         this._extensionCommandQueue.queueCommand(extensionId, () => {
             // update params for that extension
-            tapFx.Rpc.publish('tapfx.updateExtensionParams', extensionId, { params: params, queryParams: queryParams });
+            this._tapFx.Rpc.publish('tapfx.updateExtensionParams', extensionId, { params: params, queryParams: queryParams });
 
             // for now, automatically resolve (otherwise the queue will get stuck / timeout)
             // note: in the future, should probably subscribe to a 'shell.updateExtensionParams' from the extension to detect when the update params completed and then resolve. similar to what loadExtension and unloadExtension do
@@ -244,7 +243,7 @@ class ExtensionManager {
         let extensionId = this._extensionIdMap.get(extensionName);
         if (extensionId) {
             this._extensionCommandQueue.queueCommand(extensionId, () => {
-                tapFx.Rpc.publish('tapfx.removeExtension', extensionId);
+                this._tapFx.Rpc.publish('tapfx.removeExtension', extensionId);
             });
         } else {
             // TODO: display an error page

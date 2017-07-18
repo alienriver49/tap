@@ -7,25 +7,17 @@ import Extension from './tapFx/core/extension/extension';
 import ConventionEngine from './tapFx/ux/conventionEngine'
 import Http from './tapFx/core/http/http'
 import Security from './tapFx/security/security'
-import { Aurelia, PLATFORM } from 'aurelia-framework';
+import { Aurelia } from 'aurelia-framework';
 
 declare global {
     interface ITapFx {
         Utilities: Utilities,
         Rpc: RpcClient
-        ViewModels: {
-            BaseBlade: typeof BaseBlade
-        },
-        BaseExtension: typeof BaseExtension,
         Extension: Extension,
         BindingEngine: BindingEngine,
         ConventionEngine: ConventionEngine,
         Aurelia: Aurelia,
         Http: Http,
         Security: Security
-    }
-
-    interface Window {
-        TapFx: ITapFx
     }
 }

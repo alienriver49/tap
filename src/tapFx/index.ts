@@ -21,43 +21,55 @@ let tapFx: ITapFx;
 /**
  * Bootstrap the tap framework.
  */
-export let init = bootstrap((aurelia: Aurelia) => {
-    console.log('[TAP-FX] Bootstrapping framework');
+export let init = (): Promise<ITapFx> => {
+    return new Promise<ITapFx>((resolve, reject) => {
+        bootstrap((aurelia: Aurelia) => {
+            console.log('[TAP-FX] Bootstrapping framework');
 
-    aurelia.container.registerSingleton(Utilities, Utilities);
-    aurelia.container.registerSingleton(RpcClient, RpcClient);
-    aurelia.container.registerSingleton(BindingEngine, BindingEngine);
-    aurelia.container.registerSingleton(Extension, Extension);
-    aurelia.container.registerSingleton(BladeParser, BladeParser);
-    aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
-    aurelia.container.registerSingleton(Http, Http);
-    aurelia.container.registerSingleton(Security, Security);
+            aurelia.container.registerSingleton(Utilities, Utilities);
+            aurelia.container.registerSingleton(RpcClient, RpcClient);
+            aurelia.container.registerSingleton(BindingEngine, BindingEngine);
+            aurelia.container.registerSingleton(Extension, Extension);
+            aurelia.container.registerSingleton(BladeParser, BladeParser);
+            aurelia.container.registerSingleton(ConventionEngine, ConventionEngine);
+            aurelia.container.registerSingleton(Http, Http);
+            aurelia.container.registerSingleton(Security, Security);
 
-    // TODO: how can we expose things to the shell, but not extensions? i.e. things like Rpc, BindingEngine, ConventionEngine shouldn't be exposed to extension developers right away
-    tapFx = {
-        Utilities: aurelia.container.get(Utilities),
-        Rpc: aurelia.container.get(RpcClient),
-        BindingEngine: aurelia.container.get(BindingEngine),
-        ViewModels: {
-            BaseBlade: BaseBlade
-        },
-        BaseExtension: BaseExtension,
-        Extension: aurelia.container.get(Extension),
-        ConventionEngine: aurelia.container.get(ConventionEngine),
-        Aurelia: aurelia,
-        Http: aurelia.container.get(Http),
-        Security: aurelia.container.get(Security)
-    };
+            // TODO: how can we expose things to the shell, but not extensions? i.e. things like Rpc, BindingEngine, ConventionEngine shouldn't be exposed to extension developers right away
+            tapFx = {
+                Utilities: aurelia.container.get(Utilities),
+                Rpc: aurelia.container.get(RpcClient),
+                BindingEngine: aurelia.container.get(BindingEngine),
+                Extension: aurelia.container.get(Extension),
+                ConventionEngine: aurelia.container.get(ConventionEngine),
+                Aurelia: aurelia,
+                Http: aurelia.container.get(Http),
+                Security: aurelia.container.get(Security)
+            };
 
-    window.TapFx = tapFx;
-});
+            resolve(tapFx);
+        });
+    });
+};
 
 /**
- * Set the tap framework for use on the global scope.
+ * Get the tap framework.
  */
-/*export function getTapFx(): ITapFx {
+export function getTapFx(): ITapFx {
     if (!tapFx)
         throw Error('TapFx not yet bootstrapped, please call this function within init().then resolution.');
 
     return tapFx;
-}*/
+}
+
+/**
+ * TapFx view models.
+ */
+export let ViewModels = {
+    BaseBlade: BaseBlade
+}
+
+/**
+ * Base extension class.
+ */
+export {BaseExtension} from './core/extension/baseExtension';

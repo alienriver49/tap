@@ -1,11 +1,9 @@
-import DeferredPromise from './../../tapFx/core/deferredPromise' // TODO - expose this via global scope
-
-let tapFx = window.TapFx;
+import { inject } from 'aurelia-framework'
+import DeferredPromise from './../../tapFx/core/deferredPromise' // TODO - expose this via tapFx object
 
 /**
  * Class for storing and transferring the results of extension commands (load, unload, etc.).
  */
-
 export class ExtensionCommandResult {
     constructor() { }
 
@@ -19,7 +17,10 @@ export class ExtensionCommandResult {
     message: string;
 }
 
-interface ICurrentCommand {
+/**
+ * Interface for storing command information.
+ */
+interface ICommand {
     extensionId: string;
     commandId: string;
     defer: DeferredPromise<ExtensionCommandResult>;
@@ -29,8 +30,11 @@ interface ICurrentCommand {
  * Class for queueing extension commands (promises).
  * TODO: implement command timeouts
  */
+@inject('TapFx')
 export class ExtensionCommandQueue {
-    constructor() {
+    constructor(
+        private _tapFx: ITapFx,
+    ) {
         this.clear();
     }
 
@@ -42,7 +46,7 @@ export class ExtensionCommandQueue {
     /**
      * Information about the current command in the queue.
      */
-    current: ICurrentCommand = {} as ICurrentCommand;
+    current: ICommand = {} as ICommand;
 
     /**
      * Queue an extension command call.
@@ -51,7 +55,7 @@ export class ExtensionCommandQueue {
      */
     queueCommand(extensionId: string, commandCall: Function): void {
         // create a command id to be associated with this
-        let commandId = tapFx.Utilities.newGuid();
+        let commandId = this._tapFx.Utilities.newGuid();
         // new up a deferred promise
         let defer: DeferredPromise<ExtensionCommandResult> = new DeferredPromise<ExtensionCommandResult>();
 

@@ -1,7 +1,9 @@
-let tapFx = window.TapFx;
+import { inject } from 'aurelia-framework'
 
+@inject('TapFx')
 class ExtensionLoaderEngine {
     constructor(
+        private _tapFx: ITapFx,
     ) {
     }
 
@@ -10,7 +12,7 @@ class ExtensionLoaderEngine {
      * @param extensionName 
      */
     private _getExtensionBundle(extensionName: string): string {
-        return 'tap' + tapFx.Utilities.upperCaseFirstChar(extensionName) + '-bundle.js';
+        return 'tap' + this._tapFx.Utilities.upperCaseFirstChar(extensionName) + '-bundle.js';
     }
 
     /**

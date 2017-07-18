@@ -1,6 +1,6 @@
-let tapFx = window.TapFx;
+import {ViewModels} from './../tapFx'
 
-class LandingBlade extends tapFx.ViewModels.BaseBlade {
+class LandingBlade extends ViewModels.BaseBlade {
     title: string;
     subtitle: string;
     display: string;

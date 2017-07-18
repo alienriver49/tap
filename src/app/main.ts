@@ -57,10 +57,11 @@ import AuthorizationEngine from './authorization/authorizationEngine'
 
 export function configure(aurelia: Aurelia) {
     console.log('[TAP-SHELL] Configuring shell');
-    init.then(() => {
+    init().then((tapFx) => {
         aurelia.host = document.body;
         // The app and tapFx have separate instances of Aurelia,
         // Use singletons from TapFx in the app
+        aurelia.container.registerInstance('TapFx', tapFx);
         aurelia.container.registerSingleton(CommandManager, CommandManager);
         aurelia.container.registerSingleton(ExtensionManager, ExtensionManager);
         aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
@@ -88,7 +89,7 @@ export function configure(aurelia: Aurelia) {
                 auth.authenticate('TylerId', false, {});
             }
 
-            delete(window.TapFx.Aurelia);
+            //delete(tapFx.Aurelia);
         });
     });
 }

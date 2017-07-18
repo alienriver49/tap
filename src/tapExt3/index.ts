@@ -1,12 +1,14 @@
 import LandingBlade from './landingBlade'
+import {getTapFx, BaseExtension} from './../tapFx'
 
-let tapFx = window.TapFx;
-
-export class Index extends tapFx.BaseExtension {
+export class Index extends BaseExtension {
     constructor(
     ) {
         super();
+        this._tapFx = getTapFx();
     }
+
+    private _tapFx: ITapFx;
 
     public init(): void {
         console.log('[EXT-3] Index.init');
@@ -20,6 +22,6 @@ export class Index extends tapFx.BaseExtension {
 
     public addBlade(blade: LandingBlade, viewName: string): void {
         console.log('[EXT-3] Attempting to add blade.');
-        tapFx.Extension.addBlade(blade, viewName);
+        this._tapFx.Extension.addBlade(blade, viewName);
     }
 }

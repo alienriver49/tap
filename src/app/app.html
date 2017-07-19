@@ -23,8 +23,8 @@
         </ul>
     </nav>
 
-    <div id="extension-containers" class="extension-containers">
-        <div repeat.for="extension of extensionManager.extensions">
+    <div id="extension-container" class="extension-container">
+        <div repeat.for="extension of extensionManager.extensions" class="extension">
             <div id.one-way="'tap_ext:' + extension.id">Extension ID: ${extension.id}</div>
         </div>
     </div>

@@ -1,14 +1,12 @@
+import {tapcBase, ITapcBaseConfig} from './tapcBase'
 
-import {tapcBase, ITapcBase} from './tapcBase'
-
-export interface ITapcMdcCheckbox extends ITapcBase {
+export interface ITapcMdcCheckboxConfig extends ITapcBaseConfig {
     isChecked?: string;
     display?: string;
 }
 
-export class tapcMdcCheckbox extends tapcBase{
-
-    constructor(config?: ITapcMdcCheckbox){
+export class tapcMdcCheckbox extends tapcBase {
+    constructor(config?: ITapcMdcCheckboxConfig) {
         if (config === void 0) { config = {}; }
         super(config);
         this.attributeIsChecked = config.isChecked || '';

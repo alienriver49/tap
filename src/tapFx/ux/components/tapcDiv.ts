@@ -1,15 +1,12 @@
+import {tapcBaseContainer, ITapcBaseContainerConfig} from './tapcBaseContainer'
 
-import {tapcBaseContainer, ITapcBaseContainer} from './tapcBaseContainer'
-
-export interface ITapcDiv extends ITapcBaseContainer {
+export interface ITapcDivConfig extends ITapcBaseContainerConfig {
 }
 
-export class tapcDiv extends tapcBaseContainer{
-
-    constructor(config?: ITapcDiv){
+// TODO: this should be renamed to something more generic, like tapcContent or something. we want to avoid HTML-specific names where possible
+export class tapcDiv extends tapcBaseContainer {
+    constructor(config?: ITapcDivConfig) {
         if (config === void 0) { config = {}; }
         super(config);
-        this.content = config.content || [];
     }
-
 }

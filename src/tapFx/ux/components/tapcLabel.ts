@@ -1,16 +1,14 @@
-import {tapcBaseContainer, ITapcBaseContainer} from './tapcBaseContainer'
+import {tapcBaseContainer, ITapcBaseContainerConfig} from './tapcBaseContainer'
 
-export interface ITapcLabel extends ITapcBaseContainer {
+export interface ITapcLabelConfig extends ITapcBaseContainerConfig {
     for?: string;
     value?: string;
 }
 
-export class tapcLabel extends tapcBaseContainer{
-
-    constructor(config?: ITapcLabel){
+export class tapcLabel extends tapcBaseContainer {
+    constructor(config?: ITapcLabelConfig) {
         super(config);
-        if (config && typeof config === 'object'){
-            this.content = config.content || [];
+        if (config && typeof config === 'object') {
             this.attributeFor = config.for || '';
             this.attributeValue = config.value || '';
         }

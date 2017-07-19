@@ -6,6 +6,11 @@ import BaseBlade from './viewModels/viewModels.baseBlade'
 import ConventionEngine from './conventionEngine'
 import Utilities from './../utilities/utilities'
 
+const attrRegExp: RegExp = /^attribute(.*)/;
+const privateAttrRegExp: RegExp = /^_attribute(.*)/;
+const eventRegExp: RegExp = /^event(.*)/;
+const bindRegExp = /^@(.*)/;
+
 @inject(ConventionEngine, Utilities)
 export class BladeParser {
     constructor(
@@ -22,21 +27,16 @@ export class BladeParser {
      */
     public parseBladeToHTML(blade: BaseBlade, bladeFunctions: string[]): string {
         // Can't get innerHtml or outerHtml property from template element,
-        // so use a temp div element as the parent
+        // so use a div element as the parent with the 'blade' class added
         let parent: HTMLDivElement = document.createElement('div');
+        parent.classList.add('blade');
 
-        // add a border to the blade
-        let styleAttr = document.createAttribute('style');
-        styleAttr.value = 'border: 2px solid black; padding: 10px;';
-        parent.attributes.setNamedItem(styleAttr);
-
-        // add a remove blade button
+        // add a remove blade button with the 'removeBladeButton' class added
         let removeBladeButton = document.createElement('button');
-        styleAttr = document.createAttribute('style');
-        styleAttr.value = 'float: right;';
+        removeBladeButton.classList.add('removeBladeButton', 'btn', 'btn-primary');
         removeBladeButton.name = 'remove';
         removeBladeButton.textContent = 'Remove';
-        removeBladeButton.attributes.setNamedItem(styleAttr);
+        //removeBladeButton.attributes.setNamedItem(styleAttr);
         parent.appendChild(removeBladeButton);
 
 
@@ -44,9 +44,10 @@ export class BladeParser {
         /*if (blade instanceof FormBlade) {
 
         }*/
-        
-        for(let i = 0; i < blade.content.length; i++){
-            let el = this.parseNode(parent, blade.content[i]);
+        let bladeContent = blade.content;
+        console.log(bladeContent);
+        for (let i = 0; i < bladeContent.length; i++) {
+            let el = this.parseNode(parent, bladeContent[i]);
         }
 
         this._conventionEngine.attachFunctions(parent, bladeFunctions);
@@ -60,96 +61,70 @@ export class BladeParser {
      * @param node 
      */
     public parseNode(parent: Element, node: tapcBase): void {
-        let attrRegExp: RegExp = /^attribute(.*)/;
-        let privateAttrRegExp: RegExp = /^_attribute(.*)/;
-        let eventRegExp: RegExp = /^event(.*)/;
-        let match: RegExpExecArray | null;
-        let bindRegExp = /^@(.*)/;
         let bindMatch: RegExpExecArray | null;
         let el: HTMLElement | null = null; 
 
-        if (node instanceof tapc.tapcDiv){
+        if (node instanceof tapc.tapcHeading) {
+            el = document.createElement('h' + node.importance);
+        }
+        if (node instanceof tapc.tapcDiv) {
             el = document.createElement('div');
         }
-        if (node instanceof tapc.tapcLabel){
+        if (node instanceof tapc.tapcForm) {
+            el = document.createElement('form');
+        }
+        if (node instanceof tapc.tapcLabel) {
             el = document.createElement('label');
         }
-        if (node instanceof tapc.tapcLineBreak){
+        /*if (node instanceof tapc.tapcLineBreak) {
             el = document.createElement('br');
-        }
-        if (node instanceof tapc.tapcInput){
+        }*/
+        if (node instanceof tapc.tapcInput) {
             el = document.createElement('input');
         }
-        if (node instanceof tapc.tapcText){
-            let textNode = document.createTextNode(node.attributeText);
-            if (bindMatch = bindRegExp.exec(node.attributeText))
-                textNode.data = this._utilities.camelCaseToHyphen('${'+ bindMatch[1] + '}');
+        if (node instanceof tapc.tapcText) {
+            let textNode = document.createTextNode(node.text);
+            if (bindMatch = bindRegExp.exec(node.text))
+                textNode.data = '${'+ bindMatch[1] + '}';
             parent.appendChild(textNode);
         }
-        if (node instanceof tapc.tapcTapTestComponent){
+        if (node instanceof tapc.tapcTapTestComponent) {
             el = document.createElement('tap-test-component');
         }
-        if (node instanceof tapc.tapcDataTable){
+        if (node instanceof tapc.tapcDataTable) {
             let dataTable = node as tapc.tapcDataTable;
             if (!dataTable.attributeColumnConfiguration)
                 throw new Error(`Column configuration must be set on tapcDataTable`);
             el = document.createElement('tap-data-table');
         }
-        if (node instanceof tapc.tapcMdcCheckbox){
+        if (node instanceof tapc.tapcMdcCheckbox) {
             el = document.createElement('mdc-checkbox');
         }
-        if (node instanceof tapc.tapcButton){
+        if (node instanceof tapc.tapcButton) {
             el = document.createElement('button');
         }
-        if (el){
+        if (el) {
             // Add attribute and event handlers
             for (let prop in node) {
-                if (node.hasOwnProperty(prop)){
-                    let value = node[prop];
-                    //if (value && ((match = attrRegExp.exec(prop)) || (match = privateAttrRegExp.exec(prop)) )){
-                    if (value && (match = attrRegExp.exec(prop))){
-                        // If the attribute value starts with '@', then bind it, 
-                        // otherwise use literal value
-                        if (bindMatch = bindRegExp.exec(value)){
-                            el.setAttribute(this._utilities.camelCaseToHyphen(`${match[1]}.bind`), bindMatch[1]);
-                        }else{
-                            el.setAttribute(this._utilities.camelCaseToHyphen(match[1]), node[prop]);
-                        }
-                    }
-                    if (value && (match = eventRegExp.exec(prop))){
-                        el.setAttribute(`${match[1]}.delegate`, node[prop]);
-                    }
+                if (node.hasOwnProperty(prop)) {
+                    this._setAttributes(el, node, prop);
                 }
             }
 
             // Also check the prototype because getters are defined there
-            if (Object.getPrototypeOf(node)){
+            if (Object.getPrototypeOf(node)) {
                 Object.getOwnPropertyNames(Object.getPrototypeOf(node)).forEach((prop) => {
                     el = el as HTMLElement;
-                    if (Reflect.has(node, prop)){
-                        let value = node[prop];
-                        //if (value && ((match = attrRegExp.exec(prop)) || (match = privateAttrRegExp.exec(prop)) )){
-                        if (value && (match = attrRegExp.exec(prop))){
-                            // If the attribute value starts with '@', then bind it, 
-                            // otherwise use literal value
-                            if (bindMatch = bindRegExp.exec(value)){
-                                el.setAttribute(this._utilities.camelCaseToHyphen(`${match[1]}.bind`), bindMatch[1]);
-                            }else{
-                                el.setAttribute(this._utilities.camelCaseToHyphen(match[1]), node[prop]);
-                            }
-                        }
-                        if (value && (match = eventRegExp.exec(prop))){
-                            el.setAttribute(`${match[1]}.delegate`, node[prop]);
-                        }
-
+                    if (Reflect.has(node, prop)) {
+                        this._setAttributes(el, node, prop);
                     }
                 });
 
             }
 
             // Recursively parse any content
-            if (node instanceof tapcBaseContainer){  
-                for(let i = 0; i < node.content.length; i++){
+            if (node instanceof tapcBaseContainer) {  
+                for (let i = 0; i < node.content.length; i++) {
                     this.parseNode(el, node.content[i]);
                 }
             }
@@ -157,6 +132,36 @@ export class BladeParser {
 
         if (el)
             parent.appendChild(el);
+    }
+
+    /**
+     * Set attributes on the HTMLElement based on certain criteria.
+     * @param el 
+     * @param node 
+     * @param prop 
+     */
+    private _setAttributes(el: HTMLElement, node: tapcBase, prop: string): void {
+        let match: RegExpExecArray | null;
+        let bindMatch: RegExpExecArray | null;
+        let value = node[prop];
+        // TODO: support attributes without values, like form's 'novalidate'
+        //if (value && ((match = attrRegExp.exec(prop)) || (match = privateAttrRegExp.exec(prop)) )){
+        if (value && (match = attrRegExp.exec(prop))) {
+            let attribute = this._utilities.camelCaseToHyphen(match[1]);
+            // If the attribute value starts with '@', then bind it,
+            // else if, check for the repeat attribute
+            // otherwise use literal value
+            if (bindMatch = bindRegExp.exec(value)) {
+                el.setAttribute(`${attribute}.bind`, bindMatch[1]);
+            } else if (attribute === 'repeat') {
+                el.setAttribute(`${attribute}.for`, value);
+            } else {
+                el.setAttribute(attribute, value);
+            }
+        }
+        if (value && (match = eventRegExp.exec(prop))) {
+            el.setAttribute(`${match[1]}.delegate`, value);
+        }
     }
 }
 

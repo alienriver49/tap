@@ -1,8 +1,8 @@
 import {tapcBase} from './tapcBase'
 
-export class tapcLineBreak extends tapcBase{
-
-    constructor(){
+// TODO: possibly remove this
+export class tapcLineBreak extends tapcBase {
+    constructor() {
         super();
     }
 }

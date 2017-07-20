@@ -6,6 +6,8 @@ import {ViewModels} from './../tapFx'
 
 class LandingBlade extends ViewModels.BaseBlade {
     title: string;
+    subtitle: string;
+    text: string;
     display: string;
     raised: boolean = false;
     clearText: boolean = false;
@@ -32,130 +34,59 @@ class LandingBlade extends ViewModels.BaseBlade {
      * Blade activation (initialization);
      */
     activate(): void {
-        this.title = 'Title';
-        this.titleChanged(this.title, "");
+        this.title = 'Extension 3';
+        this.subtitle = 'With Common and Material Components';
+        this.text = 'Input text'
+        this.textChanged(this.title, "");
     }
 
     private _buildContent(): void {
-        this.content.push(new tapfx.tapcLineBreak());
-        let div = new tapfx.tapcDiv({id: 'ext3-div'});
-        div.content.push(new tapfx.tapcLabel(
-            {content: [new tapfx.tapcText({text: 'Extension 3 with common and material components'})]}
-        ));
-        let inputDiv = new tapfx.tapcDiv({id: 'input-div'})
-        inputDiv.content.push(new tapfx.tapcLabel(
-            {for: 'title',
-             content: [new tapfx.tapcText({text: 'Blade text'})]
-            }
-        ));
-        inputDiv.content.push(new tapfx.tapcInput(
-            {type: 'text',
-            value: '@title'
-            }
-        ));
-        div.content.push(inputDiv);
-        this.content.push(div);
-        this.content.push(new tapfx.tapcLineBreak());
-
-        let label2 = new tapfx.tapcLabel();
-        label2.content.push(new tapfx.tapcMdcCheckbox({
-            isChecked: "@raised"
-        }))
-        label2.content.push(new tapfx.tapcDiv({
-            content: [new tapfx.tapcText({text: 'Raise button'})]
-        }));
-        this.content.push(label2);
-        
-        let testComp = new tapfx.tapcTapTestComponent({
-            display: '@display',
-            clearText: '@clearText',
-            raised: '@raised'
-        });
-        this.content.push(testComp);
-        this.content.push(new tapfx.tapcLineBreak());
-
-        this.content.push(new tapfx.tapcText({text: 'Test Address1 child object'}));
-        this.content.push(new tapfx.tapcLineBreak());
-        this.content.push(new tapfx.tapcText({text: '@address.line1'}));
-        this.content.push(new tapfx.tapcLineBreak());
-        this.content.push(new tapfx.tapcText({text: '@address.town'}));
-        this.content.push(new tapfx.tapcText({text: '@address.state'}));
-        this.content.push(new tapfx.tapcText({text: '@address.zip'}));
-        this.content.push(new tapfx.tapcLineBreak());
-        this.content.push(new tapfx.tapcText({text: 'Test Address2 child object (same object as Address1)'}));
-        this.content.push(new tapfx.tapcLineBreak());
-        this.content.push(new tapfx.tapcText({text: '@address2.line1'}));
-        this.content.push(new tapfx.tapcLineBreak());
-        this.content.push(new tapfx.tapcText({text: '@address2.town'}));
-        this.content.push(new tapfx.tapcText({text: '@address2.state'}));
-        this.content.push(new tapfx.tapcText({text: '@address2.zip'}));
-        this.content.push(new tapfx.tapcLineBreak());
-        let updateChildObject = new tapfx.tapcButton({
-            id: 'update-child-button',
-            type: 'button',
-            click: 'onUpdateChildObjectClick()',
-            content: [new tapfx.tapcText({text: 'Update property on child object'})]
-        });
-        let changeChildObject = new tapfx.tapcButton({
-            id: 'change-child-button',
-            type: 'button',
-            click: 'onChangeChildObjectClick()',
-            content: [new tapfx.tapcText({text: 'Change child object'})]
-        });
-        let div3 = new tapfx.tapcDiv({
-            content: [updateChildObject, changeChildObject]
-        })
-        this.content.push(div3);
-        this.content.push(new tapfx.tapcLineBreak());
-
-        let addButton = new tapfx.tapcButton({
-            id: 'add-button',
-            type: 'button',
-            click: 'onAddButtonClick()',
-            content: [new tapfx.tapcText({text: 'Add row'})]
-        });
-        let removeButton = new tapfx.tapcButton({
-            id: 'remove-button',
-            type: 'button',
-            click: 'onRemoveButtonClick()',
-            content: [new tapfx.tapcText({text: 'Remove row'})]
-        });
-        let changeData = new tapfx.tapcButton({
-            id: 'change-data-button',
-            type: 'button',
-            click: 'onChangeDataClick()',
-            content: [new tapfx.tapcText({text: 'Change Array'})]
-        });
-        let testButton = new tapfx.tapcButton({
-            id: 'test-button',
-            type: 'button',
-            click: 'onTestClick()',
-            content: [new tapfx.tapcText({text: 'Test random array modification by index'})]
-        });
-        let div2 = new tapfx.tapcDiv({
-            content: [addButton, removeButton, changeData, testButton]
-        })
-        this.content.push(new tapfx.tapcText({text: 'Test syncing changing array contents and changing array'}));
-        this.content.push(div2);
-
-        let dataTable = new tapfx.tapcDataTable({
-            id: 'test-table',
-            attributeData: '@data'
-        })
-        dataTable.setColumnConfiguration(this.columnConfig, '@columnConfig');
-        this.content.push(dataTable);
+        this.content.push(
+            new tapfx.tapcDiv().addToContainer(
+                new tapfx.tapcDiv().addToContainer(
+                    new tapfx.tapcForm().addLabelInput(
+                        new tapfx.tapcLabel({for: 'text'}).addText('Blade text'),
+                        new tapfx.tapcInput({name: 'text', value: '@text'})
+                    ),
+                ),
+                new tapfx.tapcDiv().addToContainer(
+                    new tapfx.tapcLabel().addToContainer(
+                        new tapfx.tapcMdcCheckbox({isChecked: "@raised"}),
+                        new tapfx.tapcDiv().addText('Raise button')
+                    ),
+                    new tapfx.tapcTapTestComponent({display: '@display', clearText: '@clearText', raised: '@raised'})
+                ),
+                new tapfx.tapcDiv().addText('Test Address1 child object'),
+                new tapfx.tapcDiv().addText('@address.line1'),
+                new tapfx.tapcDiv().addText('@address.town', ', ', '@address.state', ' ', '@address.zip'),
+                new tapfx.tapcDiv().addText('Test Address2 child object (same object as Address1)'),
+                new tapfx.tapcDiv().addText('@address2.line1'),
+                new tapfx.tapcDiv().addText('@address2.town', ', ', '@address2.state', ' ', '@address2.zip'),
+                new tapfx.tapcDiv().addToContainer(
+                    new tapfx.tapcButton({name: 'updateChildObject'}).addText('Update property on child object'),
+                    new tapfx.tapcButton({name: 'changeChildObject'}).addText('Change child object'),
+                ),
+                new tapfx.tapcDiv().addText('Test syncing changing array contents and changing array').addToContainer(
+                    new tapfx.tapcButton({name: 'addData'}).addText('Add row'),
+                    new tapfx.tapcButton({name: 'removeData'}).addText('Remove row'),
+                    new tapfx.tapcButton({name: 'changeData'}).addText('Change array'),
+                    new tapfx.tapcButton({name: 'test'}).addText('Test random array modification by index'),
+                ),
+                new tapfx.tapcDataTable({id: 'test-table', attributeData: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig')
+            )
+        );
     }
 
     private _updateDisplay() {
-        this.display = this.title ? '[ADDED] ' + this.title : '';
+        this.display = this.text ? '[ADDED] ' + this.text : '';
     }
 
-    titleChanged(newValue: string, oldValue: string): void {
-        console.log('[EXT-3] Blade title has changed.');
+    textChanged(newValue: string, oldValue: string): void {
+        console.log('[EXT-3] Blade text has changed.');
         this._updateDisplay();
     }
 
-    onAddButtonClick(): void {
+    onButtonAddDataClick(): void {
         if (this._usingDataset1){
             this.data.push(
                 new School({
@@ -173,17 +104,17 @@ class LandingBlade extends ViewModels.BaseBlade {
         }
     }
 
-    onRemoveButtonClick(): void {
+    onButtonRemoveDataClick(): void {
         this.data.pop();
     }
 
     _usingDataset1: boolean = true;
-    onChangeDataClick(): void {
+    onButtonChangeDataClick(): void {
         this._usingDataset1 = !this._usingDataset1;
         this._changeDataSet();
     }
 
-    private _changeDataSet(){
+    private _changeDataSet() {
         if (this._usingDataset1){
             this.data = [
                 new School({
@@ -202,7 +133,7 @@ class LandingBlade extends ViewModels.BaseBlade {
                     hasPool: false 
                 }),
             ];
-        }else{
+        } else {
             this.data = [
                 new School({
                     name: 'Eddington',
@@ -225,12 +156,12 @@ class LandingBlade extends ViewModels.BaseBlade {
 
     clearTextChanged(newValue: string, oldValue: string): void {
         if (newValue){
-            this.title = '';
+            this.text = '';
             this.clearText = false;
         }
     }
 
-    public onTestClick(): void {
+    public onButtonTestClick(): void {
         let random = (min: number, max: number) => { return Math.floor(Math.random() * (max - min + 1) + min); };
         let index = random(0, this.data.length-1);
         console.log('Array index change');
@@ -253,7 +184,7 @@ class LandingBlade extends ViewModels.BaseBlade {
     }
 
     _childPropToggle: boolean = true;
-    public onUpdateChildObjectClick(): void {
+    public onButtonUpdateChildObjectClick(): void {
         if (this._childPropToggle)
             this.address.town = 'Bangor';
         else
@@ -262,7 +193,7 @@ class LandingBlade extends ViewModels.BaseBlade {
     }
 
     _childObjToggle: boolean = true;
-    public onChangeChildObjectClick(): void {
+    public onButtonChangeChildObjectClick(): void {
         if (this._childObjToggle){
             this.address2 = new Address({line1: '370 US Route 1', town: 'Falmouth', state: 'ME', zip: '04096'});
             this.address = this.address2;

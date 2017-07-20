@@ -1,6 +1,7 @@
 import {getTapFx, ViewModels} from './../tapFx'
+import * as tapfx from './../tapFx/ux/tapcModules'
 
-class LandingBlade extends ViewModels.BaseBlade {
+class LandingBlade extends ViewModels.FormBlade {
     title: string;
     subtitle: string;
 
@@ -23,9 +24,59 @@ class LandingBlade extends ViewModels.BaseBlade {
     constructor() {
         super();
         this._tapFx = getTapFx();
+        this._buildContent();
     }
 
     private _tapFx: ITapFx;
+    
+    private _buildContent(): void {
+        this.addForm()
+                .addToContainer(
+                    new tapfx.tapcDiv().addToContainer(
+                        new tapfx.tapcButton({name: 'convention', disabled: '@buttonConventionDisabled' }).addText('Convention Button'),
+                    )
+                )
+                .addToContainer(
+                    new tapfx.tapcDiv().addToContainer(
+                        new tapfx.tapcButton({name: 'clickMe', click: "onButtonClickMeClick('argument 1 being passed to a function', 'argument 2 being passed to a function')" }).addText('Click Me!'),
+                    )
+                )
+                .addLabelInput(
+                    new tapfx.tapcLabel({for: 'showHideCheckbox'}).addText('Subtitle:'),
+                    new tapfx.tapcInput({name: 'showHideCheckbox', type: tapfx.InputType.Checkbox, value: '@showHideCheckbox'}),
+                )
+                .addToContainer(
+                    new tapfx.tapcDiv({if: '@showHideCheckbox'}).addText('Show / Hide Content')
+                )
+                .addToContainer(
+                    new tapfx.tapcDiv().addToContainer(
+                        new tapfx.tapcSelect({value: '@selectedOption'}).addToContainer(
+                            new tapfx.tapcOption({name: 'selectOptions', repeat: 'option of selectOptions', model: '@option'}).addText('@option')
+                        ),
+                        new tapfx.tapcHeading({importance: 3}).addText('Selected Option: ', '@selectedOption')
+                    )
+                )
+                .addToContainer(
+                    new tapfx.tapcDiv().addToContainer(
+                        new tapfx.tapcDiv({repeat: 'input of checkboxes'}).addToContainer(
+                            new tapfx.tapcInput({name: 'checkboxes', type: tapfx.InputType.Checkbox, model: '@input', checked: '@selectedCheckboxes'}),
+                            new tapfx.tapcText({text: ' '}),
+                            new tapfx.tapcText({text: '@input'})
+                        ),
+                        new tapfx.tapcHeading({importance: 3}).addText('Selected Checkboxes: ', '@selectedCheckboxes')
+                    )
+                )
+                .addToContainer(
+                    new tapfx.tapcDiv().addToContainer(
+                        new tapfx.tapcDiv({repeat: 'input of radios'}).addToContainer(
+                            new tapfx.tapcInput({name: 'radios', type: tapfx.InputType.Radio, model: '@input', checked: '@selectedRadio'}),
+                            new tapfx.tapcText({text: ' '}),
+                            new tapfx.tapcText({text: '@input.label'})
+                        ),
+                        new tapfx.tapcHeading({importance: 3}).addText('Selected Checkboxes: ', '{ value: ', '@selectedRadio.value', ', label: ', '@selectedRadio.label', ' }')
+                    )
+                );
+    }
 
     /**
      * Blade activation (initialization);
@@ -36,7 +87,7 @@ class LandingBlade extends ViewModels.BaseBlade {
         let timeout: number = 500;
         let promise = new Promise<undefined>((resolve) => {
             this.title = 'Extension 2';
-            this.subtitle = 'Static Title and Subtitle';
+            this.subtitle = 'Form Blade';
             
             setTimeout(resolve, timeout);
         });

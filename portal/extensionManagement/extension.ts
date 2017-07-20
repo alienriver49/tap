@@ -174,7 +174,6 @@ export class Extension {
      * @param config
      */
     addBlade(config: IPortalBladeConfig): PortalBlade {
-        console.log(this);
         // TODO: Figure this out using this._portalBladeFactory
         let blade = new PortalBlade(this._tapFx, this, config) /*this._portalBladeFactory(this, config)*/;
         // Should we move these functions to PortalBlade?
@@ -184,9 +183,9 @@ export class Extension {
 
         // Either load the serialized view or specified HTML file
         if (config.serializedView)
-            blade.addView2();
+            blade.addViewFromSerializedHtml();
         else
-            blade.addView();
+            blade.addViewFromViewName();
 
         this.blades.push(blade);
         

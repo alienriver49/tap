@@ -1,14 +1,13 @@
-import {tapcBase, ITapcBase} from './tapcBase'
+import {tapcBase, ITapcBaseConfig} from './tapcBase'
 
-export interface ITapcTapTestComponent extends ITapcBase {
+export interface ITapcTapTestComponentConfig extends ITapcBaseConfig {
     clearText?: string;
     display?: string;
     raised?: string;
 }
 
-export class tapcTapTestComponent extends tapcBase{
-
-    constructor(config?: ITapcTapTestComponent){
+export class tapcTapTestComponent extends tapcBase {
+    constructor(config?: ITapcTapTestComponentConfig) {
         if (config === void 0) { config = {}; }
         super(config);
         this.attributeClearText = config.clearText || '';

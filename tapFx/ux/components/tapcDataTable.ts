@@ -1,13 +1,12 @@
-import {tapcBase, ITapcBase} from './tapcBase'
+import {tapcBase, ITapcBaseConfig} from './tapcBase'
 import {ITapDataTableColumnConfiguration} from './../../../webComponents/dataTable/tap-data-table'
 
-export interface ITapcDataTableConfig extends ITapcBase {
+export interface ITapcDataTableConfig extends ITapcBaseConfig {
     attributeData?: string;
 }
 
-export class tapcDataTable extends tapcBase{
-
-    constructor(config?: ITapcDataTableConfig){
+export class tapcDataTable extends tapcBase {
+    constructor(config?: ITapcDataTableConfig) {
         if (config === void 0) { config = {}; }
         super(config);
 
@@ -22,15 +21,16 @@ export class tapcDataTable extends tapcBase{
      * @param columnConfig 
      * @param bindingName 
      */
-    public setColumnConfiguration(columnConfig: ITapDataTableColumnConfiguration[], bindingName: string){
+    public setColumnConfiguration(columnConfig: ITapDataTableColumnConfiguration[], bindingName: string): this {
         if (!columnConfig)
             throw new Error('tapcDataTable: columnConfiguration is not valid');
         this._attributeColumnConfiguration = bindingName;
+
+        return this;
     }
 
     // ES6 style getters are defined on the prototype
-    public get attributeColumnConfiguration(){
+    public get attributeColumnConfiguration() {
         return this._attributeColumnConfiguration;
     }
-
 }

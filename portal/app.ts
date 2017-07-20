@@ -12,15 +12,21 @@ export class App {
         public router: Router,
         public extensionManager: ExtensionManager
     ) {
-        // Add a listener for when the page finishes loading to activate our router. Similar to how the router-view and configureRouter work with the aurelia-router.
-        // Currently done this way because of the adding of iframes to the extension-iframes div, we must have that div before loading extensions.
-        window.onload = () => {
-            console.log('[SHELL] Window onload triggered.')
-            this.router.activate();
-        }
-    } 
+    }
 
+    /**
+     * Called when the app view is activated.
+     */
     activate() {
+        console.log('[SHELL] App activate');
         this.fetchConfig.configure();
+    }
+
+    /**
+     * Called by the extension iframes custom element.
+     */
+    extensionIframesReady() {
+        console.log('[SHELL] App activateRouter');
+        this.router.activate();
     }
 }

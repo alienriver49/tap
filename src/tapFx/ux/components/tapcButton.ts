@@ -1,13 +1,18 @@
 import {tapcBaseContainer, ITapcBaseContainerConfig} from './tapcBaseContainer'
 
 export interface ITapcButtonConfig extends ITapcBaseContainerConfig {
-    type?: ButtonType;
+    type?: /*ButtonType*/string;
     disabled?: string;
     click?: string;
 }
 
-export const enum ButtonType {
+// note: TypeScript 2.4 allows string enums
+/*export const enum ButtonType {
     Button = 'button',
+}*/
+
+export class ButtonType {
+    public static readonly Button: string = "button";
 }
 
 export class tapcButton extends tapcBaseContainer {

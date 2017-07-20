@@ -4,7 +4,7 @@ import {DOM} from 'aurelia-pal';
 
 @customElement('extension-iframes')
 @inject(DOM.Element)
-export class RouterView {
+export class ExtensionIframes {
     constructor(
         private _element: Element,
     ) {

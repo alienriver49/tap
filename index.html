@@ -1,38 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="shortcut icon" media="all" type="image/x-icon" href="favicon.ico">
-  <script>
-    // Load webcomponentsjs polyfill if browser does not support native Web Components
-    // Currently needed for Edge and IE 11 among others
-    (function() {
-      'use strict';
-      var webComponentsSupported = (
-          'registerElement' in document &&
-          'import' in document.createElement('link') &&
-          'content' in document.createElement('template')
-          );
-      if (!webComponentsSupported) {
-        // hide body to prevent flash of unstyled content
-        // document.body.style.opacity = 0;
-        // window.addEventListener('WebComponentsReady', function() {
-        //   // show body now that everything is ready
-        //   document.body.style.opacity = 1;
-        // });
-
-        var script = document.createElement('script');
-        script.async = true;
-        script.src = 'webcomponents-lite.js';
-        script.onload = onload;
-        document.head.appendChild(script);
-      }
-    })();  
-  </script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurelia</title>
 </head>
-
-<body aurelia-app="app/main"></body>
-
+<body aurelia-app="portal/main">
+    <h1>Loading...</h1>
+    <!--build:systemjs-->
+    <script src="jspm_packages/system.js"></script>
+    <script src="system.config.js"></script>
+    <!--endbuild-->
+    <script>
+      System.import('aurelia-bootstrapper');
+    </script>
+</body>
 </html>

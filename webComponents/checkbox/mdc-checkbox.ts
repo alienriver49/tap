@@ -1,5 +1,5 @@
-import {inject, bindable, bindingMode, DOM} from 'aurelia-framework';
-import {MDCCheckbox} from '@material/checkbox';
+﻿import {inject, bindable, bindingMode, DOM} from 'aurelia-framework';
+import {MDCCheckbox} from '@material/checkbox/dist/mdc.checkbox.js';
 import '@material/checkbox/dist/mdc.checkbox.css';
 
 @inject(Element)

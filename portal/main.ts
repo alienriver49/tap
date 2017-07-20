@@ -1,9 +1,9 @@
-/// <reference path="./../typings.d.ts" />
+﻿/// <reference path="./../typings.d.ts" />
 import { Aurelia, PLATFORM, FrameworkConfiguration } from 'aurelia-framework';
 import {LogManager} from "aurelia-framework";
 import {ConsoleAppender} from "aurelia-logging-console";
 import {AuthService} from "aurelia-auth";
-import {init} from './../tapFx';
+import {init} from 'tap-fx';
 import config from './../tapFx/security/authConfig';
 import CommandManager from './commanding/commandManager'
 import ExtensionManager from './extensionManagement/extensionManager'
@@ -80,14 +80,14 @@ export function configure(aurelia: Aurelia) {
 
         let auth: AuthService = aurelia.container.get(AuthService);
         aurelia.start().then(() => {
-            if (auth.isAuthenticated()) {
-                console.log('[SHELL] Authenticated! ', auth.getTokenPayload());
-                aurelia.setRoot(PLATFORM.moduleName('app/app'));
-            }
-            else {
-                console.log('[SHELL] Not authenticated!');
-                auth.authenticate('TylerId', false, {});
-            }
+            //if (auth.isAuthenticated()) {
+            //    console.log('[SHELL] Authenticated! ', auth.getTokenPayload());
+                aurelia.setRoot();
+            //}
+            //else {
+            //    console.log('[SHELL] Not authenticated!');
+            //    auth.authenticate('TylerId', false, {});
+            //}
 
             //delete(tapFx.Aurelia);
         });

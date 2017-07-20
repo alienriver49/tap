@@ -1,18 +1,20 @@
-{
+﻿{
   "compileOnSave": false,
   "compilerOptions": {
-    "target": "es6",
+    "target": "es5",
     "module": "es6",
     "moduleResolution": "node",
-    "sourceMap": true,
+    "allowJs": true,
     "noImplicitAny": false,
     "removeComments": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "sourceMap": true
   },
   "exclude": [
     "node_modules",
+    "jspm_packages",
     "dist",
     "webpack.config.js"
   ]

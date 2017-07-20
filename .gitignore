@@ -1,4 +1,4 @@
-# Hidden files
+﻿# Hidden files
 .*
 
 # Temporary files
@@ -19,5 +19,11 @@
 node_modules/
 npm-debug.log*
 
+#jspm
+jspm_packages/
+
 # Distribution
 dist/
+
+# Visual Studio
+.vs/

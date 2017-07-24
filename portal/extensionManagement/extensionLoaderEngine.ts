@@ -63,7 +63,7 @@ class ExtensionLoaderEngine {
                         scriptTag.textContent = script.inline;
 
                     // set up the funcs we will use for handling the load and error events from the script tags
-                    let onScriptLoad: EventListener = (e: Event): void => {
+                   /* let onScriptLoad: EventListener = (e: Event): void => {
                         scriptTag.removeEventListener('load', onScriptLoad);
                         scriptTag.removeEventListener('error', onScriptError);
                         bootstrapScripts(scripts);
@@ -72,13 +72,14 @@ class ExtensionLoaderEngine {
                         // TODO: implement error handling for scripts failing to load
                     };
                     scriptTag.addEventListener('load', onScriptLoad);
-                    scriptTag.addEventListener('error', onScriptError);
+                    scriptTag.addEventListener('error', onScriptError);*/
 
                     iFrame.contentWindow.document.body.appendChild(scriptTag);
 
+                    // TODO: need to remove the timeout and get the 'load' event listeners working again
                     setTimeout(() => {
                         bootstrapScripts(scripts);
-                    }, 10);
+                    }, 50);
                     //bootstrapScripts(scripts);
                 } else {
                     // else, we have no more scripts to load and are finished, so resolve our promise
@@ -96,8 +97,7 @@ class ExtensionLoaderEngine {
             
             // Need a base tag so that baseURI is available for SystemJS
             let baseTag = iFrame.contentWindow.document.createElement('base');
-            console.log(window.location.href );
-            baseTag.setAttribute('href', 'http://falppdt-bjackso.corp.tylertechnologies.com:9000/')
+            baseTag.setAttribute('href', this._tapFx.Utilities.currentUrl())
             iFrame.contentWindow.document.head.appendChild(baseTag);
 
             bootstrapScripts(extensionScripts);

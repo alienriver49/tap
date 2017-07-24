@@ -77,6 +77,13 @@ export class Utilities {
             this.classOf(obj) !== '[object Function]');
     }
 
+    /**
+     * Get the current URL without hash or query params.
+     */
+    currentUrl(): string {
+        let loc = document.location;
+        return loc.protocol + '//' + loc.hostname + (loc.port ? ':' + loc.port : '') + loc.pathname;
+    }
 }
 
 export default Utilities;

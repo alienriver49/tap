@@ -1,8 +1,8 @@
-import * as tapfx from './../tapFx/ux/tapcModules'
-import {ITapDataTableColumnConfiguration} from './../webComponents/dataTable/tap-data-table'
+import * as tapfx from './../../tapFx/ux/tapcModules'
+import {ITapDataTableColumnConfiguration} from './../../webComponents/dataTable/tap-data-table'
 import {School} from './school'
 import {Address} from './address'
-import {ViewModels} from './../tapFx'
+import {ViewModels} from 'tap-fx'
 
 class LandingBlade extends ViewModels.BaseBlade {
     title: string;

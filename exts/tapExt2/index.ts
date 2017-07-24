@@ -1,6 +1,6 @@
 import LandingBlade from './landingBlade'
-import BaseBlade from './../tapFx/ux/viewModels/viewModels.baseblade'; // TODO: remove this and use a typing
-import {getTapFx, BaseExtension} from './../tapFx'
+import BaseBlade from './../../tapFx/ux/viewModels/viewModels.baseblade'; // TODO: remove this and use a typing
+import {getTapFx, BaseExtension} from 'tap-fx'
 
 export class Index extends BaseExtension {
     constructor(

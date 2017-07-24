@@ -1,5 +1,5 @@
 import LandingBlade from './landingBlade'
-import {getTapFx, BaseExtension} from './../tapFx'
+import {getTapFx, BaseExtension} from 'tap-fx'
 
 export class Index extends BaseExtension {
     constructor(

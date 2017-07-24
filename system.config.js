@@ -19,6 +19,10 @@ System.config({
   },
 
   packages: {
+    "exts": {
+      "defaultJSExtensions": true,
+      "defaultExtension": "ts"
+    },
     "portal": {
       "defaultJSExtensions": true,
       "defaultExtension": "ts"
@@ -46,6 +50,7 @@ System.config({
     "aurelia-auth": "npm:aurelia-auth@3.0.5",
     "aurelia-binding": "npm:aurelia-binding@1.2.1",
     "aurelia-bootstrapper": "npm:aurelia-bootstrapper@2.1.1",
+    "aurelia-dependency-injection": "npm:aurelia-dependency-injection@1.3.1",
     "aurelia-event-aggregator": "npm:aurelia-event-aggregator@1.0.1",
     "aurelia-fetch-client": "npm:aurelia-fetch-client@1.1.2",
     "aurelia-framework": "npm:aurelia-framework@1.1.2",

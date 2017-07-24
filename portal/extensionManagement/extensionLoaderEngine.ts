@@ -1,5 +1,10 @@
 import { inject } from 'aurelia-framework'
 
+interface IScript {
+    src?: string;
+    inline?: string;
+}
+
 @inject('TapFx')
 class ExtensionLoaderEngine {
     constructor(
@@ -12,7 +17,7 @@ class ExtensionLoaderEngine {
      * @param extensionName 
      */
     private _getExtensionBundle(extensionName: string): string {
-        return 'tap' + this._tapFx.Utilities.upperCaseFirstChar(extensionName) + '-bundle.js';
+        return 'exts/tap' + this._tapFx.Utilities.upperCaseFirstChar(extensionName) + '/bootstrap';
     }
 
     /**
@@ -23,10 +28,19 @@ class ExtensionLoaderEngine {
     public loadExtension(extensionId: string, extensionName: string): Promise<string> {
         return new Promise<string>((resolve) => {
             // standard script bundles
-            let extensionScripts = [
-                'common-bundle.js',
-                'tapFx-bundle.js',
-                this._getExtensionBundle(extensionName)
+            /*
+            <!--build:systemjs-->
+            <script src="jspm_packages/system.js"></script>
+            <script src="system.config.js"></script>
+            <!--endbuild-->
+            <script>
+            System.import('aurelia-bootstrapper');
+            </script>*/
+            let extScript = this._getExtensionBundle(extensionName);
+            let extensionScripts: IScript[] = [
+                {src: 'jspm_packages/system.js'},
+                {src: 'system.config.js'},
+                {inline: 'System.import("'+extScript+'")'}
             ];
 
             // create an iframe element for the extension
@@ -35,7 +49,7 @@ class ExtensionLoaderEngine {
             iFrame.setAttribute('src', 'about:blank');
             //iFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts');
             // function to bootstrap extension scripts. note: should add functionality for async scripts which can be loaded simultaneously
-            let bootstrapScripts = (scripts: string[]) => {
+            let bootstrapScripts = (scripts: IScript[]) => {
                 // grab the first script from the array, this removes it from the array as well
                 let script = scripts.shift();
                 if (script) {
@@ -43,7 +57,10 @@ class ExtensionLoaderEngine {
                     console.log('[SHELL] Loading:', script);
                     let scriptTag = iFrame.contentWindow.document.createElement('script');
                     scriptTag.setAttribute('type', 'text/javascript');
-                    scriptTag.setAttribute('src', script);
+                    if (script.src)
+                        scriptTag.setAttribute('src', script.src);
+                    if (script.inline)
+                        scriptTag.textContent = script.inline;
 
                     // set up the funcs we will use for handling the load and error events from the script tags
                     let onScriptLoad: EventListener = (e: Event): void => {
@@ -58,25 +75,32 @@ class ExtensionLoaderEngine {
                     scriptTag.addEventListener('error', onScriptError);
 
                     iFrame.contentWindow.document.body.appendChild(scriptTag);
+
+                    setTimeout(() => {
+                        bootstrapScripts(scripts);
+                    }, 10);
+                    //bootstrapScripts(scripts);
                 } else {
                     // else, we have no more scripts to load and are finished, so resolve our promise
                     console.log('[SHELL] Finish loading extension: ' + extensionName + ' with (ID): ', extensionId);
                     resolve('finished');
                 }
             };
-
-            // add an event listener to the iframe to load the scripts on load of the iframe element (not sure this is completely necessary)
-            let onIFrameLoad: EventListener = (e: Event): void => {
-                iFrame.removeEventListener('load', onIFrameLoad);
-                bootstrapScripts(extensionScripts);
-            };
-            iFrame.addEventListener('load', onIFrameLoad, false);
             
             // append that iframe to our 'extension-iframes' element
-            let iFramesEl = document.getElementById('extension-iframes');
+            let iFramesEl = window.document.getElementById('extension-iframes');
             if (iFramesEl) {
                 iFramesEl.appendChild(iFrame);
             }
+
+            
+            // Need a base tag so that baseURI is available for SystemJS
+            let baseTag = iFrame.contentWindow.document.createElement('base');
+            console.log(window.location.href );
+            baseTag.setAttribute('href', 'http://falppdt-bjackso.corp.tylertechnologies.com:9000/')
+            iFrame.contentWindow.document.head.appendChild(baseTag);
+
+            bootstrapScripts(extensionScripts);
         });
     }
 

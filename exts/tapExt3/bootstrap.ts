@@ -1,5 +1,5 @@
 import {Index} from './index'
-import {init} from './../tapFx'
+import {init} from 'tap-fx'
 
 init().then((tapFx) => {
     console.log('[EXT-BOOTSTRAP] startExtension');

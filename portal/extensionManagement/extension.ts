@@ -152,7 +152,7 @@ export class Extension {
             blade[func] = function() {
                 // publish the function call to the extension
                 console.log('[SHELL] Publishing message from function: ' + func);
-                this._tapFx.Rpc.publish('tapfx.' + bladeID + '.' + func, extId, { functionArgs: [...arguments] });
+                this._tapFx.Rpc.publish('tapfx.' + bladeID + '.' + func, extId, { functionArgs: Array.from(arguments)/*[...arguments]*/ });
                 
                 // set up a subscription for any result from the calling of the function in the extension
                 let resultPromise = new DeferredPromise();

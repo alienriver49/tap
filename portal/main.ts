@@ -1,6 +1,5 @@
 ﻿/// <reference path="./../typings.d.ts" />
-import { Aurelia, PLATFORM, FrameworkConfiguration } from 'aurelia-framework';
-import {LogManager} from "aurelia-framework";
+import { Aurelia, PLATFORM, FrameworkConfiguration, LogManager } from 'aurelia-framework';
 import {ConsoleAppender} from "aurelia-logging-console";
 import {AuthService} from "aurelia-auth";
 import {init} from 'tap-fx';
@@ -23,7 +22,7 @@ export function configure(aurelia: Aurelia) {
         aurelia.container.registerSingleton(AuthorizationEngine, AuthorizationEngine);
 
         aurelia.use
-            .standardConfiguration()
+            .basicConfiguration()
             .history()
             // Register the components globally so we don't need to
             // 'require' them in each html (useful when dynamically creating views)

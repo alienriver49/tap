@@ -1,8 +1,8 @@
-/// <reference path="./../typings.d.ts" />
+/// <reference path="./../../typings.d.ts" />
 import LandingBlade from './landingBlade'
 import SecondBlade from './secondBlade'
-import BaseBlade from './../tapFx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
-import {getTapFx, BaseExtension} from './../tapFx'
+import BaseBlade from './../../tapFx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
+import {getTapFx, BaseExtension} from 'tap-fx'
 
 export class Index extends BaseExtension {
     constructor(

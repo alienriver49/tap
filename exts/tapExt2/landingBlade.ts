@@ -1,5 +1,5 @@
-import {getTapFx, ViewModels} from './../tapFx'
-import * as tapfx from './../tapFx/ux/tapcModules'
+import {getTapFx, ViewModels} from 'tap-fx'
+import * as tapfx from './../../tapFx/ux/tapcModules'
 
 class LandingBlade extends ViewModels.FormBlade {
     title: string;

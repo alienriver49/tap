@@ -62,7 +62,7 @@ export class Extension extends BaseExtension {
         // the removal chain keeps track of the removal of blades in sequential order
         let removalChain = Promise.resolve<boolean>(true);
         // loop through the blade mappings in order of the blade sequence
-        let bladeMappings = [...this._bladeInfoMap.entries()].sort((a, b) => { return b[1].bladeSequence - a[1].bladeSequence; });
+        let bladeMappings = Array.from(this._bladeInfoMap.entries())/*[...this._bladeInfoMap.entries()]*/.sort((a, b) => { return b[1].bladeSequence - a[1].bladeSequence; });
         // TODO: this chain should only fail if the first blade in the sequence can't be removed (deactivated), for the time being, as the business use case would make sense since any prior blades should have finished their tasks. also, it would be difficult to figure out which URL to redirect to if any blade in the set failed to be removed.
         bladeMappings.forEach((bladeMapping) => {
             let blade = bladeMapping[0];
@@ -349,7 +349,7 @@ export class Extension extends BaseExtension {
      * Get the max blade sequence in our current blade info map. If no mappings are found, 0 is returned.
      */
     private _getMaxBladeSequence(): number {
-        let bladeMappings = [...this._bladeInfoMap.values()];
+        let bladeMappings = Array.from(this._bladeInfoMap.values())/*[...this._bladeInfoMap.values()]*/;
         return bladeMappings.length > 0 ? (Math.max.apply(null, bladeMappings.map((bi) => { return bi.bladeSequence }))) : 0;
     }
 

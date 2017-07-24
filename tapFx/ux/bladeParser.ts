@@ -45,7 +45,6 @@ export class BladeParser {
 
         }*/
         let bladeContent = blade.content;
-        console.log(bladeContent);
         for (let i = 0; i < bladeContent.length; i++) {
             let el = this.parseNode(parent, bladeContent[i]);
         }

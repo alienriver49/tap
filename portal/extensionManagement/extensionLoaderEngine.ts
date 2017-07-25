@@ -13,7 +13,7 @@ class ExtensionLoaderEngine {
     }
 
     /**
-     * Function for getting an extension JS bundle based on convention and the IIS file layout.
+     * Function for getting an extension's SystemJS bootstrap script.
      * @param extensionName 
      */
     private _getExtensionBundle(extensionName: string): string {
@@ -27,15 +27,6 @@ class ExtensionLoaderEngine {
      */
     public loadExtension(extensionId: string, extensionName: string): Promise<string> {
         return new Promise<string>((resolve) => {
-            // standard script bundles
-            /*
-            <!--build:systemjs-->
-            <script src="jspm_packages/system.js"></script>
-            <script src="system.config.js"></script>
-            <!--endbuild-->
-            <script>
-            System.import('aurelia-bootstrapper');
-            </script>*/
             let extScript = this._getExtensionBundle(extensionName);
             let extensionScripts: IScript[] = [
                 {src: 'jspm_packages/system.js'},
@@ -57,50 +48,55 @@ class ExtensionLoaderEngine {
                     console.log('[SHELL] Loading:', script);
                     let scriptTag = iFrame.contentWindow.document.createElement('script');
                     scriptTag.setAttribute('type', 'text/javascript');
-                    if (script.src)
+                    // if using src, set the src attribute on the script tag, otherwise if using inline, set the textContent on the script tag
+                    if (script.src) {
                         scriptTag.setAttribute('src', script.src);
-                    if (script.inline)
-                        scriptTag.textContent = script.inline;
 
-                    // set up the funcs we will use for handling the load and error events from the script tags
-                   /* let onScriptLoad: EventListener = (e: Event): void => {
-                        scriptTag.removeEventListener('load', onScriptLoad);
-                        scriptTag.removeEventListener('error', onScriptError);
-                        bootstrapScripts(scripts);
-                    };
-                    let onScriptError: EventListener = (e: Event): void => {
-                        // TODO: implement error handling for scripts failing to load
-                    };
-                    scriptTag.addEventListener('load', onScriptLoad);
-                    scriptTag.addEventListener('error', onScriptError);*/
+                        // scripts with src will be the only one's which hit load listeners
+                        // set up the funcs we will use for handling the load and error events from the script tags
+                        let onScriptLoad: EventListener = (e: Event): void => {
+                            scriptTag.removeEventListener('load', onScriptLoad);
+                            scriptTag.removeEventListener('error', onScriptError);
+                            bootstrapScripts(scripts);
+                        };
+                        let onScriptError: EventListener = (e: Event): void => {
+                            // TODO: implement error handling for scripts failing to load
+                        };
+                        scriptTag.addEventListener('load', onScriptLoad);
+                        scriptTag.addEventListener('error', onScriptError);
+                    } else if (script.inline)
+                        scriptTag.textContent = script.inline;
 
                     iFrame.contentWindow.document.body.appendChild(scriptTag);
 
-                    // TODO: need to remove the timeout and get the 'load' event listeners working again
-                    setTimeout(() => {
-                        bootstrapScripts(scripts);
-                    }, 50);
-                    //bootstrapScripts(scripts);
+                    // since inline doesn't have the load listener to kick of bootstrapping of the scripts, trigger that here
+                    if (script.inline) bootstrapScripts(scripts);
                 } else {
                     // else, we have no more scripts to load and are finished, so resolve our promise
                     console.log('[SHELL] Finish loading extension: ' + extensionName + ' with (ID): ', extensionId);
                     resolve('finished');
                 }
             };
+
+            // add an event listener to the iframe to add a base tag and start loading the scripts on load of the iframe element
+            let onIFrameLoad: EventListener = (e: Event): void => {
+                iFrame.removeEventListener('load', onIFrameLoad);
+
+                // need a base tag so that baseURI is available for SystemJS
+                let baseTag = iFrame.contentWindow.document.createElement('base');
+                baseTag.setAttribute('href', this._tapFx.Utilities.currentUrl())
+                iFrame.contentWindow.document.head.appendChild(baseTag);
+
+                // start the loading of scripts
+                bootstrapScripts(extensionScripts);
+            };
+            iFrame.addEventListener('load', onIFrameLoad);
             
             // append that iframe to our 'extension-iframes' element
             let iFramesEl = window.document.getElementById('extension-iframes');
             if (iFramesEl) {
                 iFramesEl.appendChild(iFrame);
             }
-
-            
-            // Need a base tag so that baseURI is available for SystemJS
-            let baseTag = iFrame.contentWindow.document.createElement('base');
-            baseTag.setAttribute('href', this._tapFx.Utilities.currentUrl())
-            iFrame.contentWindow.document.head.appendChild(baseTag);
-
-            bootstrapScripts(extensionScripts);
         });
     }
 

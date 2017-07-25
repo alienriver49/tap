@@ -6,7 +6,7 @@ class LandingBlade extends ViewModels.FormBlade {
     subtitle: string;
 
     buttonConventionDisabled = false;
-    showHideCheckbox = true;
+    showContent = true;
 
     selectOptions = ['Option 1', 'Option 2', 'Option 3'];
     selectedOption = this.selectOptions[0];
@@ -42,18 +42,21 @@ class LandingBlade extends ViewModels.FormBlade {
                     )
                 )
                 .addLabelInput(
-                    new tapfx.tapcLabel({for: 'showHideCheckbox'}).addText('Subtitle:'),
-                    new tapfx.tapcInput({name: 'showHideCheckbox', type: tapfx.InputType.Checkbox, value: '@showHideCheckbox'}),
+                    new tapfx.tapcLabel({for: 'showContent'}).addToContainer(
+                        new tapfx.tapcDiv({if: '@showContent'}).addText('Hide:'),
+                        new tapfx.tapcDiv({if: '@!showContent'}).addText('Show:')
+                    ),
+                    new tapfx.tapcInput({name: 'showContent', type: tapfx.InputType.Checkbox, value: '@showContent'}),
                 )
                 .addToContainer(
-                    new tapfx.tapcDiv({if: '@showHideCheckbox'}).addText('Show / Hide Content')
+                    new tapfx.tapcDiv({if: '@showContent'}).addText('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed at pharetra magna, ut sagittis risus. Duis purus massa, vestibulum sed purus sed, facilisis vestibulum nibh. Curabitur rutrum sed mauris eget tincidunt. Phasellus imperdiet sem ac nunc lobortis vehicula id non tellus.')
                 )
                 .addToContainer(
                     new tapfx.tapcDiv().addToContainer(
                         new tapfx.tapcSelect({value: '@selectedOption'}).addToContainer(
                             new tapfx.tapcOption({name: 'selectOptions', repeat: 'option of selectOptions', model: '@option'}).addText('@option')
                         ),
-                        new tapfx.tapcHeading({importance: 3}).addText('Selected Option: ', '@selectedOption')
+                        new tapfx.tapcHeading({importance: 4}).addText('Selected Option: ', '@selectedOption')
                     )
                 )
                 .addToContainer(
@@ -63,7 +66,7 @@ class LandingBlade extends ViewModels.FormBlade {
                             new tapfx.tapcText({text: ' '}),
                             new tapfx.tapcText({text: '@input'})
                         ),
-                        new tapfx.tapcHeading({importance: 3}).addText('Selected Checkboxes: ', '@selectedCheckboxes')
+                        new tapfx.tapcHeading({importance: 4}).addText('Selected Checkboxes: ', '@selectedCheckboxes')
                     )
                 )
                 .addToContainer(
@@ -73,7 +76,7 @@ class LandingBlade extends ViewModels.FormBlade {
                             new tapfx.tapcText({text: ' '}),
                             new tapfx.tapcText({text: '@input.label'})
                         ),
-                        new tapfx.tapcHeading({importance: 3}).addText('Selected Checkboxes: ', '{ value: ', '@selectedRadio.value', ', label: ', '@selectedRadio.label', ' }')
+                        new tapfx.tapcHeading({importance: 4}).addText('Selected Checkboxes: ', '{ value: ', '@selectedRadio.value', ', label: ', '@selectedRadio.label', ' }')
                     )
                 );
     }

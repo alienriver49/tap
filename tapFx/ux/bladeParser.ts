@@ -49,7 +49,8 @@ export class BladeParser {
             let el = this.parseNode(parent, bladeContent[i]);
         }
 
-        this._conventionEngine.attachFunctions(parent, bladeFunctions);
+        // use the convention engine to attach click handlers
+        this._conventionEngine.attachClickHandlers(parent, bladeFunctions);
 
         return `<template>${parent.outerHTML}</template>`;
     }
@@ -74,6 +75,12 @@ export class BladeParser {
         }
         if (node instanceof tapc.tapcLabel) {
             el = document.createElement('label');
+        }
+        if (node instanceof tapc.tapcSelect) {
+            el = document.createElement('select');
+        }
+        if (node instanceof tapc.tapcOption) {
+            el = document.createElement('option');
         }
         /*if (node instanceof tapc.tapcLineBreak) {
             el = document.createElement('br');

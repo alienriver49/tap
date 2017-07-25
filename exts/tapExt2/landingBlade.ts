@@ -134,7 +134,8 @@ class LandingBlade extends ViewModels.FormBlade {
         this.subtitle = origSubtitle + ' - Convention Button Clicked!';
         this.buttonConventionDisabled = true;
 
-        //window.TapFx.Security.getUserInfo();
+        let user: any = this._tapFx.Security.getUserInfo();
+        console.log('[EXT-2] userInfo: ', user);
 
         setTimeout(() => {
             this.subtitle = origSubtitle;

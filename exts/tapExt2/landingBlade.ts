@@ -46,7 +46,7 @@ class LandingBlade extends ViewModels.FormBlade {
                         new tapfx.tapcDiv({if: '@showContent'}).addText('Hide:'),
                         new tapfx.tapcDiv({if: '@!showContent'}).addText('Show:')
                     ),
-                    new tapfx.tapcInput({name: 'showContent', type: tapfx.InputType.Checkbox, value: '@showContent'}),
+                    new tapfx.tapcInput({name: 'showContent', type: tapfx.InputType.Checkbox, checked: '@showContent'}),
                 )
                 .addToContainer(
                     new tapfx.tapcDiv({if: '@showContent'}).addText('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed at pharetra magna, ut sagittis risus. Duis purus massa, vestibulum sed purus sed, facilisis vestibulum nibh. Curabitur rutrum sed mauris eget tincidunt. Phasellus imperdiet sem ac nunc lobortis vehicula id non tellus.')

@@ -120,6 +120,7 @@ export class PortalBlade {
 
         let baseElement = queryBaseElement
 
+        let viewFactory: ViewFactory;
         let loader = this._extensionResources.defaultLoader;
         let cachedTemplateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(viewWithPath);
         if (!cachedTemplateRegistryEntry || !cachedTemplateRegistryEntry.factory) {
@@ -127,7 +128,7 @@ export class PortalBlade {
             let templateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(viewWithPath);
 
             // Get associated viewFactory for template, otherwise create it and attach to templateRegistryEntry
-            let viewFactory = templateRegistryEntry.factory;
+            viewFactory = templateRegistryEntry.factory;
             if (!viewFactory) {
                 this._extensionResources.viewResources = new ViewResources(this._extensionResources.viewResources, templateRegistryEntry.address);
                 this._extensionResources.viewResources.bindingLanguage = this._extensionResources.container.get(TemplatingBindingLanguage);
@@ -135,11 +136,11 @@ export class PortalBlade {
                 viewFactory = viewCompiler.compile(this._config.serializedView, this._extensionResources.viewResources, ViewCompileInstruction.normal);
                 templateRegistryEntry.factory = viewFactory;
             }
-            this._createBindView(viewFactory, baseElement);
         } else {
-            let viewFactory = cachedTemplateRegistryEntry.factory;
-            this._createBindView(viewFactory, baseElement);
+            viewFactory = cachedTemplateRegistryEntry.factory;
         }
+
+        this._createBindView(viewFactory, baseElement);
     }
 
     /**

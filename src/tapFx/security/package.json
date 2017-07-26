@@ -1,0 +1,14 @@
+{
+  "name": "tap-fx-security",
+  "version": "0.1.0",
+  "description": "Security module for TAP",
+  "main": "bundles/tap-fx-security.umd.js",
+  "module": "tap-fx-security.es5.js",
+  "es2015": "tap-fx-security.js",
+  "typings": "tap-fx-security.d.ts",
+  "license": "MIT",
+  "dependencies": {
+    "aurelia-dependency-injection": "^1.3.1",
+    "aurelia-auth": "^3.0.5"
+  }
+}

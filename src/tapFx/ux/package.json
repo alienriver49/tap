@@ -1,0 +1,10 @@
+{
+  "name": "tap-fx-ux",
+  "version": "0.1.0",
+  "description": "UX module for TAP",
+  "main": "bundles/tap-fx-ux.umd.js",
+  "module": "tap-fx-ux.es5.js",
+  "es2015": "tap-fx-ux.js",
+  "typings": "tap-fx-ux.d.ts",
+  "license": "MIT"
+}

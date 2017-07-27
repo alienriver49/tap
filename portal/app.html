@@ -11,6 +11,7 @@
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
         <ul class="nav navbar-nav">
             <li role="presentation"><a href="#">Home</a></li>
+            <li role="presentation"><a href="#Invoices">Invoices</a></li>
             <li role="presentation"><a href="#ext1">Extension 1</a></li>
             <li role="presentation"><a href="#ext2">Extension 2</a></li>
             <li role="presentation"><a href="#ext3">Extension 3</a></li>
@@ -18,10 +19,15 @@
         
         <!-- TODO: I think the router needs an API exposed for managing some of this stuff (like setting / adding query params to a URL) -->
         <ul class="nav navbar-nav navbar-right">
-            <li role="presentation"><a href="#${router.currentUrl}/param1">Add param1</a></li>
-            <li role="presentation"><a href="#${router.currentUrl}/param2">Add param2</a></li>
-            <li role="presentation"><a href="#${router.currentUrl}/param3">Add param3</a></li>
-            <li role="presentation"><a href="#${router.currentUrl}${router.currentUrl.indexOf('?') === -1 ? '?' : '&'}qp=1">Add Query Param</a></li>
+            <li class="dropdown">
+                <a href="#${router.currentUrl}" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Add <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                    <li role="presentation"><a href="#${router.currentUrl}/param1">Param 1</a></li>
+                    <li role="presentation"><a href="#${router.currentUrl}/param2">Param 2</a></li>
+                    <li role="presentation"><a href="#${router.currentUrl}/param3">Param 3</a></li>
+                    <li role="presentation"><a href="#${router.currentUrl}${router.currentUrl.indexOf('?') === -1 ? '?' : '&'}qp=1">Query Param</a></li>
+                </ul>
+            </li>
         </ul>
     </nav>
 

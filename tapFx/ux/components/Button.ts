@@ -1,5 +1,6 @@
 import {BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig} from './BaseElementContainer'
 import {Icon} from './Icon'
+import {Text} from './Text'
 
 export interface IButtonConfig extends IBaseElementContainerConfig {
     type?: /*ButtonType*/string;
@@ -65,7 +66,7 @@ export class Button extends BaseElementContainer implements IButton {
      * @param iconName 
      */
     addIcon(iconName: string): this {
-        this.addToContainer(new Icon({ class: iconName }));
+        this.addToContainer(new Icon({ class: iconName }), new Text({text: ' '}));
 
         return this;
     }

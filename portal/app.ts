@@ -4,6 +4,7 @@ import Router from './commanding/router';
 import ExtensionManager from './extensionManagement/extensionManager'; // imported and injected for use on the view
 import './app.css';
 import './../tapFx/ux/cssModules';
+import 'bootstrap';
 
 @inject(FetchConfig, Router, ExtensionManager)
 export class App {

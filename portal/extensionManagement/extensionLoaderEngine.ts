@@ -17,7 +17,7 @@ class ExtensionLoaderEngine {
      * @param extensionName 
      */
     private _getExtensionBundle(extensionName: string): string {
-        return 'exts/tap' + this._tapFx.Utilities.upperCaseFirstChar(extensionName) + '/bootstrap';
+        return 'exts/' + extensionName + '/bootstrap';
     }
 
     /**

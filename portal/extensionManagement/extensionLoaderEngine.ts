@@ -29,6 +29,7 @@ class ExtensionLoaderEngine {
         return new Promise<string>((resolve) => {
             let extScript = this._getExtensionBundle(extensionName);
             let extensionScripts: IScript[] = [
+                {src: 'jspm_packages/system-polyfills.js'},
                 {src: 'jspm_packages/system.js'},
                 {src: 'system.config.js'},
                 {inline: 'System.import("'+extScript+'")'}
@@ -37,7 +38,7 @@ class ExtensionLoaderEngine {
             // create an iframe element for the extension
             let iFrame = document.createElement('iframe');
             iFrame.setAttribute('id', extensionId);
-            iFrame.setAttribute('src', 'about:blank');
+            iFrame.setAttribute('src', this._tapFx.Utilities.currentUrl() + '/portal/empty.html');
             //iFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts');
             // function to bootstrap extension scripts. note: should add functionality for async scripts which can be loaded simultaneously
             let bootstrapScripts = (scripts: IScript[]) => {

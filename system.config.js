@@ -11,7 +11,11 @@ System.config({
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "strictNullChecks": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "lib": [
+      "es2015",
+      "dom"
+    ]
   },
   paths: {
     "github:*": "jspm_packages/github/*",
@@ -69,6 +73,7 @@ System.config({
     "material-components-web": "npm:material-components-web@0.15.0",
     "tap-fx": "tapFx/index",
     "typescript": "npm:typescript@2.4.1",
+    "whatwg-fetch": "npm:whatwg-fetch@2.0.3",
     "github:jspm/nodelibs-assert@0.1.0": {
       "assert": "npm:assert@1.4.1"
     },

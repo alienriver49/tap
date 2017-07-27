@@ -278,15 +278,15 @@ export class ProxiedObservable implements Callable {
     private _updateCollectionObserver(originalValue: any): boolean {
         let wasUpdated = false;
 
-        if (originalValue instanceof Array){
+        if (originalValue instanceof Array) {
             this._disposeCollectionObserver();
 
             // This proxy is just used to watch for array changes using array indexes
             // for example, a[2] = 10
-            let value = new Proxy(originalValue, {
+            let value =  typeof Proxy !== 'undefined' ? new Proxy(originalValue, {
                 set: this.proxyArraySet.bind(this),
                 get: this.proxyArrayGet.bind(this)
-            });
+            }) : { set: this.proxyArraySet.bind(this), get: this.proxyArrayGet.bind(this) };
             // Update the property to use the array proxy (temporarily disabling observer)
             let _canObservePropertyState = this._canObserveProperty
             this._canObserveProperty = false;

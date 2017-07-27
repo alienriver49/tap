@@ -1,12 +1,21 @@
-import {tapcBase, ITapcBaseConfig} from './tapcBase'
+import {BaseElement, IBaseElement, IBaseElementConfig} from './BaseElement'
 import {ITapDataTableColumnConfiguration} from './../../../webComponents/dataTable/tap-data-table'
 
-export interface ITapcDataTableConfig extends ITapcBaseConfig {
+export interface IDataTableConfig extends IBaseElementConfig {
     attributeData?: string;
 }
 
-export class tapcDataTable extends tapcBase {
-    constructor(config?: ITapcDataTableConfig) {
+export interface IDataTable extends IBaseElement {
+    attributeData: string;
+    attributeColumnConfiguration: string;
+    setColumnConfiguration(columnConfig: ITapDataTableColumnConfiguration[], bindingName: string): this;
+}
+
+/**
+ * Data table UX component.
+ */
+export class DataTable extends BaseElement implements IDataTable {
+    constructor(config?: IDataTableConfig) {
         if (config === void 0) { config = {}; }
         super(config);
 

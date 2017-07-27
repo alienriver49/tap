@@ -1,6 +1,6 @@
-import {tapcBase, ITapcBaseConfig} from './tapcBase'
+import {BaseElement, IBaseElement, IBaseElementConfig} from './BaseElement'
 
-export interface ITapcInputConfig extends ITapcBaseConfig {
+export interface IInputConfig extends IBaseElementConfig {
     type?: /*InputType*/string;
     value?: string;
     checked?: string;
@@ -18,15 +18,25 @@ export interface ITapcInputConfig extends ITapcBaseConfig {
 }*/
 
 export class InputType {
-    public static readonly Text: string = "text";
-    public static readonly Password: string = "password";
-    public static readonly Checkbox: string = "checkbox";
-    public static readonly Radio: string = "radio";
-    public static readonly File: string = "checkbox";
+    public static readonly Text: string = 'text';
+    public static readonly Password: string = 'password';
+    public static readonly Checkbox: string = 'checkbox';
+    public static readonly Radio: string = 'radio';
+    public static readonly File: string = 'checkbox';
 }
 
-export class tapcInput extends tapcBase {
-    constructor(config?: ITapcInputConfig) {
+export interface IInput extends IBaseElement {
+    attributeType: string;
+    attributeValue: string;
+    attributeChecked: string;
+    attributeModel: string;
+}
+
+/**
+ * Input UX component for taking input from the user.
+ */
+export class Input extends BaseElement implements IInput {
+    constructor(config?: IInputConfig) {
         if (config === void 0) { config = {}; }
         super(config);
         this.attributeType = config.type || InputType.Text;

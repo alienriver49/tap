@@ -1,5 +1,5 @@
 import {ViewModels} from 'tap-fx'
-import * as tapfx from './../../tapFx/ux/tapcModules'
+import * as tapc from './../../tapFx/ux/tapcModules'
 
 class LandingBlade extends ViewModels.FormBlade {
     title: string;
@@ -14,17 +14,17 @@ class LandingBlade extends ViewModels.FormBlade {
     private _buildContent(): void {
         this.addForm()
                 .addLabelInput(
-                    new tapfx.tapcLabel({for: 'title'}).addText('Title:'),
-                    new tapfx.tapcInput({name: 'title', value: '@title'}),
+                    new tapc.Label({for: 'title'}).addText('Title:'),
+                    new tapc.Input({name: 'title', value: '@title'}),
                 )
                 .addLabelInput(
-                    new tapfx.tapcLabel({for: 'subtitle'}).addText('Subtitle:'),
-                    new tapfx.tapcInput({name: 'subtitle', value: '@subtitle'}), // TODO: missing trigger on blur binding behaviour
+                    new tapc.Label({for: 'subtitle'}).addText('Subtitle:'),
+                    new tapc.Input({name: 'subtitle', value: '@subtitle'}), // TODO: missing trigger on blur binding behaviour
                 )
                 .addToContainer(
-                    new tapfx.tapcDiv().addToContainer(
-                        new tapfx.tapcLabel({for: 'display'}).addText('Display:'),
-                        new tapfx.tapcText({text: '@display'}),
+                    new tapc.Content().addToContainer(
+                        new tapc.Label({for: 'display'}).addText('Display:'),
+                        new tapc.Text({text: '@display'}),
                     )
                 );
     }

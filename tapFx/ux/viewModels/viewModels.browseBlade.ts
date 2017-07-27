@@ -1,4 +1,5 @@
-import {tapcBase} from './../components/tapcBase'
+import {BaseElement} from './../components/BaseElement'
+import {IButton} from './../components/Button'
 import {BaseBlade} from './viewModels.baseBlade'
 
 export class BrowseBlade extends BaseBlade {
@@ -6,7 +7,8 @@ export class BrowseBlade extends BaseBlade {
         super();
     }
 
-    public addBrowse() {
+    public addActionButtons(...buttons: IButton[]) {
+        
     }
 }
 

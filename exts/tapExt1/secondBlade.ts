@@ -1,5 +1,5 @@
 import {ViewModels} from 'tap-fx'
-import * as tapfx from './../../tapFx/ux/tapcModules'
+import * as tapc from './../../tapFx/ux/tapcModules'
 
 class SecondBlade extends ViewModels.FormBlade {
     title: string;
@@ -16,29 +16,29 @@ class SecondBlade extends ViewModels.FormBlade {
     private _buildContent(): void {
         this.addForm()
                 .addLabelInput(
-                    new tapfx.tapcLabel({for: 'title'}).addText('Title:'),
-                    new tapfx.tapcInput({name: 'title', value: '@title'}),
+                    new tapc.Label({for: 'title'}).addText('Title:'),
+                    new tapc.Input({name: 'title', value: '@title'}),
                 )
                 .addLabelInput(
-                    new tapfx.tapcLabel({for: 'subtitle'}).addText('Subtitle:'),
-                    new tapfx.tapcInput({name: 'subtitle', value: '@subtitle'}), // TODO: missing trigger on blur binding behaviour
+                    new tapc.Label({for: 'subtitle'}).addText('Subtitle:'),
+                    new tapc.Input({name: 'subtitle', value: '@subtitle'}), // TODO: missing trigger on blur binding behaviour
                 )
                 .addToContainer(
-                    new tapfx.tapcDiv().addToContainer(
-                        new tapfx.tapcLabel({for: 'display'}).addText('Display:'),
-                        new tapfx.tapcText({text: '@display'}),
+                    new tapc.Content().addToContainer(
+                        new tapc.Label({for: 'display'}).addText('Display:'),
+                        new tapc.Text({text: '@display'}),
                     )
                 )
                 .addToContainer(
-                    new tapfx.tapcDiv().addToContainer(
-                        new tapfx.tapcLabel({for: 'queryParams'}).addText('Query Params:'),
-                        new tapfx.tapcText({text: '@queryParams'}),
+                    new tapc.Content().addToContainer(
+                        new tapc.Label({for: 'queryParams'}).addText('Query Params:'),
+                        new tapc.Text({text: '@queryParams'}),
                     )
                 )
                 // Note: slightly different than the original template, adds a label with 'Can Close?' instead of having it inline to the right of the checkbox, though we may want both
                 .addLabelInput( 
-                    new tapfx.tapcLabel({for: 'canClose'}).addText('Can Close?'),
-                    new tapfx.tapcInput({name: 'canClose', type: tapfx.InputType.Checkbox, value: 'true', checked: '@canClose'}),
+                    new tapc.Label({for: 'canClose'}).addText('Can Close?'),
+                    new tapc.Input({name: 'canClose', type: tapc.InputType.Checkbox, value: 'true', checked: '@canClose'}),
                 );
     }
 

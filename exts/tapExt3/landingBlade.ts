@@ -1,4 +1,4 @@
-import * as tapfx from './../../tapFx/ux/tapcModules'
+import * as tapc from './../../tapFx/ux/tapcModules'
 import {ITapDataTableColumnConfiguration} from './../../webComponents/dataTable/tap-data-table'
 import {School} from './school'
 import {Address} from './address'
@@ -42,37 +42,37 @@ class LandingBlade extends ViewModels.BaseBlade {
 
     private _buildContent(): void {
         this.content.push(
-            new tapfx.tapcDiv().addToContainer(
-                new tapfx.tapcDiv().addToContainer(
-                    new tapfx.tapcForm().addLabelInput(
-                        new tapfx.tapcLabel({for: 'text'}).addText('Blade text'),
-                        new tapfx.tapcInput({name: 'text', value: '@text'})
+            new tapc.Content().addToContainer(
+                new tapc.Content().addToContainer(
+                    new tapc.Form().addLabelInput(
+                        new tapc.Label({for: 'text'}).addText('Blade text'),
+                        new tapc.Input({name: 'text', value: '@text'})
                     ),
                 ),
-                new tapfx.tapcDiv().addToContainer(
-                    new tapfx.tapcLabel().addToContainer(
-                        new tapfx.tapcMdcCheckbox({isChecked: "@raised"}),
-                        new tapfx.tapcDiv().addText('Raise button')
+                new tapc.Content().addToContainer(
+                    new tapc.Label().addToContainer(
+                        new tapc.MdcCheckbox({isChecked: "@raised"}),
+                        new tapc.Content().addText('Raise button')
                     ),
-                    new tapfx.tapcTapTestComponent({display: '@display', clearText: '@clearText', raised: '@raised'})
+                    new tapc.TapTestComponent({display: '@display', clearText: '@clearText', raised: '@raised'})
                 ),
-                new tapfx.tapcDiv().addText('Test Address1 child object'),
-                new tapfx.tapcDiv().addText('@address.line1'),
-                new tapfx.tapcDiv().addText('@address.town', ', ', '@address.state', ' ', '@address.zip'),
-                new tapfx.tapcDiv().addText('Test Address2 child object (same object as Address1)'),
-                new tapfx.tapcDiv().addText('@address2.line1'),
-                new tapfx.tapcDiv().addText('@address2.town', ', ', '@address2.state', ' ', '@address2.zip'),
-                new tapfx.tapcDiv().addToContainer(
-                    new tapfx.tapcButton({name: 'updateChildObject'}).addText('Update property on child object'),
-                    new tapfx.tapcButton({name: 'changeChildObject'}).addText('Change child object'),
+                new tapc.Content().addText('Test Address1 child object'),
+                new tapc.Content().addText('@address.line1'),
+                new tapc.Content().addText('@address.town', ', ', '@address.state', ' ', '@address.zip'),
+                new tapc.Content().addText('Test Address2 child object (same object as Address1)'),
+                new tapc.Content().addText('@address2.line1'),
+                new tapc.Content().addText('@address2.town', ', ', '@address2.state', ' ', '@address2.zip'),
+                new tapc.Content().addToContainer(
+                    new tapc.Button({name: 'updateChildObject'}).addText('Update property on child object'),
+                    new tapc.Button({name: 'changeChildObject'}).addText('Change child object'),
                 ),
-                new tapfx.tapcDiv().addText('Test syncing changing array contents and changing array').addToContainer(
-                    new tapfx.tapcButton({name: 'addData'}).addText('Add row'),
-                    new tapfx.tapcButton({name: 'removeData'}).addText('Remove row'),
-                    new tapfx.tapcButton({name: 'changeData'}).addText('Change array'),
-                    new tapfx.tapcButton({name: 'test'}).addText('Test random array modification by index'),
+                new tapc.Content().addText('Test syncing changing array contents and changing array').addToContainer(
+                    new tapc.Button({name: 'addData'}).addText('Add row'),
+                    new tapc.Button({name: 'removeData'}).addText('Remove row'),
+                    new tapc.Button({name: 'changeData'}).addText('Change array'),
+                    new tapc.Button({name: 'test'}).addText('Test random array modification by index'),
                 ),
-                new tapfx.tapcDataTable({id: 'test-table', attributeData: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig')
+                new tapc.DataTable({id: 'test-table', attributeData: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig')
             )
         );
     }

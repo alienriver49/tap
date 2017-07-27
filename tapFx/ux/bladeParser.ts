@@ -1,7 +1,7 @@
 import { inject } from 'aurelia-framework'
 import * as tapc from './tapcModules'
-import {tapcBase} from './components/tapcBase'
-import {tapcBaseContainer} from './components/tapcBaseContainer'
+import {IBaseElement} from './components/BaseElement'
+import {BaseElementContainer} from './components/BaseElementContainer'
 import BaseBlade from './viewModels/viewModels.baseBlade'
 import ConventionEngine from './conventionEngine'
 import Utilities from './../utilities/utilities'
@@ -31,15 +31,6 @@ export class BladeParser {
         let parent: HTMLDivElement = document.createElement('div');
         parent.classList.add('blade');
 
-        // add a remove blade button with the 'removeBladeButton' class added
-        let removeBladeButton = document.createElement('button');
-        removeBladeButton.classList.add('removeBladeButton', 'btn', 'btn-primary');
-        removeBladeButton.name = 'remove';
-        removeBladeButton.textContent = 'Remove';
-        //removeBladeButton.attributes.setNamedItem(styleAttr);
-        parent.appendChild(removeBladeButton);
-
-
         // POC: Could render different types of blades differently
         /*if (blade instanceof FormBlade) {
 
@@ -60,53 +51,56 @@ export class BladeParser {
      * @param parent 
      * @param node 
      */
-    public parseNode(parent: Element, node: tapcBase): void {
+    public parseNode(parent: Element, node: IBaseElement): void {
         let bindMatch: RegExpExecArray | null;
         let el: HTMLElement | null = null; 
 
-        if (node instanceof tapc.tapcHeading) {
+        if (node instanceof tapc.Heading) {
             el = document.createElement('h' + node.importance);
         }
-        if (node instanceof tapc.tapcDiv) {
+        if (node instanceof tapc.Content) {
             el = document.createElement('div');
         }
-        if (node instanceof tapc.tapcForm) {
+        if (node instanceof tapc.Form) {
             el = document.createElement('form');
         }
-        if (node instanceof tapc.tapcLabel) {
+        if (node instanceof tapc.Label) {
             el = document.createElement('label');
         }
-        if (node instanceof tapc.tapcSelect) {
+        if (node instanceof tapc.Select) {
             el = document.createElement('select');
         }
-        if (node instanceof tapc.tapcOption) {
+        if (node instanceof tapc.Option) {
             el = document.createElement('option');
         }
-        /*if (node instanceof tapc.tapcLineBreak) {
-            el = document.createElement('br');
-        }*/
-        if (node instanceof tapc.tapcInput) {
+        if (node instanceof tapc.Input) {
             el = document.createElement('input');
         }
-        if (node instanceof tapc.tapcText) {
+        if (node instanceof tapc.Image) {
+            el = document.createElement('image');
+        }
+        if (node instanceof tapc.Icon) {
+            el = document.createElement('span');
+        }
+        if (node instanceof tapc.Text) {
             let textNode = document.createTextNode(node.text);
             if (bindMatch = bindRegExp.exec(node.text))
                 textNode.data = '${'+ bindMatch[1] + '}';
             parent.appendChild(textNode);
         }
-        if (node instanceof tapc.tapcTapTestComponent) {
+        if (node instanceof tapc.TapTestComponent) {
             el = document.createElement('tap-test-component');
         }
-        if (node instanceof tapc.tapcDataTable) {
-            let dataTable = node as tapc.tapcDataTable;
+        if (node instanceof tapc.DataTable) {
+            let dataTable = node as tapc.DataTable;
             if (!dataTable.attributeColumnConfiguration)
                 throw new Error(`Column configuration must be set on tapcDataTable`);
             el = document.createElement('tap-data-table');
         }
-        if (node instanceof tapc.tapcMdcCheckbox) {
+        if (node instanceof tapc.MdcCheckbox) {
             el = document.createElement('mdc-checkbox');
         }
-        if (node instanceof tapc.tapcButton) {
+        if (node instanceof tapc.Button) {
             el = document.createElement('button');
         }
         if (el) {
@@ -129,7 +123,7 @@ export class BladeParser {
             }
 
             // Recursively parse any content
-            if (node instanceof tapcBaseContainer) {  
+            if (node instanceof BaseElementContainer) {  
                 for (let i = 0; i < node.content.length; i++) {
                     this.parseNode(el, node.content[i]);
                 }
@@ -146,7 +140,7 @@ export class BladeParser {
      * @param node 
      * @param prop 
      */
-    private _setAttributes(el: HTMLElement, node: tapcBase, prop: string): void {
+    private _setAttributes(el: HTMLElement, node: IBaseElement, prop: string): void {
         let match: RegExpExecArray | null;
         let bindMatch: RegExpExecArray | null;
         let value = node[prop];

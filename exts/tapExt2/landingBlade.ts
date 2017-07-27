@@ -1,5 +1,5 @@
 import {getTapFx, ViewModels} from 'tap-fx'
-import * as tapfx from './../../tapFx/ux/tapcModules'
+import * as tapc from './../../tapFx/ux/tapcModules'
 
 class LandingBlade extends ViewModels.FormBlade {
     title: string;
@@ -32,51 +32,51 @@ class LandingBlade extends ViewModels.FormBlade {
     private _buildContent(): void {
         this.addForm()
                 .addToContainer(
-                    new tapfx.tapcDiv().addToContainer(
-                        new tapfx.tapcButton({name: 'convention', disabled: '@buttonConventionDisabled' }).addText('Convention Button'),
+                    new tapc.Content().addToContainer(
+                        new tapc.Button({name: 'convention', disabled: '@buttonConventionDisabled' }).addText('Convention Button'),
                     )
                 )
                 .addToContainer(
-                    new tapfx.tapcDiv().addToContainer(
-                        new tapfx.tapcButton({name: 'clickMe', click: "onButtonClickMeClick('argument 1 being passed to a function', 'argument 2 being passed to a function')" }).addText('Click Me!'),
+                    new tapc.Content().addToContainer(
+                        new tapc.Button({name: 'clickMe', click: "onButtonClickMeClick('argument 1 being passed to a function', 'argument 2 being passed to a function')" }).addText('Click Me!'),
                     )
                 )
                 .addLabelInput(
-                    new tapfx.tapcLabel({for: 'showContent'}).addToContainer(
-                        new tapfx.tapcDiv({if: '@showContent'}).addText('Hide:'),
-                        new tapfx.tapcDiv({if: '@!showContent'}).addText('Show:')
+                    new tapc.Label({for: 'showContent'}).addToContainer(
+                        new tapc.Content({if: '@showContent'}).addText('Hide:'),
+                        new tapc.Content({if: '@!showContent'}).addText('Show:')
                     ),
-                    new tapfx.tapcInput({name: 'showContent', type: tapfx.InputType.Checkbox, checked: '@showContent'}),
+                    new tapc.Input({name: 'showContent', type: tapc.InputType.Checkbox, checked: '@showContent'}),
                 )
                 .addToContainer(
-                    new tapfx.tapcDiv({if: '@showContent'}).addText('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed at pharetra magna, ut sagittis risus. Duis purus massa, vestibulum sed purus sed, facilisis vestibulum nibh. Curabitur rutrum sed mauris eget tincidunt. Phasellus imperdiet sem ac nunc lobortis vehicula id non tellus.')
+                    new tapc.Content({if: '@showContent'}).addText('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed at pharetra magna, ut sagittis risus. Duis purus massa, vestibulum sed purus sed, facilisis vestibulum nibh. Curabitur rutrum sed mauris eget tincidunt. Phasellus imperdiet sem ac nunc lobortis vehicula id non tellus.')
                 )
                 .addToContainer(
-                    new tapfx.tapcDiv().addToContainer(
-                        new tapfx.tapcSelect({value: '@selectedOption'}).addToContainer(
-                            new tapfx.tapcOption({name: 'selectOptions', repeat: 'option of selectOptions', model: '@option'}).addText('@option')
+                    new tapc.Content().addToContainer(
+                        new tapc.Select({value: '@selectedOption'}).addToContainer(
+                            new tapc.Option({name: 'selectOptions', repeat: 'option of selectOptions', model: '@option'}).addText('@option')
                         ),
-                        new tapfx.tapcHeading({importance: 4}).addText('Selected Option: ', '@selectedOption')
+                        new tapc.Heading({importance: 4}).addText('Selected Option: ', '@selectedOption')
                     )
                 )
                 .addToContainer(
-                    new tapfx.tapcDiv().addToContainer(
-                        new tapfx.tapcDiv({repeat: 'input of checkboxes'}).addToContainer(
-                            new tapfx.tapcInput({name: 'checkboxes', type: tapfx.InputType.Checkbox, model: '@input', checked: '@selectedCheckboxes'}),
-                            new tapfx.tapcText({text: ' '}),
-                            new tapfx.tapcText({text: '@input'})
+                    new tapc.Content().addToContainer(
+                        new tapc.Content({repeat: 'input of checkboxes'}).addToContainer(
+                            new tapc.Input({name: 'checkboxes', type: tapc.InputType.Checkbox, model: '@input', checked: '@selectedCheckboxes'}),
+                            new tapc.Text({text: ' '}),
+                            new tapc.Text({text: '@input'})
                         ),
-                        new tapfx.tapcHeading({importance: 4}).addText('Selected Checkboxes: ', '@selectedCheckboxes')
+                        new tapc.Heading({importance: 4}).addText('Selected Checkboxes: ', '@selectedCheckboxes')
                     )
                 )
                 .addToContainer(
-                    new tapfx.tapcDiv().addToContainer(
-                        new tapfx.tapcDiv({repeat: 'input of radios'}).addToContainer(
-                            new tapfx.tapcInput({name: 'radios', type: tapfx.InputType.Radio, model: '@input', checked: '@selectedRadio'}),
-                            new tapfx.tapcText({text: ' '}),
-                            new tapfx.tapcText({text: '@input.label'})
+                    new tapc.Content().addToContainer(
+                        new tapc.Content({repeat: 'input of radios'}).addToContainer(
+                            new tapc.Input({name: 'radios', type: tapc.InputType.Radio, model: '@input', checked: '@selectedRadio'}),
+                            new tapc.Text({text: ' '}),
+                            new tapc.Text({text: '@input.label'})
                         ),
-                        new tapfx.tapcHeading({importance: 4}).addText('Selected Checkboxes: ', '{ value: ', '@selectedRadio.value', ', label: ', '@selectedRadio.label', ' }')
+                        new tapc.Heading({importance: 4}).addText('Selected Checkboxes: ', '{ value: ', '@selectedRadio.value', ', label: ', '@selectedRadio.label', ' }')
                     )
                 );
     }

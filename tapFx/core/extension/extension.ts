@@ -16,9 +16,11 @@ interface IFunction {
     funcDesc: PropertyDescriptor;
 }
 
+/**
+ * Interface for storing blade info.
+ */
 interface IBladeInfo {
     bladeId: string;
-    bladeSequence: number;
 }
 
 @inject(BladeEngine, Utilities, RpcClient, BindingEngine, BladeParser)
@@ -38,6 +40,7 @@ export class Extension extends BaseExtension {
         this._rpcSubscriptions.push(subscription);
     }
 
+    private _className: string = (this as Object).constructor.name;
     /**
      * Extension subscriptions.
      */
@@ -47,53 +50,38 @@ export class Extension extends BaseExtension {
      */
     private _bladeSubscriptions: Map<string, RpcClientSubscription[]> = new Map();
     /**
-     * Maps blades to their blade information.
+     * Maps blades to their blade information. This information is stored in order of insertion.
      */
     private _bladeInfoMap: Map<BaseBlade, IBladeInfo> = new Map();
-    private _className: string = (this as Object).constructor.name;
 
     /**
-     * Function called from the remove extension RPC call. Loops through the blades of the extension in descending order to remove them (calling deactivate for each).
+     * Function called from the remove extension RPC call. Removes all the blades of an extension.
      * @param data 
      */
     private _onRemoveExtension(data: any): void {
         console.log('[TAP-FX] Removing extension with id of: ' + this._rpc.InstanceId);
 
-        // the removal chain keeps track of the removal of blades in sequential order
-        let removalChain = Promise.resolve<boolean>(true);
-        // loop through the blade mappings in order of the blade sequence
-        let bladeMappings = Array.from(this._bladeInfoMap.entries())/*[...this._bladeInfoMap.entries()]*/.sort((a, b) => { return b[1].bladeSequence - a[1].bladeSequence; });
-        // TODO: this chain should only fail if the first blade in the sequence can't be removed (deactivated), for the time being, as the business use case would make sense since any prior blades should have finished their tasks. also, it would be difficult to figure out which URL to redirect to if any blade in the set failed to be removed.
-        bladeMappings.forEach((bladeMapping) => {
-            let blade = bladeMapping[0];
-            let bladeInfo = bladeMapping[1];
-            removalChain = removalChain.then((result) => {
-                // if the result was true, means the last blade was removed
-                if (result)
-                    return this._removeBlade(blade);
-                else
-                    return result;
+        // remove all the blades from the extension
+        let blades = Array.from(this._bladeInfoMap.keys());
+        if (blades.length > 0) {
+            this._removeBladeRange(blades[0]).then((result) => {
+                // if all blades were removed we will unsubscribe from all rpc subscriptions for the extension
+                if (result) {
+                    this._rpcSubscriptions.forEach((subscription) => {
+                        subscription.unsubscribe();
+                    });
+
+                    // publish to the shell that this extension is ready to be removed.
+                    let returnData: Object = {
+                        extensionId: this._rpc.InstanceId
+                    };
+                    this._rpc.publish('shell.removeExtension', '', returnData);
+                } else
+                    this._removeExtensionFailed();
+                
+                return result;
             });
-        });
-
-        // after the final blade
-        removalChain = removalChain.then((result) => {
-            // if all blades were removed we will unsubscribe from 
-            if (result) {
-                this._rpcSubscriptions.forEach((subscription) => {
-                    subscription.unsubscribe();
-                });
-
-                // publish to the shell that this extension is ready to be removed.
-                let returnData: Object = {
-                    extensionId: this._rpc.InstanceId
-                };
-                this._rpc.publish('shell.removeExtension', '', returnData);
-            } else
-                this._removeExtensionFailed();
-            
-            return result;
-        });
+        }
     }
 
     /**
@@ -142,7 +130,7 @@ export class Extension extends BaseExtension {
         bladeInfo.functions = this._registerBladeFunctions(blade, bladeInfo.bladeId);
         bladeInfo.view = this._parseBladeForm(blade, bladeInfo.functions);
         
-        this._bladeInfoMap.set(blade, { bladeId: bladeInfo.bladeId, bladeSequence: this._getNextBladeSequence() } );
+        this._bladeInfoMap.set(blade, { bladeId: bladeInfo.bladeId } );
         this._rpc.publish('shell.addBlade', "", bladeInfo);
     }
 
@@ -164,36 +152,65 @@ export class Extension extends BaseExtension {
     }
 
     /**
-     * Attempts to remove a blade from an extension. Calls deactivation lifecycle hooks.
-     * @param blade
+     * Attempts to remove the passed blades from an extension.
+     * @param blades
      */
-    removeBlade(blade: BaseBlade): void {
-        this._removeBlade(blade); 
+    removeBlades(...blades: BaseBlade[]): void {
+        // find the earliest blade from the passed set and remove the range of blades starting with that blade
+        let earliestBlade = this._findEarliestBlade(blades);
+        if (earliestBlade) this._removeBladeRange(earliestBlade);
     }
 
     /**
-     * Attempts to remove a blade from an extension. Wrapped by removeBlade as to not expose too much functionality to the extension developer.
-     * @param blade
+     * Attempts to remove a range of blades based on the passed starting blade. Currently the ending blade of the range is always the latest blade. This removes the range of blades in descending order beginning with the ending blade of the range.
+     * @param startingBlade
      * @param manualRemoval Whether the blade is being removed manually (by user interaction).
+     * @return A promise which returns a whether the blades were removed.
      */
-    private _removeBlade(blade: BaseBlade, manualRemoval: boolean = false): Promise<boolean> {
-        let defer = new DeferredPromise<boolean>();
+    private _removeBladeRange(startingBlade: BaseBlade, manualRemoval: boolean = false): Promise<boolean> {
+        // find the id of the earliest blade which exists in the set of blades passed
+        let startingBladeInfo = this._bladeInfoMap.get(startingBlade);
+        if (!startingBladeInfo)
+            throw Error("Couldn't find starting blade for removal of blade range.");
 
-        let bladeInfo = this._bladeInfoMap.get(blade);
-        if (!bladeInfo)
-            throw Error("Couldn't find blade id associated with passed blade.");
+        let startingBladeId = startingBladeInfo.bladeId;
+        let bladeMappings = this._getBladeMappings();
+        // get the index of the starting blade id
+        let sliceIndex = bladeMappings.findIndex((b) => {
+            return b.bladeInfo.bladeId === startingBladeId;
+        });
+        // slice all blades after the earliest blade
+        let removeMappings = bladeMappings.slice(sliceIndex);
 
-        let bladeId = bladeInfo.bladeId;
-        this._bladeEngine.performDeactivation(blade).then((canDeactivate) => {
-            if (canDeactivate) {
-                this._performRemoveBlade(blade, bladeId, manualRemoval);
-            } else {
-                this._removeBladeFailed();
-            }
-            defer.resolve(canDeactivate);
+        // start a removal chain
+        let removalChain = Promise.resolve<boolean>(true);
+        // keep track if this is the latest blade (max sequence)
+        let isLatestBlade = true;
+        removeMappings.reverse().forEach((bladeMapping) => {
+            let blade = bladeMapping.blade;
+            let bladeId = bladeMapping.bladeInfo.bladeId;
+            removalChain = removalChain.then((result) => {
+                let returnResult: boolean | Promise<boolean> = result;
+                // the result is the result of canDeactivate (or true if not the latest blade)
+                if (result) {
+                    // after the latest blade, we won't check canDeactivate because we will make the assumption that all previous blades finished their tasks
+                    returnResult = this._bladeEngine.performDeactivation(blade, isLatestBlade).then((canDeactivate) => {
+                        if (canDeactivate) {
+                            this._performRemoveBlade(blade, bladeId, manualRemoval);
+                        } else {
+                            this._removeBladeFailed();
+                        }
+                        return canDeactivate;
+                    });
+                    
+                    isLatestBlade = false;
+                }
+
+                return returnResult;
+            });
         });
 
-        return defer.promise;
+        return removalChain;
     }
 
     /**
@@ -251,9 +268,9 @@ export class Extension extends BaseExtension {
                 // If the property is an object, we should be back metadata
                 // and the property will be reinstantiated using the metadata 
                 // on the other side
-                if (childMetadata && !(blade[prop] instanceof Array)){
+                if (childMetadata && !(blade[prop] instanceof Array)) {
                     serializedBlade._childMetadata.push(childMetadata);
-                }else{
+                } else {
                     // Switch context to use proxy array
                     if (blade[prop] instanceof Array && childMetadata && childMetadata.originalValue)
                         serializedBlade[prop] = childMetadata.originalValue;
@@ -312,7 +329,7 @@ export class Extension extends BaseExtension {
         let subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + funcName, (data) => {
             // call the _removeBlade function as a manual removal
             console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + funcName);
-            this._removeBlade(blade, true);
+            this._removeBladeRange(blade, true);
 
             // publish a void result back to the shell so it doesn't keep listening
             let result = undefined;
@@ -346,18 +363,28 @@ export class Extension extends BaseExtension {
     }
 
     /**
-     * Get the max blade sequence in our current blade info map. If no mappings are found, 0 is returned.
+     * Gets the entries of the blade info map and maps them to an array of objects containing the mapping info.
      */
-    private _getMaxBladeSequence(): number {
-        let bladeMappings = Array.from(this._bladeInfoMap.values())/*[...this._bladeInfoMap.values()]*/;
-        return bladeMappings.length > 0 ? (Math.max.apply(null, bladeMappings.map((bi) => { return bi.bladeSequence }))) : 0;
+    private _getBladeMappings(): {blade: BaseBlade, bladeInfo: IBladeInfo}[] {
+        return Array.from(this._bladeInfoMap.entries()).map((ba) => { return { blade: ba[0], bladeInfo: ba[1] } });
     }
 
     /**
-     * Get the next sequence for blade ordering.
+     * Based on an array of blades, find the earliest blade (earliest insertion) in that array which is mapped to this extension.
+     * @param searchBlades 
      */
-    private _getNextBladeSequence(): number {
-        return this._getMaxBladeSequence() + 1;
+    private _findEarliestBlade(searchBlades: BaseBlade[]): BaseBlade | undefined {
+        let earliestBlade: BaseBlade | undefined;
+        // grab entries from the map (Map orders by insertion so they are in ascending order already), map this to a useful object
+        let bladeMappings = this._getBladeMappings();
+        // intercept the two arrays finding values which exist in both
+        let interceptedBlades = bladeMappings.filter((bladeMapping) => { return searchBlades.indexOf(bladeMapping.blade) !== -1; });
+        // the earliest blade will be the first entry in this interception
+        if (interceptedBlades.length > 0) {
+            earliestBlade = interceptedBlades[0].blade;
+        }
+
+        return earliestBlade;
     }
 }
 

@@ -152,7 +152,7 @@ class ExtensionManager {
             extension.removeBlade(data.bladeId);
 
             console.log('[SHELL] Finish removing blade for extension: ' + extension.name);
-            // if there are no more blades, remove the extension
+            // if the blade was removed by the user (using the remove button) and there are no more blades, remove the extension
             if (data.manualRemoval && extension.blades.length === 0) {
                 console.log('[SHELL] No more blades left - unloading extension: ' + extension.name);
                 // remove the extension

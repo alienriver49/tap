@@ -49,10 +49,12 @@ export class BladeEngine {
     /**
      * Check whether a blade can be deactivated and perform any deactivation logic.
      * @param blade 
-     * @returns Promise resolving to whether the blade can be deactivated.
+     * @param checkCanDeactivate Whether we should check canDeactivate. Defaults to true. If false, this will just call deactivate.
+     * @returns Promise resolving to whether the blade can be deactivated (if checkCanDeactivate is false, this will resolve true).
      */
-    public performDeactivation(blade: BaseBlade): Promise<boolean> {
-        let promiseChain = Promise.resolve<boolean>(this.canDeactivate(blade));
+    public performDeactivation(blade: BaseBlade, checkCanDeactivate: boolean = true): Promise<boolean> {
+        let canDeactivate = checkCanDeactivate ? this.canDeactivate(blade) : true;
+        let promiseChain = Promise.resolve<boolean>(canDeactivate);
         promiseChain = promiseChain.then((result) => {
             let ret: boolean | Promise<boolean> = result;
             if (result) {

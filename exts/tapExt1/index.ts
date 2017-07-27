@@ -24,10 +24,12 @@ export class Index extends BaseExtension {
         console.log('[EXT-1] Updating extension parameters.');
 
         // if the length of blades is greater than the params, remove those blades
+        let removedBlades: BaseBlade[] = [];
         while (this._blades.length > params.length) {
             let blade = this._blades.pop();
-            if (blade) this._tapFx.Extension.removeBlade(blade);
+            if (blade) removedBlades.push(blade);
         }
+        if (removedBlades.length > 0) this._tapFx.Extension.removeBlades(...removedBlades);
 
         // update blades with any params
         params.forEach((param, index) => {

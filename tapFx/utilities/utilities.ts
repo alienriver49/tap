@@ -84,6 +84,20 @@ export class Utilities {
         let loc = document.location;
         return loc.protocol + '//' + loc.hostname + (loc.port ? ':' + loc.port : '') + loc.pathname;
     }
+
+    /**
+     * Get a random int between the passed min and max.
+     * @param min 
+     * @param max 
+     */
+    getRandomInt(min: number, max: number): number {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    private _randomNouns: string[] = ['Pizza', 'Paper', 'Pencils', 'Rubber ducks', 'Coffee', 'Boxes', 'Books', 'Tea', 'Toys', 'Trinkets', 'Shinies', 'Telescope', 'Bike'];
+    getRandomNoun(): string {
+        return this._randomNouns[this.getRandomInt(0, this._randomNouns.length - 1)]
+    }
 }
 
 export default Utilities;

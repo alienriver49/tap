@@ -2,6 +2,8 @@ import {getTapFx, ViewModels} from 'tap-fx'
 import * as tapc from './../../tapFx/ux/tapcModules'
 
 class LandingBlade extends ViewModels.FormBlade {
+    private _tapFx: ITapFx;
+    
     title: string;
     subtitle: string;
 
@@ -26,8 +28,6 @@ class LandingBlade extends ViewModels.FormBlade {
         this._tapFx = getTapFx();
         this._buildContent();
     }
-
-    private _tapFx: ITapFx;
     
     private _buildContent(): void {
         this.addForm()
@@ -144,12 +144,10 @@ class LandingBlade extends ViewModels.FormBlade {
     }
 
     onButtonClickMeClick(arg: any, arg2: any) {
-        //alert('Button clicked!\n\nReceived arg:\n' + arg + '\n\nReceived arg2:\n' + arg2);
         console.log('[EXT-2] onButtonClickMeClick arg 1: ' + arg + ' | arg 2: ' + arg2);
-        let random = (min: number, max: number) => { return Math.floor(Math.random() * (max - min + 1) + min); };
-        this.selectedOption = this.selectOptions[random(0, 2)];
-        this.selectedCheckboxes = [this.checkboxes[random(0, 2)]];
-        this.selectedRadio = this.radios[random(0, 2)];
+        this.selectedOption = this.selectOptions[this._tapFx.Utilities.getRandomInt(0, this.selectOptions.length - 1)];
+        this.selectedCheckboxes = [this.checkboxes[this._tapFx.Utilities.getRandomInt(0, this.checkboxes.length - 1)]];
+        this.selectedRadio = this.radios[this._tapFx.Utilities.getRandomInt(0, this.radios.length - 1)];
 
         this._tapFx.Http.fetchRequest('https://jsonplaceholder.typicode.com/users/7', {}).then(response => {
             console.log('[EXT-2] response: ', response);

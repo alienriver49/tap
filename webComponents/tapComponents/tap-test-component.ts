@@ -1,4 +1,5 @@
 import {inject, bindable, bindingMode, DOM} from 'aurelia-framework';
+import './tap-test-component.css';
 
 @inject(Element)
 export class TapTestComponent  {
@@ -10,11 +11,11 @@ export class TapTestComponent  {
     constructor(private element: Element) { 
     }
 
-    public onClearText(){
+    public onClearText() {
         this.clearText = true;
     }
 
-    public bind(bindingContext: Object){
+    public bind(bindingContext: Object) {
     }
 
     displayChanged(newValue: string, oldValue: string): void {

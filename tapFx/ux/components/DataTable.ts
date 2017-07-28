@@ -2,10 +2,14 @@ import {BaseElement, IBaseElement, IBaseElementConfig} from './BaseElement'
 import {ITapDataTableColumnConfiguration} from './../../../webComponents/dataTable/tap-data-table'
 
 export interface IDataTableConfig extends IBaseElementConfig {
-    attributeData?: string;
+    title?: string;
+    totalItems?: string;
+    data?: string;
 }
 
 export interface IDataTable extends IBaseElement {
+    attributeTitle: string;
+    attributeTotalItems: string;
     attributeData: string;
     attributeColumnConfiguration: string;
     setColumnConfiguration(columnConfig: ITapDataTableColumnConfiguration[], bindingName: string): this;
@@ -19,10 +23,14 @@ export class DataTable extends BaseElement implements IDataTable {
         if (config === void 0) { config = {}; }
         super(config);
 
-        this.attributeData = config.attributeData || '';
+        this.attributeTitle = config.title || '';
+        this.attributeTotalItems = config.totalItems || '';
+        this.attributeData = config.data || '';
     }
 
-    private _attributeColumnConfiguration: string; 
+    private _attributeColumnConfiguration: string;
+    attributeTitle: string;
+    attributeTotalItems: string;
     attributeData: string;
 
     /**

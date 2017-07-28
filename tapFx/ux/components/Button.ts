@@ -17,9 +17,9 @@ export class ButtonType {
     public static readonly Button: string = 'button';
 }
 
-const ButtonStyleBase = 'btn';
+export const ButtonClassBase = 'btn';
 
-class ButtonStyle {
+export class ButtonClass {
     public static readonly Default: string = 'btn-default';
     public static readonly Primary: string = 'btn-primary';
     public static readonly Secondary: string = 'btn-secondary';
@@ -30,12 +30,13 @@ class ButtonStyle {
     public static readonly Link: string = 'btn-link';
 }
 
+const ButtonClasses: string[] = Object.keys(ButtonClass).map((s) => { return ButtonClass[s]; });
+
 export interface IButton extends IBaseElementContainer {
     attributeType: string;
     attributeDisabled: string;
     eventClick: string;
 }
-
 
 /**
  * Button UX component.
@@ -49,12 +50,11 @@ export class Button extends BaseElementContainer implements IButton {
         this.eventClick = config.click || '';
 
         // default configuration
-        this.addClass(ButtonStyleBase);
-        // if the button has no style from our style config, give it the default
+        this.addClass(ButtonClassBase);
+        // if the button has no class from our class config, give it the default
         let classes = this.attributeClass.split(' ');
-        let buttonStyles: string[] = Object.keys(ButtonStyle).map((s) => { return ButtonStyle[s]; });
-        if (classes.filter((c) => { return buttonStyles.indexOf(c) !== -1 }).length === 0)
-            this.addClass(ButtonStyle.Default);
+        if (classes.filter((c) => { return ButtonClasses.indexOf(c) !== -1 }).length === 0)
+            this.addClass(ButtonClass.Default);
     }
 
     attributeType: string;

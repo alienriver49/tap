@@ -40,7 +40,7 @@ export class BaseElement implements IBaseElement {
 
     attributeId: string;
     attributeName: string;
-    attributeClass: string;
+    attributeClass: string; // TODO: I think that we might want this to be a getter which joins a string array of classes
     /* Enhanced attributes from binding frameworks (i.e. Aurelia's binding engine) */
     attributeIf: string;
     attributeShow: string;

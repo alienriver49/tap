@@ -29,18 +29,46 @@ header .title {
     margin-right: 12px;
 }
 
+.cline, .clear {
+    clear: both;
+}
+
 #extension-container .extension .blade {
-    border: 2px solid;
-    border-radius: 15px;
-    padding: 15px;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
 }
 
 #extension-container .extension .blade .removeBladeButton {
     float: right;
+    margin-top: 10px;
+}
+
+#extension-container .extension .blade .blade-action-bar button {
+    margin-right: 10px;
+}
+
+#extension-container .extension .blade .blade-menu {
+    float: left;
+    padding-right: 20px;
+    border-right: 1px solid #ccc;
+}
+
+#extension-container .extension .blade .blade-menu button {
+    display: block;
+    margin-bottom: 5px;
+    width: 100%;
+}
+
+#extension-container .extension .blade .blade-content {
+    float: left;
 }
 
 
 /* hide the div containing extension iframes  */
 #extension-iframes {
     display: none;
+}
+
+.text-right {
+    text-align: right;
 }

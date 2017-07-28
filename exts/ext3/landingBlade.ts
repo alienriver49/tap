@@ -2,9 +2,11 @@ import * as tapc from './../../tapFx/ux/tapcModules'
 import {ITapDataTableColumnConfiguration} from './../../webComponents/dataTable/tap-data-table'
 import {School} from './school'
 import {Address} from './address'
-import {ViewModels} from 'tap-fx'
+import {getTapFx, ViewModels} from 'tap-fx'
 
 class LandingBlade extends ViewModels.BaseBlade {
+    private _tapFx: ITapFx;
+    
     title: string;
     subtitle: string;
     text: string;
@@ -22,6 +24,7 @@ class LandingBlade extends ViewModels.BaseBlade {
 
     constructor() {
         super();
+        this._tapFx = getTapFx();
         this._buildContent();
         this._changeDataSet();
         this.address = new Address({line1: '100 Main St', town: 'Portland', state: 'ME', zip: '04102'});
@@ -72,7 +75,7 @@ class LandingBlade extends ViewModels.BaseBlade {
                     new tapc.Button({name: 'changeData'}).addText('Change array'),
                     new tapc.Button({name: 'test'}).addText('Test random array modification by index'),
                 ),
-                new tapc.DataTable({id: 'test-table', attributeData: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig')
+                new tapc.DataTable({id: 'test-table', data: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig')
             )
         );
     }
@@ -162,12 +165,11 @@ class LandingBlade extends ViewModels.BaseBlade {
     }
 
     public onButtonTestClick(): void {
-        let random = (min: number, max: number) => { return Math.floor(Math.random() * (max - min + 1) + min); };
-        let index = random(0, this.data.length-1);
+        let index = this._tapFx.Utilities.getRandomInt(0, this.data.length-1);
         console.log('Array index change');
         this.data[index] = 
                 new School({
-                    name: 'Test School ' + random(1,100),
+                    name: 'Test School ' + this._tapFx.Utilities.getRandomInt(1,100),
                     grades: [9,10,11,12],
                     hasPool: false 
                 });

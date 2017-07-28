@@ -1,9 +1,11 @@
 import {inject, bindable, bindingMode, DOM, View} from 'aurelia-framework';
+import {ButtonClass, ButtonClassBase} from './../../tapFx/ux/components/Button';
+import './tap-data-table.css';
 
 // Copied from mun-browse.IColumnConfiguration
 export interface ITapDataTableColumnConfiguration {
     identifier?: string;
-    isMultiselect?: boolean,
+    isMultiselect?: boolean;
     property?: string;
     header?: string;
     filter?: string;
@@ -34,22 +36,29 @@ export interface ITapDataTableColumnConfiguration {
 }
 
 @inject(Element)
-export class TapDataTableCustomElement{
+export class TapDataTableCustomElement {
+    @bindable({ defaultBindingMode: bindingMode.oneWay }) title: string;
+    @bindable({ defaultBindingMode: bindingMode.oneWay }) totalItems: number;
     @bindable({ defaultBindingMode: bindingMode.oneWay }) columnConfiguration: ITapDataTableColumnConfiguration[];
-    @bindable({ defaultBindingMode: bindingMode.twoWay }) data: any[]; 
+    @bindable({ defaultBindingMode: bindingMode.twoWay }) data: any[];
 
-    constructor(private element: Element){
+    buttonClassBase: string = ButtonClassBase;
+    buttonClass: ButtonClass = ButtonClass;
+
+    constructor(
+        private _element: Element
+    ) {
     }
 
-    public created(owningView: View, myView: View){
+    public created(owningView: View, myView: View) {
         let dmf = myView;
     }
 
-    public attached(){
+    public attached() {
         let dmf = 'test';
     }
 
-    public bind(bindingContext: Object){
+    public bind(bindingContext: Object) {
         let dmf = bindingContext;
     }
 }

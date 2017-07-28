@@ -1,7 +1,11 @@
+import {BaseBlade, IBaseBlade} from './viewModels.baseBlade'
 import {Form, IFormConfig} from './../components/Form'
-import {BaseBlade} from './viewModels.baseBlade'
 
-export class FormBlade extends BaseBlade {
+export interface IFormBlade extends IBaseBlade {
+    addForm(formConfig?: IFormConfig): Form;
+}
+
+export class FormBlade extends BaseBlade implements IFormBlade {
     constructor() {
         super();
     }
@@ -18,5 +22,3 @@ export class FormBlade extends BaseBlade {
         return form;
     }
 }
-
-export default FormBlade

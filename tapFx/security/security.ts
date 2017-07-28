@@ -1,6 +1,6 @@
 import { inject } from 'aurelia-dependency-injection';
 import { AuthService, BaseConfig } from 'aurelia-auth'
-import Http from '../core/http/http'
+import { Http } from '../core/http/http'
 import config from './authConfig';
 
 export interface UserInfo {
@@ -11,12 +11,13 @@ export interface UserInfo {
 
 @inject(AuthService, BaseConfig, Http)
 class Security {
-
-    constructor(private _authService: AuthService,
-                private _baseConfig: BaseConfig,
-                private _http: Http) { 
-                    this._baseConfig.configure(config);
-                }
+    constructor(
+        private _authService: AuthService,
+        private _baseConfig: BaseConfig,
+        private _http: Http
+    ) { 
+        this._baseConfig.configure(config);
+    }
 
     /**
      * Returns the token payload

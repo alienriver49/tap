@@ -86,7 +86,7 @@ export class InvoicesBrowseBlade extends ViewModels.BrowseBlade {
 
     onButtonNewClicked(): void {
         console.log('[Invoices-Browse] New clicked');
-        // TODO: make sure th
+        // TODO: make sure this hasn't been added already
         let addInvoiceBlade = new InvoicesAddBlade();
         this._tapFx.Extension.addBlade(addInvoiceBlade, '');
     }

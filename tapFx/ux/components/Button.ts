@@ -60,7 +60,7 @@ export class Button extends BaseElementContainer implements IButton {
 
     @BaseElement.tapcAttribute("type")
     attributeType: string;
-    @BaseElement.tapcAttribute("type")
+    @BaseElement.tapcAttribute("disabled")
     attributeDisabled: string;
     @BaseElement.tapcEvent("click")
     eventClick: string;

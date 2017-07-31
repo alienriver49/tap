@@ -92,15 +92,21 @@ export class Utilities {
     }
 
     private _randomNouns: string[] = ['Pizza', 'Paper', 'Pencils', 'Rubber ducks', 'Coffee', 'Boxes', 'Books', 'Tea', 'Toys', 'Trinkets', 'Shinies', 'Telescope', 'Bike'];
+    /**
+     * Gets a random noun from an array of nouns.
+     */
     getRandomNoun(): string {
         return this._randomNouns[this.getRandomInt(0, this._randomNouns.length - 1)]
     }
+
+    /**
+     * Checks if the passed variable is a primitive.
+     * @param obj 
+     */
     isPrimitive(obj: any): boolean {
         let t = typeof obj;
-        return t !== 'object' && 
-               t !== 'function';
+        return t !== 'object' && t !== 'function';
     }    
-
 }
 
 export default Utilities;

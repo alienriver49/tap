@@ -17,6 +17,9 @@ class ExtensionManager {
         let subscription = this._tapFx.Rpc.subscribe('shell.addBlade', this._onAddBlade.bind(this));
         this._rpcSubscriptions.push(subscription);
 
+        subscription = this._tapFx.Rpc.subscribe('shell.addBladeView', this._onAddBladeView.bind(this));
+        this._rpcSubscriptions.push(subscription);
+
         subscription = this._tapFx.Rpc.subscribe('shell.addBladeFailed', this._onAddBladeFailed.bind(this));
         this._rpcSubscriptions.push(subscription);
 
@@ -27,6 +30,9 @@ class ExtensionManager {
         this._rpcSubscriptions.push(subscription);
 
         subscription = this._tapFx.Rpc.subscribe('shell.removeBlade', this._onRemoveBlade.bind(this));
+        this._rpcSubscriptions.push(subscription);
+
+        subscription = this._tapFx.Rpc.subscribe('shell.removeBladeView', this._onRemoveBladeView.bind(this));
         this._rpcSubscriptions.push(subscription);
     }
 
@@ -68,6 +74,22 @@ class ExtensionManager {
             // since we know the current command is the extension load command, we will resolve this one. for now, this works since commands are sequential and we know to only call this when appropriate
             let defer = this._extensionCommandQueue.current.defer;
             if (defer) defer.resolve({ successful: true, message: 'extension loaded'});
+        }
+    }
+
+    /**
+     * Add an extension's blade's view to the shell.
+     * @param data 
+     */
+    private _onAddBladeView(data: any): void {
+        console.log('[SHELL] Received addBladeView message: ', data);
+        let extensionId = data.extensionId;
+        let extension = this._findExtension(extensionId);
+        if (extension) {
+            // add the blade's view
+            extension.addBladeView(data.bladeId);
+        } else {
+            // 
         }
     }
 
@@ -161,6 +183,22 @@ class ExtensionManager {
                 this._extensionCommandQueue.clear();
                 this._eventAggregator.publish('shell.router.reroute', { urlFragment: '/' });
             }
+        } else {
+            // 
+        }
+    }
+
+    /**
+     * Removes an extension's blade's view from the shell.
+     * @param data 
+     */
+    private _onRemoveBladeView(data: any): void {
+        console.log('[SHELL] Received removeBladeView message: ', data);
+        let extensionId = data.extensionId;
+        let extension = this._findExtension(extensionId);
+        if (extension) {
+            // remove the blade's view
+            extension.removeBladeView(data.bladeId);
         } else {
             // 
         }

@@ -125,21 +125,30 @@ export class Extension {
      * @param config
      */
     addBlade(config: IPortalBladeConfig): PortalBlade {
-        // TODO: Figure this out using this._portalBladeFactory
-        let blade = new PortalBlade(this._tapFx, this, config) /*this._portalBladeFactory(this, config)*/;
+        let blade = this._portalBladeFactory(this, config);
         // Should we move these functions to PortalBlade?
         this._registerBladeBindings(config.serializedBlade as ISerializedObject, blade);
         this._registerBladeFunctions(config.bladeId, blade, config.functions);
 
-        // Either load the serialized view or specified HTML file
-        if (config.serializedView)
-            blade.addViewFromSerializedHtml();
-        else
-            blade.addViewFromViewName();
+        // create and add the view for the blade
+        blade.createAndAddView();
 
         this.blades.push(blade);
         
         return blade;
+    }
+
+    /**
+     * Add a blade's view to the DOM.
+     * @param bladeId 
+     */
+    addBladeView(bladeId: string): void {
+        let blade = this.blades.find((b) => {
+            return b.bladeId === bladeId;
+        });
+        if (blade) {
+            blade.addView();
+        }
     }
 
     /**
@@ -154,6 +163,19 @@ export class Extension {
             let blade = this.blades[index];
             this._unregisterBladeBindings(blade);
             this.blades.splice(index, 1);
+            blade.removeView();
+        }
+    }
+
+    /**
+     * Remove a blades view from the DOM.
+     * @param bladeId 
+     */
+    removeBladeView(bladeId: string): void {
+        let blade = this.blades.find((b) => {
+            return b.bladeId === bladeId;
+        });
+        if (blade) {
             blade.removeView();
         }
     }

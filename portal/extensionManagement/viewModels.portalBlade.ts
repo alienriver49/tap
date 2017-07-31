@@ -12,7 +12,7 @@ export interface IPortalBladeConfig {
     functions: string[]
 }
 
-//@inject('TapFx')
+@inject('TapFx')
 export class PortalBlade {
     constructor(
         private _tapFx: ITapFx,
@@ -22,14 +22,22 @@ export class PortalBlade {
         this._extensionResources = _extension.getResources();
         // set this from the config
         this.bladeId = _config.bladeId;
+
+        // get the extension path (directory) and the path to the view
+        this._extensionPath = this._extension.name + '/';
+        this._viewPath = `${this._extensionPath}${this._config.viewName}`;
+
+        // find the base element with the matching prefix + extension Id, this will be where the blade is inserted
+        let elementSelector = '#tap_ext\\:'+this._extension.id;
+        let queryBaseElement = document.querySelector(elementSelector);
+        if (!queryBaseElement) {
+            throw Error(`Can't find element matching selector: ${elementSelector}`);
+        }
+        this._baseElement = queryBaseElement
     }
 
     private _extensionResources: IExtensionResources;
-    /**
-     * The blade's view. Stored for removal.
-     * @internal
-     */
-    private _view: View;
+
     /**
      * The blade's id, set via the config.
      * @readonly
@@ -37,140 +45,160 @@ export class PortalBlade {
     public readonly bladeId: string;
 
     /**
-     * For the blade viewName, check if any cached ViewFactories exist for it.
-     * If so, use the cached ViewFactory and bind it to the passed viewModel and 
-     * append it to the DOM
-     * If not, load the view via HTML Import and create and cache the ViewFactory,
-     * then bind it to passed view model and append it to the DOM
+     * The blade's view. Stored for removal.
+     * @internal
      */
-    public addViewFromViewName(): void {
-        // Assume we get the directory based on the Extension routing
-        let viewPath = this._extension.name + "/"; 
-        let viewWithPath = `${viewPath}${this._config.viewName}`;
-        console.log('[SHELL] addView, loading ', viewWithPath);
+    private _view: View;
 
-        // Insert the blade view at the element with the matching prefix + extension Id
-        let elementSelector = '#tap_ext\\:'+this._extension.id;
-        let queryBaseElement = document.querySelector(elementSelector);
-        if (!queryBaseElement) {
-            throw Error(`Can't find element matching selector: ${elementSelector}`);
-        }
+    /**
+     * Flags whether the view has been added to the DOM.
+     */
+    private _isViewAdded: boolean = false;
 
-        let baseElement = queryBaseElement
+    /**
+     * The extension path (directory).
+     */
+    private _extensionPath: string;
 
-        let loader = this._extensionResources.defaultLoader;
-        let cachedTemplateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(viewWithPath);
-        if (!cachedTemplateRegistryEntry || !cachedTemplateRegistryEntry.factory) {
-            // Use the HTML Import loader
-            loader.useTemplateLoader(this._extensionResources.htmlImportLoader);
+    /**
+     * The path to the view.
+     */
+    private _viewPath: string;
 
-            // The loader caches templateRegistryEntries in its templateRegistry,
-            loader.loadTemplate(viewWithPath).then((templateRegistryEntry) => {
-                loader.useTemplateLoader(this._extensionResources.textTemplateLoader);
-                // the loadTemplate call automatically creates a resolver for the view in the global container
-                // But the resolver just returns the view string, so we don't want to keep it, so try to remove it
-                // if (this._extensionResources.container.parent && this._extensionResources.container.parent.get(viewWithPath))
-                //     this._extensionResources.container.parent.unregister(viewWithPath);
+    /**
+     * The base element where blades will be inserted.
+     */
+    private _baseElement: Element;
 
-                if (templateRegistryEntry.template) {
-                    // Delete the link element, otherwise if this blade/view is re-imported, the compiler will fail because it will
-                    // be a duplicate link element
-                    // Don't really need to delete it anymore since we're using cached viewFactories, but doesn't hurt to clean up
-                    let linkToDelete = document.querySelector(`link[rel="import"][href="${viewPath}${this._config.viewName}"]`);
-                    if (linkToDelete)
-                        linkToDelete.remove();
+    /**
+     * Creates a bindable view and adds that view to the portal.
+     */
+    public createAndAddView(): void {
+        this._getViewFactory().then((viewFactory) => {
+            this._createView(viewFactory);
+            this.addView();
+        });
+    }
 
-                    // attempt to attach conventions before compiling the view
-                    let docFragment = (templateRegistryEntry.template as HTMLTemplateElement).content;
-                    if (this._config.functions.length > 0) this._tapFx.ConventionEngine.attachClickHandlers(docFragment, this._config.functions);
+    /**
+     * Get a view factory based on the blade's configuration. This will look for cached view factories or use the template loader to load and create a new one.
+     */
+    private _getViewFactory(): Promise<ViewFactory> {
+        return new Promise<ViewFactory>((resolve) => {
+            let viewFactory: ViewFactory;
+            let loader = this._extensionResources.defaultLoader;
+            let cachedTemplateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(this._viewPath);
+            if (!cachedTemplateRegistryEntry || !cachedTemplateRegistryEntry.factory) {
+                // load the view factory for serialized HTML
+                if (this._config.serializedView) {
+                    loader.useTemplateLoader(this._extensionResources.textTemplateLoader);
+                    let templateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(this._viewPath);
 
                     // Get associated viewFactory for template, otherwise create it and attach to templateRegistryEntry
-                    let viewFactory = templateRegistryEntry.factory;
+                    viewFactory = templateRegistryEntry.factory;
                     if (!viewFactory) {
-                        this._extensionResources.viewResources = new ViewResources(this._extensionResources.viewResources, templateRegistryEntry.address);
-                        this._extensionResources.viewResources.bindingLanguage = this._extensionResources.container.get(TemplatingBindingLanguage);
-                        let viewCompiler = new ViewCompiler(this._extensionResources.container.get(TemplatingBindingLanguage) as BindingLanguage, this._extensionResources.viewResources)
-                        viewFactory = viewCompiler.compile(templateRegistryEntry.template, this._extensionResources.viewResources, ViewCompileInstruction.normal);
-                        templateRegistryEntry.factory = viewFactory;
+                        viewFactory = this._createViewFactory(templateRegistryEntry);
                     }
-                    this._createBindView(viewFactory, baseElement);
+                    resolve(viewFactory);
+                } else {
+                    // Use the HTML Import loader
+                    loader.useTemplateLoader(this._extensionResources.htmlImportLoader);
+
+                    // The loader caches templateRegistryEntries in its templateRegistry,
+                    loader.loadTemplate(this._viewPath).then((templateRegistryEntry) => {
+                        loader.useTemplateLoader(this._extensionResources.textTemplateLoader);
+                        // the loadTemplate call automatically creates a resolver for the view in the global container
+                        // But the resolver just returns the view string, so we don't want to keep it, so try to remove it
+                        // if (this._extensionResources.container.parent && this._extensionResources.container.parent.get(this._viewPath))
+                        //     this._extensionResources.container.parent.unregister(this._viewPath);
+
+                        if (templateRegistryEntry.template) {
+                            // Delete the link element, otherwise if this blade/view is re-imported, the compiler will fail because it will
+                            // be a duplicate link element
+                            // Don't really need to delete it anymore since we're using cached viewFactories, but doesn't hurt to clean up
+                            let linkToDelete = document.querySelector(`link[rel="import"][href="${this._extensionPath}${this._config.viewName}"]`);
+                            if (linkToDelete)
+                                linkToDelete.remove();
+
+                            // attempt to attach conventions before compiling the view
+                            let docFragment = (templateRegistryEntry.template as HTMLTemplateElement).content;
+                            if (this._config.functions.length > 0) this._tapFx.ConventionEngine.attachClickHandlers(docFragment, this._config.functions);
+
+                            // Get associated viewFactory for template, otherwise create it and attach to templateRegistryEntry
+                            viewFactory = templateRegistryEntry.factory;
+                            if (!viewFactory) {
+                                viewFactory = this._createViewFactory(templateRegistryEntry);
+                            }
+                            resolve(viewFactory);
+                        }
+                    });
                 }
-            });
-        } else {
-            let viewFactory = cachedTemplateRegistryEntry.factory;
-            this._createBindView(viewFactory, baseElement);
-        }
-    }
-
-    /**
-     * Loads the view from the serialized html and binds to this     
-     */
-    public addViewFromSerializedHtml(): void {
-        // Assume we get the directory based on the Extension routing
-        let viewPath = this._extension.name + "/"; 
-        let viewWithPath = `${viewPath}${this._config.viewName}`;
-        console.log('[SHELL] addView, loading ', viewWithPath);
-
-        // Insert the blade view at the element with the matching prefix + extension Id
-        let elementSelector = '#tap_ext\\:'+this._extension.id;
-        let queryBaseElement = document.querySelector(elementSelector);
-        if (!queryBaseElement) {
-            throw Error(`Can't find element matching selector: ${elementSelector}`);
-        }
-
-        let baseElement = queryBaseElement
-
-        let viewFactory: ViewFactory;
-        let loader = this._extensionResources.defaultLoader;
-        let cachedTemplateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(viewWithPath);
-        if (!cachedTemplateRegistryEntry || !cachedTemplateRegistryEntry.factory) {
-            loader.useTemplateLoader(this._extensionResources.textTemplateLoader);
-            let templateRegistryEntry = loader.getOrCreateTemplateRegistryEntry(viewWithPath);
-
-            // Get associated viewFactory for template, otherwise create it and attach to templateRegistryEntry
-            viewFactory = templateRegistryEntry.factory;
-            if (!viewFactory) {
-                this._extensionResources.viewResources = new ViewResources(this._extensionResources.viewResources, templateRegistryEntry.address);
-                this._extensionResources.viewResources.bindingLanguage = this._extensionResources.container.get(TemplatingBindingLanguage);
-                let viewCompiler = new ViewCompiler(this._extensionResources.container.get(TemplatingBindingLanguage) as BindingLanguage, this._extensionResources.viewResources)
-                viewFactory = viewCompiler.compile(this._config.serializedView, this._extensionResources.viewResources, ViewCompileInstruction.normal);
-                templateRegistryEntry.factory = viewFactory;
+            } else {
+                viewFactory = cachedTemplateRegistryEntry.factory;
+                resolve(viewFactory);
             }
-        } else {
-            viewFactory = cachedTemplateRegistryEntry.factory;
-        }
-
-        this._createBindView(viewFactory, baseElement);
+        });
     }
 
     /**
-     * Creates and binds the view.
-     * @param viewFactory 
-     * @param baseElement 
+     * Creates a view factory and attaches it to the passed template registry entry. Returns the created view factory.
+     * @param templateRegistryEntry 
      */
-    private _createBindView(viewFactory: ViewFactory, baseElement: Element): void {
+    private _createViewFactory(templateRegistryEntry: TemplateRegistryEntry): ViewFactory {
+        this._extensionResources.viewResources = new ViewResources(this._extensionResources.viewResources, templateRegistryEntry.address);
+        this._extensionResources.viewResources.bindingLanguage = this._extensionResources.container.get(TemplatingBindingLanguage);
+        let viewCompiler = new ViewCompiler(this._extensionResources.viewResources.bindingLanguage, this._extensionResources.viewResources)
+        let viewFactory = viewCompiler.compile(this._config.serializedView, this._extensionResources.viewResources, ViewCompileInstruction.normal);
+        templateRegistryEntry.factory = viewFactory;
+
+        return viewFactory;
+    }
+
+    /**
+     * Creates the blade's view from the passed view factory.
+     * @param viewFactory 
+     */
+    private _createView(viewFactory: ViewFactory): void {
         // create a new view and store it
-        this._view = viewFactory.create(this._extensionResources.container, undefined, baseElement);
-        console.log(`[SHELL] addView: created view ${this._config.viewName} `);
+        this._view = viewFactory.create(this._extensionResources.container, undefined, this._baseElement);
+    }
+
+    /**
+     * Adds the blade's view. Performs appending of nodes to the base element (DOM node), attaching, and binding.
+     */
+    public addView(): void {
+        if (!this._view)
+            throw Error('View has not been created yet for this blade.');
+        if (this._isViewAdded)
+            throw Error('Blade view has not been removed or has already been added.');
+
+        console.log(`[SHELL] adding view`);
         // add the needed HTML nodes for the view to a bade element
-        this._view.appendNodesTo(baseElement);
+        this._view.appendNodesTo(this._baseElement);
         // trigger an attach
         this._view.attached();
         // bind the view
         this._view.bind(this);
+
+        this._isViewAdded = true;
     }
 
     /**
      * Removes the blade's view. Peforms unbinding, detaching, and removal of nodes from the DOM.
      */
     public removeView(): void {
-        // reverse order of _createBindView
+        if (!this._isViewAdded)
+            throw Error('Blade view has not been added or has already been removed.');
 
+        console.log(`[SHELL] removing view`);
+        // reverse order of addView
         // unbind the view
         this._view.unbind();
         // trigger a detach
         this._view.detached();
         // remove the nodes from the DOM
         this._view.removeNodes();
+
+        this._isViewAdded = false;
     }
 }

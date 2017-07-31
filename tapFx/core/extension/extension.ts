@@ -124,6 +124,20 @@ export class Extension extends BaseExtension {
      * @param viewName 
      */
     private _performAddBlade(blade: BaseBlade, viewName: string): void {
+        // if not journeying, we will want to remove the latest blade's view from the DOM
+        if (!this.journeyOn) {
+            let bladeMappings = this._getBladeMappings();
+            // only do this if we there are currently blades
+            if (bladeMappings.length > 0) {
+                let currentBlade = bladeMappings[bladeMappings.length - 1]
+                let returnData: Object = {
+                    extensionId: this._rpc.InstanceId,
+                    bladeId: currentBlade.bladeInfo.bladeId
+                };
+                this._rpc.publish('shell.removeBladeView', '', returnData);
+            }
+        }
+
         let bladeInfo = this._registerBladeBindings(blade);
         // Get the extension Id from RPC and pass it to the shell
         bladeInfo.extensionId = this._rpc.InstanceId;
@@ -157,7 +171,7 @@ export class Extension extends BaseExtension {
      * @param blades
      */
     removeBlades(...blades: BaseBlade[]): void {
-        // find the earliest blade from the passed set and remove the range of blades starting with that blade
+        // find the earliest blade from the passed array and remove the range of blades starting with that blade
         let earliestBlade = this._findEarliestBlade(blades);
         if (earliestBlade) this._removeBladeRange(earliestBlade);
     }
@@ -239,6 +253,20 @@ export class Extension extends BaseExtension {
             manualRemoval: manualRemoval
         };
         this._rpc.publish('shell.removeBlade', '', returnData);
+
+        // if not journeying, we will want to re-add the previous blade's view back to the DOM
+        if (!this.journeyOn) {
+            let bladeMappings = this._getBladeMappings();
+            // only do this if we there are currently blades
+            if (bladeMappings.length > 0) {
+                let currentBlade = bladeMappings[bladeMappings.length - 1]
+                let returnData: Object = {
+                    extensionId: this._rpc.InstanceId,
+                    bladeId: currentBlade.bladeInfo.bladeId
+                };
+                this._rpc.publish('shell.addBladeView', '', returnData);
+            }
+        }
     }
 
     // TODO: determine what we need to implement for this and implement it.

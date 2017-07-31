@@ -1,7 +1,7 @@
 /// <reference path="./../../typings.d.ts" />
 import LandingBlade from './landingBlade'
 import SecondBlade from './secondBlade'
-import BaseBlade from './../../tapFx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
+import { BaseBlade } from './../../tapFx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
 import {getTapFx, BaseExtension} from 'tap-fx'
 
 export class Index extends BaseExtension {
@@ -9,6 +9,7 @@ export class Index extends BaseExtension {
     ) {
         super();
         this._tapFx = getTapFx();
+        this.journeyOn = false;
     }
 
     private _tapFx: ITapFx;

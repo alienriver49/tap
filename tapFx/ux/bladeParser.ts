@@ -2,7 +2,7 @@ import { inject } from 'aurelia-framework'
 import * as tapc from './tapcModules'
 import {IBaseElement} from './components/BaseElement'
 import {BaseElementContainer} from './components/BaseElementContainer'
-import {BaseBlade} from './viewModels/viewModels.baseBlade'
+import { BaseBlade } from './viewModels/viewModels.baseBlade'
 import ConventionEngine from './conventionEngine'
 import Utilities from './../utilities/utilities'
 

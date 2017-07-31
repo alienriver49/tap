@@ -18,6 +18,8 @@ export class MdcCheckbox extends BaseElement implements IMdcCheckbox {
         this.attributeDisplay = config.display || '';
     }
 
+    @BaseElement.tapcAttribute("isChecked")
     attributeIsChecked: string;
+    @BaseElement.tapcAttribute("display")
     attributeDisplay: string;
 }

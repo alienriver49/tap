@@ -2,11 +2,12 @@ import { inject } from 'aurelia-dependency-injection'
 import BladeEngine from './bladeEngine'
 import Utilities from './../../utilities/utilities'
 import { RpcClient, RpcClientSubscription } from './../../rpc/client'
-import {BindingEngine, IChildMetadata, ISerializedObject} from './../../binding/bindingEngine'
+import {BindingEngine, ISerializedObject} from './../../binding/bindingEngine'
 import DeferredPromise from './../../core/deferredPromise'
 import {BladeParser} from './../../ux/bladeParser'
 import BaseExtension from './baseExtension'; // type only
 import BaseBlade from './../../ux/viewModels/viewModels.baseBlade'; // type only
+import * as tapm from './../../metadata/metadata'
 
 /**
  * Interface defining a function. Includes the name and the property descriptor.
@@ -248,41 +249,22 @@ export class Extension extends BaseExtension {
 
     private _registerBladeBindings(blade: BaseBlade): any {
 
-        let bladeId = this._bindingEngine.resolveId(blade);
+        //let bladeId = this._bindingEngine.resolveId(blade);
 
-        let serializedBlade: ISerializedObject = {_childMetadata: [], _syncObjectContextId: ''};
+        //let serializedBlade: ISerializedObject = {_childMetadata: [], _syncObjectContextId: ''};
         let refIds: Set<string> = new Set<string>(); 
-
-        for (let prop in blade) {
-            // only register blade's own properties and not those on the prototype chain
-            // anything starting with an underscore is treated as a private property and is not watched for changes
-            // skip Functions
-            if (blade.hasOwnProperty(prop) &&
-                prop !== 'form' &&  // don't observe form
-                !(blade[prop] instanceof Map) && !(blade[prop] instanceof Set) &&  // skip Maps and Sets for now
-                prop.charAt(0) !== '_' &&
-                this._utilities.classOf(blade[prop]) !== '[object Function]'
-            ) {
-                let childMetadata = this._bindingEngine.observe(blade, prop, refIds);
-
-                // If the property is an object, we should be back metadata
-                // and the property will be reinstantiated using the metadata 
-                // on the other side
-                if (childMetadata && !(blade[prop] instanceof Array)) {
-                    serializedBlade._childMetadata.push(childMetadata);
-                } else {
-                    // Switch context to use proxy array
-                    if (blade[prop] instanceof Array && childMetadata && childMetadata.originalValue)
-                        serializedBlade[prop] = childMetadata.originalValue;
-                    else
-                        // otherwise we copy of property as is
-                        serializedBlade[prop] = blade[prop];
-                }
-            }
-        }
+        let metadata: ISerializedObject =  {
+                property: '',
+                contextId: '',
+                parentId: '',
+                value: null,
+                type: '',
+                childMetadata: [] 
+            };
+        let serializedBlade = this._bindingEngine.observeObject(metadata, blade, refIds, this._rpc.InstanceId);
 
         return {
-            bladeId: bladeId,
+            bladeId: serializedBlade.contextId,
             serializedBlade: serializedBlade
         }
     }

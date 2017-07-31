@@ -1,4 +1,5 @@
 import {BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig} from './BaseElementContainer'
+import {BaseElement} from './BaseElement'
 import {IOption} from './Option'
 
 export interface ISelectConfig extends IBaseElementContainerConfig {
@@ -26,7 +27,9 @@ export class Select extends BaseElementContainer implements ISelect {
 
     content: IOption[];
 
+    @BaseElement.tapcAttribute("multiple")
     attributeMultiple: string;
+    @BaseElement.tapcAttribute("value")
     attributeValue: string;
 
     /**

@@ -1,4 +1,5 @@
 import {BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig} from './BaseElementContainer'
+import {BaseElement} from './BaseElement'
 import {Icon} from './Icon'
 import {Text} from './Text'
 
@@ -57,8 +58,11 @@ export class Button extends BaseElementContainer implements IButton {
             this.addClass(ButtonClass.Default);
     }
 
+    @BaseElement.tapcAttribute("type")
     attributeType: string;
+    @BaseElement.tapcAttribute("type")
     attributeDisabled: string;
+    @BaseElement.tapcEvent("click")
     eventClick: string;
 
     /**

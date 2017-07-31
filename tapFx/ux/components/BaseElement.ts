@@ -1,4 +1,13 @@
 /**
+ * Using the reflect-metadata library which adds a polyfill for an experimental metadata API. 
+ * This library is not yet part of the ECMAScript (JavaScript) standard. However, once 
+ * decorators are officially adopted as part of the ECMAScript standard these extensions 
+ * will be proposed for adoption.
+ * https://www.typescriptlang.org/docs/handbook/decorators.html#metadata
+ */
+import 'reflect-metadata'
+
+/**
  * Config interface for BaseElement creation.
  */
 export interface IBaseElementConfig {
@@ -21,6 +30,9 @@ export interface IBaseElement {
     attributeShow: string;
     attributeHide: string;
     attributeRepeat: string;
+    // Functions to check for decorator metadata
+    getEventName(propertyName: string): string | undefined;
+    getAttributeName(propertyName: string): string | undefined;
 }
 
 /**
@@ -38,13 +50,22 @@ export class BaseElement implements IBaseElement {
         this.attributeRepeat = config.repeat || '';
     }
 
+
+    @BaseElement.tapcAttribute("id")
     attributeId: string;
+    @BaseElement.tapcAttribute("name")
     attributeName: string;
+    @BaseElement.tapcAttribute("class")
     attributeClass: string; // TODO: I think that we might want this to be a getter which joins a string array of classes
+
     /* Enhanced attributes from binding frameworks (i.e. Aurelia's binding engine) */
+    @BaseElement.tapcAttribute("if")
     attributeIf: string;
+    @BaseElement.tapcAttribute("show")
     attributeShow: string;
+    @BaseElement.tapcAttribute("hide")
     attributeHide: string;
+    @BaseElement.tapcAttribute("repeat")
     attributeRepeat: string;
 
     private get _classes(): string[] {
@@ -61,6 +82,37 @@ export class BaseElement implements IBaseElement {
         }
 
         return this;
+    }
+
+    static tapcAttributeMetadataKey = Symbol("tapcAttribute");
+    static tapcEventMetadataKey = Symbol("tapcEvent");
+
+    static tapcAttribute (attributeName: string): any {
+        return Reflect.metadata(BaseElement.tapcAttributeMetadataKey, attributeName);
+    }
+
+    static tapcEvent(eventName: string): any {
+        return Reflect.metadata(BaseElement.tapcEventMetadataKey, eventName);
+    }
+
+    /**
+     *  Return the value of the tapcAttribute decorator for the passed property
+     * or else return undefined (checks prototype chain)
+     * @param propertyName The propertyname to check
+     */
+    public getAttributeName(propertyName: string): string | undefined{
+        let result = Reflect.getMetadata(BaseElement.tapcAttributeMetadataKey, this, propertyName);
+        return result;
+    }
+
+    /**
+     *  Return the value of the tapcEvent decorator for the passed property
+     * or else return undefined (checks prototype chain)
+     * @param propertyName The propertyname to check
+     */
+    public getEventName(propertyName: string): string | undefined{
+        let result = Reflect.getMetadata(BaseElement.tapcEventMetadataKey, this, propertyName);
+        return result;
     }
 }
 

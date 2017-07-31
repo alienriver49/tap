@@ -45,8 +45,15 @@ export class Input extends BaseElement implements IInput {
         this.attributeModel = config.model || '';
     }
 
+    @BaseElement.tapcAttribute("type")
     attributeType: string;
+
+    @BaseElement.tapcAttribute("value")
     attributeValue: string;
+
+    @BaseElement.tapcAttribute("checked")
     attributeChecked: string;
+
+    @BaseElement.tapcAttribute("model")
     attributeModel: string;
 }

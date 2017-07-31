@@ -69,6 +69,7 @@ System.config({
     "material-components-web": "npm:material-components-web@0.15.0",
     "moment": "npm:moment@2.18.1",
     "numeral": "npm:numeral@2.0.6",
+    "reflect-metadata": "npm:reflect-metadata@0.1.10",
     "tap-fx": "tapFx/index",
     "typescript": "npm:typescript@2.4.1",
     "github:jspm/nodelibs-assert@0.1.0": {

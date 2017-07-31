@@ -21,6 +21,8 @@ class LandingBlade extends ViewModels.BaseBlade {
         {header: 'Has Pool', property: 'hasPool'}
     ]
     data: School[];
+    numbers: number[] = [6,7,8];
+    twoD: number[][] = [[1,2,3], [4,5,6], [7,8,9]];
 
     constructor() {
         super();
@@ -74,6 +76,7 @@ class LandingBlade extends ViewModels.BaseBlade {
                     new tapc.Button({name: 'removeData'}).addText('Remove row'),
                     new tapc.Button({name: 'changeData'}).addText('Change array'),
                     new tapc.Button({name: 'test'}).addText('Test random array modification by index'),
+                    new tapc.Button({name: 'changeItemProp'}).addText('Change prop on array child object'),
                 ),
                 new tapc.DataTable({id: 'test-table', data: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig')
             )
@@ -185,6 +188,11 @@ class LandingBlade extends ViewModels.BaseBlade {
         // this.data.splice(1, 1, new School({ name: 'Push School ' + random(1,100), grades: [9,10,11,12], hasPool: false }));
     }
 
+    onButtonChangeItemPropClick(): void {
+        let index = this._tapFx.Utilities.getRandomInt(0, this.data.length-1);
+        this.data[index].name = `New Name ${this._tapFx.Utilities.getRandomInt(0, 1000)}`;
+    }
+
     _childPropToggle: boolean = true;
     public onButtonUpdateChildObjectClick(): void {
         if (this._childPropToggle)
@@ -198,6 +206,7 @@ class LandingBlade extends ViewModels.BaseBlade {
     public onButtonChangeChildObjectClick(): void {
         if (this._childObjToggle){
             this.address2 = new Address({line1: '370 US Route 1', town: 'Falmouth', state: 'ME', zip: '04096'});
+            this.address2.address = this.address2;
             this.address = this.address2;
         }else{
             this.address2 = new Address({line1: '100 Main St', town: 'Portland', state: 'ME', zip: '04102'});

@@ -19,5 +19,6 @@ export class Image extends BaseElement implements IImage {
         this.attributeSrc = config.src || '';
     }
 
+    @BaseElement.tapcAttribute("src")
     attributeSrc: string;
 }

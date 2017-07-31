@@ -1,20 +1,17 @@
 import { inject, Factory } from 'aurelia-dependency-injection'
 import Utilities from './../utilities/utilities';
 import RpcClient from './../rpc/client'
-import {ProxiedObservable, IArrayBindingSync, IPropertyBindingSync, IArrayChangedSplice} from './proxiedObservable'
+import {ProxiedObservable} from './proxiedObservable'
+import {ProxiedCollectionObservable, IArrayBindingSync, IArrayChangedSplice} from './proxiedCollectionObservable'
+import * as tapm from './../metadata/metadata'
 
-export interface IChildMetadata {
+export interface ISerializedObject{
     property: string;
     contextId: string;
     parentId: string;
     value: any;
-    originalValue: any;
-}
-
-export interface ISerializedObject {
-    _childMetadata: IChildMetadata[],
-    _syncObjectContextId: string,  // Used with propertyBindingSync messages
-    [k: string]: any
+    type: string;
+    childMetadata: ISerializedObject[];
 }
 
 // Reference to an object that could not be resolved
@@ -24,139 +21,294 @@ export interface IUnresolvedRef {
     refId: string
 }
 
-interface IContextBindingMap {
+interface IObjectBindingMap {
     observers: ProxiedObservable[];
     functions: string[];
     // This is used as our ref counts
-    // When observing a property, update this with the context's parent Id
+    // When observing a property, update this with a comma-delimited string of 
+    // the context's parent Id and the context's property on the parent
     // When disposing of an observer, only dispose if the context's parent Id
     // is included here and is the only entry
     parentContextIds: Set<string>;
     isRoot: boolean;
 }
 
-@inject(Utilities, RpcClient, Factory.of(ProxiedObservable))
+interface ICollectionBindingMap {
+    observer: ProxiedCollectionObservable | null;
+    // This is used as our ref counts
+    // When observing an object or array and one of it's properties or indexes is an array, 
+    // then save that parent info here.
+    // When disposing of an observer, only dispose if the context's parent Id
+    // is included here and is the only entry
+    // Values are comma-delimited string of the collection's parent context Id and
+    // the property or index on the parent 
+    parents: Set<string>;
+}
+
+export interface IBindingEngine {
+    getIdByContext(context: Object): string | null;
+    resolveSerializedObject(obj: ISerializedObject, node?: Object, firstTime?: boolean): Object;
+    observeObject(metadata: ISerializedObject, context: Object, refIds: Set<string>, extensionId: string): ISerializedObject;
+    unobserve(context: Object, parentContextId: string, contextId?: string, inRecursion?: boolean): void; 
+}
+
+@inject(Utilities, RpcClient, Factory.of(ProxiedObservable), Factory.of(ProxiedCollectionObservable))
 export class BindingEngine {
     constructor(
         private _utilities: Utilities,
         private _rpc: RpcClient,
-        private _proxiedObservableFactory: (...args: any[]) => ProxiedObservable
+        private _proxiedObservableFactory: (...args: any[]) => ProxiedObservable,
+        private _proxiedCollectionObservableFactory: (...args: any[]) => ProxiedCollectionObservable
     ) {
         _rpc.subscribe('tapfx.propertyBindingSync', this._onPropertyBindingSync.bind(this));
         _rpc.subscribe('tapfx.arrayBindingSync', this._onArrayBindingSync.bind(this));
     }
 
     private _className: string = (this as Object).constructor.name;
-    private _contextIDMap: Map<Object, string> = new Map();
-    private _contextBindingMap: Map<string, IContextBindingMap> = new Map();
+    private _contextIdMap: Map<Object, string> = new Map();
+    private _contextBindingMap: Map<string, IObjectBindingMap> = new Map();
+    private _collectionBindingMap: Map<string, ICollectionBindingMap> = new Map();
     private _seen: Object[] = [];
     private _seenFlag: string = '$$__checked__$$';
     private _unresolvedRefs: IUnresolvedRef[] = [];
+    // Map of original arrays to proxy versions of the arrays
+    private _arrayProxyMap: WeakMap<any[], any[]> = new WeakMap();
 
     /**
      * Handler for 'tapfx.propertyBindingSync' RPC messages 
      * 
      * @param data 
      */
-    private _onPropertyBindingSync(data: IPropertyBindingSync): void {
+    private _onPropertyBindingSync(data: ISerializedObject): void {
         console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Property binding sync.`, data);
-        let bindingMap = this._contextBindingMap.get(data.contextID)
-        let observer = ((bindingMap && bindingMap.observers) || []).find((i) => {
+
+        let bindingMap = this.getBindingMap(data.parentId);
+        let observer = ((bindingMap && (bindingMap as IObjectBindingMap).observers) || []).find((i) => {
             return i.property() === data.property;
         });
         if (observer){
-            // If the new value is an object, recursively register it for observation
-            if (this._utilities.isObject(data.newValue)){
+            // If the old value was an object, dispose of any observers
+            let context = this.getContextById(data.contextId);
+            if (context && context[data.property] && this._utilities.isObject(context[data.property])){
+                let oldValueContext = context[data.property];
+                let oldValueContextId = this.getIdByContext(oldValueContext);
+                // If oldValue is an object mapped in the BindingEngine, then
+                // dispose of any observers on it
+                if (oldValueContextId)
+                    this.unobserve(oldValueContext, data.contextId,  data.property);
+            }
+            // TODO if the old value was an array, dispose of any observers
 
-                // If the old value was an object, dispose of any observers
-                let context = this.getContextById(data.contextID);
-                if (context && context[data.property] && this._utilities.isObject(context[data.property])){
-                    let oldValueContext = context[data.property];
-                    let oldValueContextId = this.getIdByContext(oldValueContext);
-                    // If oldValue is an object mapped in the BindingEngine, then
-                    // dispose of any observers on it
-                    if (oldValueContextId)
-                        this._unobserve(oldValueContext, data.contextID, oldValueContextId);
-                }
-
-                // The sender should have passed a contextID for the new object, so use that as the shared context key
-                if (!data.syncObjectContextId)
-                    console.error(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Sync object missing syncObjectContextId.`, data);
-                else {
-                    // Is the new object already in the context (ex, because it's referenced by something else already in
-                    // the context)?  If so, assume it's already being observed and get the value from the context collection
-                    // because that should be the latest (right???)
-                    let existingObject: Object | null = null;
-                    this._contextIDMap.forEach((value, key) => {
-                        if (value === data.syncObjectContextId)
-                        existingObject = key;
-                    })
-                    if (existingObject)
-                        data.newValue = existingObject;
-                    else{
-                        this.resolveId(data.newValue, data.syncObjectContextId, data.contextID);
-                        this._registerObjectBindings(data.syncObjectContextId, data.newValue, observer.extensionId, data.contextID, true)
+             // If the new value is an object or array, recursively register it for observation
+             if (!this._utilities.isPrimitive(data.value)){
+                 // First check if it already exists in the context
+                let existingChildObject = this.getContextById(data.contextId);
+                if (existingChildObject){
+                    // If so, we assume it's being observed and assign that to the parent object
+                    data.value = existingChildObject;
+                }else{
+                    if (this._utilities.isObject(data.value)){
+                        let resolvedObject: Object = {};
+                        Object.assign(resolvedObject, data.value);
+                        data.value = resolvedObject;
+                        resolvedObject = this.resolveSerializedObject(data, resolvedObject, true);
+                        // Then begin observing it (this handles observation of both objects and arrays)
+                        // data.value is changed by observeObject, so don't use it after this
+                        this.observeObject(data, resolvedObject, new Set<string>(), observer.extensionId);
+                        data.value = resolvedObject;
+                    }
+                    if (data.value instanceof Array){
+                        let resolvedArray: any[] = data.value as any[];
+                        this.resolveSerializedObject(data, {}, true);
+                        // data.value is changed by observeObject, so don't use it after this
+                        this.observeObject(data, data.value, new Set<string>(), observer.extensionId);
+                        data.value = resolvedArray;
                     }
                 }
-            }
-            observer.setValue(data.newValue, true);
+             }
+
+             observer.setValue(data.value, true);
         }
     }
-
+    
     /**
-     * Recursively observe the passed object, 
-     * Used by _onPropertyBindingSync 
-     * @param objectID 
-     * @param obj 
-     * @param extensionId 
-     * @param parentID 
+     * Handler for 'tapfx.arrayBindingSync' RPC messages 
+     * @param data 
      */
-    private _registerObjectBindings(objectID: string, obj: ISerializedObject, extensionId: string, parentContextId: string, observeThis: boolean): void {
-        if (!parentContextId){
+    private _onArrayBindingSync(data: IArrayBindingSync): void {
+        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Array binding sync.`, data);
+        let bindingMap = this._collectionBindingMap.get(data.contextId)
+        if (!bindingMap || !bindingMap.observer){
+            console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Could not find collection binding map or observer for context Id "${data.contextId}"`) 
+            return;
+        }
+
+        let observer: ProxiedCollectionObservable = bindingMap.observer; 
+        let addedMetadata: ISerializedObject[] = [];
+
+        // splice changes into the array
+        // This is broken into multiple steps to handle the possibility that 
+        // multiple splices for the same array will be passed in the sync message
+        // and we need to ensure all added elements in all splices are resolved before observing them
+        // TODO?  Hmmmm, maybe the steps aren't needed after all because on the sending side the 
+        // splices are serialized in enumerable order, so that should mean when deserializing
+        // in the same order that as long as the current and any former splices have been resolved,
+        // then it should be safe to observe and update the array contents without caring about 
+        // later splices
+
+        // step 1, resolve updated data
+        data.splices.forEach((splice: IArrayChangedSplice) => {
+            // Resolve and reinstantiate any new elements
+            if (splice.addedCount && splice.added){
+                this._seen = [];
+                this._unresolvedRefs = [];
+                splice.added.forEach((element: any, index: number, theArray: any[]) => {
+                    addedMetadata.push(element);
+                    if (this._utilities.isPrimitive(element)){
+                        theArray[index] = element;
+                    }else{
+                        let serializedObject: ISerializedObject = element;
+                        // First check if it already exists in the context
+                        let existingChildObject = this.getContextById(serializedObject.contextId);
+                        if (existingChildObject){
+                            // If so, we assume it's being observed and assign that to the parent object
+                            theArray[index] = existingChildObject;
+                        }else{
+                            if (['a', 'o'].indexOf(serializedObject.type) < 0)
+                                theArray[index] = serializedObject.value;
+                            if (serializedObject.type === "a"){
+                                let resolvedObject: Object = {};
+                                Object.assign(resolvedObject, serializedObject);
+                                serializedObject.value = resolvedObject;
+                                resolvedObject = this.resolveSerializedObject(serializedObject, resolvedObject, false);
+                                theArray[index] = resolvedObject;
+                            }
+                            if (serializedObject.type === "o"){
+                                theArray[index] = serializedObject.value;
+                                this.resolveSerializedObject(serializedObject, {}, false);
+                            }
+                        }
+                    }
+                })
+
+            }
+        })
+
+        // Step 2
+        // resolve the unresolved references
+        this._unresolvedRefs.forEach((ref) => {
+            let existingObject = this.getContextById(ref.refId);
+            if (!existingObject)
+                throw new Error(`Cannot resolve a reference for context Id: ${ref.refId}`);
+            ref.context[ref.property] = existingObject;
+        })
+        // Remove the temporary flags from the objects
+        this._seen.forEach((o) => {
+            delete o[this._seenFlag];
+        });
+
+        // Step 3
+        // Observe any new elements (if they're objects or arrays)
+        data.splices.forEach((splice: IArrayChangedSplice) => {
+            // Observe new elements that are arrays or object 
+            if (splice.addedCount && splice.added){
+                splice.added.forEach((element: any, index: number, theArray: any[]) => {
+                    if (!this._utilities.isPrimitive(element)){
+                        let metadata = addedMetadata[index];
+                        if (this._utilities.isObject(element) || element instanceof Array){
+                            this.observeObject(metadata, element, new Set<string>(), observer.extensionId);
+                        }
+                    }
+                })
+            }
+
+            // Update the parent array with the content changes
+            observer.updateArray(splice, true);
+        })
+    }
+
+
+    public resolveSerializedObject(obj: ISerializedObject, node: Object = {}, firstTime: boolean = false): Object {
+        if (firstTime){
             this._seen = [];
             this._unresolvedRefs = [];
         }
         
         // If this object has already been seen, don't dive in again
         if (obj.hasOwnProperty(this._seenFlag))
-            return ;        
+            return {};        
+
+        obj[this._seenFlag] = true;
+        this._seen.push(obj);
+
+        // node is our deserialized object without extraneous properties from the passed data
+        if (!firstTime)
+            node[obj.property] = obj.value;
+        // else
+        //     node = obj.value;
+
+        this.resolveId(obj.value, obj.contextId, obj.parentId, obj.property);
 
         // Recursively register any child objects first
-        if (obj.hasOwnProperty('_childMetadata')){
-            let childMetadata: IChildMetadata[] = obj['_childMetadata'];
-            childMetadata.forEach((metadata) => {
+        // For objects, they're in the childMetadata
+        if (obj.type === 'o'){
+            obj.childMetadata.forEach((metadata) => {
                 // Check if there is already a mapped context with the passed Id
                 let existingChildObject = this.getContextById(metadata.contextId);
-
                 if (existingChildObject){
                     // If so, we assume it's being observed and assign that to the parent object
-                    obj[metadata.property] = existingChildObject;
+                    // Updates node via object reference
+                    (obj.value as Object)[metadata.property] = existingChildObject;
                 }else{
-                    // If there is a value for the object, assign it
                     if (metadata.value){
-                        let childObject: ISerializedObject = metadata.value;
-                        // Must be an object, so add a temporary flag property to objects to prevent infinite loop from circular references
-                        obj[this._seenFlag] = true;
-                        this._seen.push(obj);
-
-                        this.resolveId(childObject, metadata.contextId, parentContextId);
-                        this._registerObjectBindings(metadata.contextId, childObject, extensionId, metadata.parentId, false);
-                        // And reinstantiate them on the parent object
-                        obj[metadata.property] = childObject;
+                        if (['a', 'o'].indexOf(metadata.type) >= 0)
+                            this.resolveSerializedObject(metadata);
+                        // And reinstantiate on parent (updates node via object reference)
+                        (obj.value as Object)[metadata.property] = metadata.value;
                     }else{
                         // Otherwise reference will be resolved later
-                        this._unresolvedRefs.push({context: obj, property: metadata.property, refId: metadata.contextId});
+                        this._unresolvedRefs.push({context: obj.value, property: metadata.property, refId: metadata.contextId});
                     }
                 }
             });
         }
 
-        if (observeThis){
+        // For collections, they're in the value collection
+        if (obj.type === 'a'){
+            (obj.value as any[]).forEach((element: any, index: number, theArray: any[]) => {
+                if (this._utilities.isPrimitive(element)){
+                    theArray[index] = element;
+                }else{
+                    let serializedElement = element as ISerializedObject;
+                    // Check if there is already a mapped context with the passed Id
+                    let existingChildObject = this.getContextById(serializedElement.contextId);
+                    if (existingChildObject){
+                        // If so, we assume it's being observed and assign that to the parent object
+                        // Updates node via array reference
+                        theArray[serializedElement.property] = existingChildObject;
+                    }else{
+                        if (serializedElement.value){
+                            if (['a', 'o'].indexOf(serializedElement.type) >= 0)
+                                this.resolveSerializedObject(serializedElement);
+                            // And reinstantiate on parent (updates node via array reference)
+                            theArray[serializedElement.property] = serializedElement.value;
+                        }else{
+                            // Otherwise reference will be resolved later
+                            this._unresolvedRefs.push({context: obj.value, property: serializedElement.property, refId: serializedElement.contextId});
+                        }
+                    }
+                }
+
+            })
+        }
+        
+
+        if (firstTime){
             // First resolve the unresolved references
             this._unresolvedRefs.forEach((ref) => {
                 let existingObject = this.getContextById(ref.refId);
                 if (!existingObject)
-                    throw new Error(`Cannot resolve a reference for context Id: ${ref.refId}`);
+                    throw new Error(`SHELL: Cannot resolve a reference for context Id: ${ref.refId}`);
                 ref.context[ref.property] = existingObject;
             })
             // Remove the temporary flags from the objects
@@ -164,144 +316,179 @@ export class BindingEngine {
                 delete o[this._seenFlag];
             });
 
-            let refIds: Set<string> = new Set<string>(); 
-            for (let prop in obj) {
-                // only register object's own properties and not those on the prototype chain
-                // anything starting with an underscore is treated as a private property and is not watched for changes
-                // skip Functions
-                if (obj.hasOwnProperty(prop) &&
-                    prop.charAt(0) !== '_' &&
-                    !(obj[prop] instanceof Map) && !(obj[prop] instanceof Set) &&  // skip Maps and Sets for now
-                    this._utilities.classOf(obj[prop]) !== '[object Function]'
-                ) {
-                    // Don't really care about the childMetadata created by observe at this point, but oh well
-                    this.observe(obj, prop, refIds, extensionId, parentContextId);
-                }
-            }
         }
+        return node;
     }
 
     /**
-     * Handler for 'tapfx.arrayBindingSync' RPC messages 
-     * @param data 
-     */
-    private _onArrayBindingSync(data: IArrayBindingSync): void {
-        console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Array binding sync.`, data);
-        let bindingMap = this._contextBindingMap.get(data.contextID)
-        let observer = ((bindingMap && bindingMap.observers ) || []).find((i) => {
-            return i.property() === data.property;
-        });
-
-        // splice changes into the array
-        data.splices.forEach((splice: IArrayChangedSplice) => {
-            observer && observer.updateArray(splice, true);
-        })
-    }
-
-    /**
-     * Associates an ID with a context.
+     * Associates an Id with a context.
      * @param context Context owning the observable properties.
-     * @param contextID An ID to associate with the context (auto-generated if not passed)
+     * @param contextId An Id to associate with the context (auto-generated if not passed)
      * @param parentContextId The context Id of the parent context
      */
-    public resolveId(context: Object, contextId: string = '', parentContextId: string = ''): string {
+    public resolveId(context: Object, contextId: string = '', parentContextId: string = '', parentProperty: string = ''): string {
+        // If the context is an array, check if it's been mapped to a proxy already
+        // If so, get the proxy array and use that as the key
+        if (context instanceof Array && this._arrayProxyMap.has(context)){
+            context = this._arrayProxyMap.get(context) as any[]; 
+        }
         // If the context is already mapped, then just return the existing contextId (and update parentContextIds)
-        if (this._contextIDMap.has(context)) {
-            let myContextId = this._contextIDMap.get(context) || '';
-            let bindingMap = this._contextBindingMap.get(myContextId)
-            if (!bindingMap) {
-                throw new Error(`Missing binding map for context Id: ${myContextId}. The binding map must first be created before observing properties on the context.`)
+        if (this._contextIdMap.has(context)) {
+            let myContextId = this._contextIdMap.get(context) || '';
+            if (context instanceof Array){
+                let bindingMap = this._collectionBindingMap.get(myContextId)
+                if (!bindingMap) {
+                    throw new Error(`Missing binding map for array Id: ${myContextId}.`)
+                }
+                if (parentContextId){
+                    let parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`
+                    if (!bindingMap.parents.has(parentPropertyKey))
+                        bindingMap.parents.add(parentPropertyKey);
+                }
+
+            }else{
+                let bindingMap = this._contextBindingMap.get(myContextId)
+                if (!bindingMap) {
+                    throw new Error(`Missing binding map for context Id: ${myContextId}.`)
+                }
+                if (parentContextId){
+                    let parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`
+                    if (!bindingMap.parentContextIds.has(parentPropertyKey))
+                        bindingMap.parentContextIds.add(parentPropertyKey);
+                }
             }
-            if (parentContextId && !bindingMap.parentContextIds.has(parentContextId))
-                bindingMap.parentContextIds.add(parentContextId);
             return contextId;
         }else{
             // Otherwise create a new Id (unless passed one) and binding mapping for the context
             if (!contextId)
                 contextId = this._utilities.newGuid();
-            this._contextIDMap.set(context, contextId);
-            let bindingMap: IContextBindingMap = {
-                observers: [], 
-                functions: [], 
-                parentContextIds: new Set<string>(), 
-                isRoot: !parentContextId 
-            };
-            if (parentContextId && !bindingMap.parentContextIds.has(parentContextId))
-                bindingMap.parentContextIds.add(parentContextId);
-            this._contextBindingMap.set(contextId, bindingMap);
+            this._contextIdMap.set(context, contextId);
+            if (context instanceof Array){
+                let bindingMap: ICollectionBindingMap = {
+                    observer: null, 
+                    parents: new Set()
+                };
+                if (parentContextId){
+                    let parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`
+                    if (!bindingMap.parents.has(parentPropertyKey))
+                        bindingMap.parents.add(parentPropertyKey);
+                }
+                this._collectionBindingMap.set(contextId, bindingMap);
+
+            }else{
+                let bindingMap: IObjectBindingMap = {
+                    observers: [], 
+                    functions: [], 
+                    parentContextIds: new Set<string>(), 
+                    isRoot: !parentContextId 
+                };
+                if (parentContextId){
+                    let parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`
+                    if (!bindingMap.parentContextIds.has(parentPropertyKey))
+                        bindingMap.parentContextIds.add(parentPropertyKey);
+                }
+                this._contextBindingMap.set(contextId, bindingMap);
+            }
             return contextId;
         }
     }
 
-    public observe(context: Object, property: string, refIds: Set<string>, extensionId: string = "", parentContextId: string = ''): IChildMetadata | null {
+    public observeProperty(context: Object, property: string, refIds: Set<string>, extensionId: string = "", parentContextId: string = ''): ISerializedObject | number | string | boolean | Symbol | null | undefined {
         // if it is the first property to be observed on the context, keep track of the context as being observed
-        let contextID = this._contextIDMap.get(context);
-        if (!contextID) {
-            throw new Error("Missing context ID. The context ID must first be resolved before observing properties on the context.")
+        let contextId = this._contextIdMap.get(context);
+        if (!contextId) {
+            throw new Error("Missing context Id. The context Id must first be resolved before observing properties on the context.")
         }
 
-        let metadata: IChildMetadata | null = null; 
-
         // make sure the property is not currently being observed
-        let bindingMap = this._contextBindingMap.get(contextID)
+        let bindingMap = this._contextBindingMap.get(contextId)
         if (!bindingMap) {
-            throw new Error(`Missing binding map for context Id: ${contextID}. The binding map must first be created before observing properties on the context.`)
+            throw new Error(`Missing binding map for context Id: ${contextId}. The binding map must first be created before observing properties on the context.`)
         }
         let existingObserverIndex = bindingMap.observers.findIndex((i) => {
             return i.property() === property;
         });
 
+        let propertyValue = context[property];
+
         if (existingObserverIndex === -1) {
-            let observer = this._proxiedObservableFactory(contextID, context, property, extensionId);
-            let originalArray = observer.observe();
-            if (originalArray){
-                metadata =  {
-                    property: '',
-                    contextId: '',
-                    parentId: '',
-                    value: null,
-                    originalValue: originalArray
-                };
-            }
+            let observer = this._proxiedObservableFactory(contextId, context, property, extensionId);
+
+            observer.observe();
 
             // keep track of the current observer            
             bindingMap.observers.push(observer);
-        }
 
-        // If the property itself is an object, then recursively observe it
-        if (this._utilities.isObject(context[property])){
-
-            // If the context is already in the contextIDMap (and already in the passed refId set), 
-            // then assume it's being observed, so we just need to pass the shared contextID key
-            // The other window will lookup the property object based on the passed contextID key
-            // and the refIds set should ensure only one copy is passed
-            let existingContextId = this._contextIDMap.get(context[property]);
-            if (existingContextId && refIds.has(existingContextId)){
-                metadata =  {
+            // If the property itself is an object or array, then recursively observe it
+            if (propertyValue instanceof Array || this._utilities.isObject(propertyValue)){
+                let metadata: ISerializedObject =  {
                     property: property,
-                    contextId: existingContextId,
-                    parentId: contextID,
+                    contextId: '',
+                    parentId: contextId,
                     value: null,
-                    originalValue: null 
+                    type: '',
+                    childMetadata: [] 
                 };
+                this.observeObject(metadata, propertyValue, refIds, extensionId);
+                return metadata;
             }else{
-                let newContextId = this.resolveId(context[property], existingContextId, parentContextId);
-                refIds.add(newContextId);
-                let serializedObject = this._recursiveObserve(newContextId, context[property], parentContextId, refIds, extensionId);
-                metadata =  {
-                    property: property,
-                    contextId: newContextId,
-                    parentId: contextID,
-                    value: serializedObject,
-                    originalValue: null 
-                };
+                return propertyValue;
             }
+        }else{
+            return propertyValue;
+        }
+    }
+
+    /**
+     * Return a serialize object representation of the passed array, also populates the serializedArray property
+     * of the passed metadata object
+     * @param metadata Should have the appropriate property, contextId and parentId properties populated
+     * @param array The array to begin observing for element changes
+     * @param refIds Collection of context Ids that have been included in the current serialization/observation process
+     * @param extensionId The Id of the extension this array belongs to
+     */
+    public observeCollection(metadata: ISerializedObject, collection: any[], refIds: Set<string>, extensionId: string = "",): void {
+        if (!metadata || !metadata.contextId || !metadata.parentId)
+            throw new Error('observeCollection: metadata is invalid or missing contextId or parentId values')
+        if (!(collection instanceof Array))
+            throw new Error('observeCollection: collection must be a valid array')
+
+        metadata.type = 'a';
+        let serializedArray: any[] = [];
+
+        // make sure the collection is not currently being observed
+        let bindingMap = this._collectionBindingMap.get(metadata.contextId)
+        if (!bindingMap) {
+            throw new Error(`Missing collection binding map for context Id: ${metadata.contextId}. The binding map must first be created before observing changes in the collection.`)
         }
 
-        // TODO if the property is an array of objects, recursively observe the objects
-        //this._observeArray(context[property], extensionId);
+        if (!bindingMap.observer) {
+            let observer = this._proxiedCollectionObservableFactory(metadata.contextId, collection, extensionId);
+            observer.observe();
+            bindingMap.observer = observer;
 
-        return metadata;
+            // If any array elements are non-primitive, then we need to observe them 
+            // This also means generating a new 'serialized' version of the array with
+            // metadata objects taking the place of elements that are non-primitive 
+            collection.forEach((element: any, index: number, array: any[]) => {
+                if (this._utilities.isPrimitive(element)){
+                    // If element is a primitive, copy directly to serialized array
+                    serializedArray[index] = element;
+                }else{
+                    let elementMetadata: ISerializedObject =  {
+                        property: index.toString(),
+                        contextId: '',
+                        parentId: metadata.contextId,
+                        value: null,
+                        type: '',
+                        childMetadata: [] 
+                    };
+                    this.observeObject(elementMetadata, element, refIds, extensionId);
+                    serializedArray[index] = elementMetadata
+                }
+            })
+            metadata.value = serializedArray;
+        }
     }
 
     /**
@@ -311,72 +498,109 @@ export class BindingEngine {
      * @param context 
      * @param extensionId 
      */
-    public observeObject(context: Object, parentContextId: string, refIds: Set<string>, extensionId: string): ISerializedObject | null {
-        let serializedObject: ISerializedObject = {_childMetadata: [], _syncObjectContextId: ''};
+    public observeObject(metadata: ISerializedObject, context: Object, refIds: Set<string>, extensionId: string): ISerializedObject {
+        if (this._utilities.isPrimitive(context))
+            throw new Error('observeObject: context must be an object or array')
 
-        // If the context is already in the contextIDMap, assume it's being observed (and already
-        // exists in the other window), so we just need to pass the shared contextID key
-        // The other window will lookup the property based on the passed contextID key
-        let contextId = this._contextIDMap.get(context);
-        if (contextId){
-            // Call resolveId to update the parentContextIds on the context
-            this.resolveId(context, '', parentContextId);
-            let serializedObject: ISerializedObject = {_childMetadata: [], _syncObjectContextId: contextId};
-            return serializedObject;
+        if (!refIds)
+            refIds = new Set<string>();
+        if (!metadata){
+            metadata =  {
+                property: '',
+                contextId: '',
+                parentId: '',
+                value: null,
+                type: '',
+                childMetadata: [] 
+            };
+        }
+
+        // If the property object is already in the contextIdMap (and already in the passed refId set), 
+        // then assume it's being observed, so we just need to pass the shared contextId key
+        // The other window will lookup the property object based on the passed contextId key
+        // and the refIds set should ensure only one copy is passed
+        let existingContextId = this._contextIdMap.get(context);
+        if (existingContextId && refIds.has(existingContextId)){
+            metadata.contextId = existingContextId;
+            metadata.type = this.getContextIdType(existingContextId);
         }else{
-            // Not in the context map yet, so add it
-            contextId = this.resolveId(context, '', parentContextId);
+            let propertyContextId = this.resolveId(context, existingContextId, metadata.parentId, metadata.property);
+            refIds.add(propertyContextId);
+            metadata.contextId = propertyContextId;
+            metadata.type = this.getContextIdType(propertyContextId);
+            if (context instanceof Array){
+                this.observeCollection(metadata as ISerializedObject, context as any[], refIds, extensionId);
+            }
+            if (this._utilities.isObject(context)){
+                this._recursiveObserveObject(metadata, context, refIds, extensionId);
+            }
         }
-        // Ensure there are no existing observers for the object
-        let existingBindingMap = this._contextBindingMap.get(contextId)
-        if (existingBindingMap && existingBindingMap.observers && existingBindingMap.observers.length === 0){
-            serializedObject = this._recursiveObserve(contextId, context, parentContextId, refIds, extensionId);
-            serializedObject._syncObjectContextId = contextId;
-            return serializedObject;
-        }
-        return null;
+        return metadata;
     }
 
     /**
-     * This is very similar to the Extension._registerBladeBindings functions
      * Iterate over all the properties in the passed object and begin observing them (if
-     * they aren't already being observed).  A 'serialized' version of the object is 
-     * created for passing to the other window.  For each property that itself is an object,
-     * a metadata entry is added for proper syncing in the other window
+     * they aren't already being observed).  The object is serialized into the passed metadata
+     * object.  Primitive properties are added directly to the metadata.value object and 
+     * complex properties (objects/arrays) are added as metadata to metadata.childMetadata
+     * @param metadata 
      * @param context 
+     * @param refIds 
      * @param extensionId 
      */
-    private _recursiveObserve(contextId: string, context: Object, parentContextId: string, refIds: Set<string>, extensionId: string = ''): ISerializedObject {
+    private _recursiveObserveObject (metadata: ISerializedObject, context: Object, refIds: Set<string>, extensionId: string = ''): void {
+        if (!metadata || !metadata.contextId) 
+            throw new Error('recursiveObserve: metadata is invalid or missing contextId value')
 
-        let serializedObject: ISerializedObject = {_childMetadata: [], _syncObjectContextId: ''};
-
+        metadata.value = {};
         for (let prop in context) {
             // only register objects own properties and not those on the prototype chain
             // anything starting with an underscore is treated as a private property and is not watched for changes
             // skip Functions
             if (context.hasOwnProperty(prop) &&
-                prop !== 'form' &&  // don't observe form
+                !tapm.noObserve(context, prop) &&  // don't observe props with tapmNoObserve decorator
                 !(context[prop] instanceof Map) && !(context[prop] instanceof Set) &&  // skip Maps and Sets for now
                 prop.charAt(0) !== '_' &&
                 this._utilities.classOf(context[prop]) !== '[object Function]'
             ) {
-                // If the property is an object, we should include metadata
-                // and the property will be reinstantiated using the metadata 
-                // on the other side
-                let childMetadata = this.observe(context, prop, refIds, extensionId, parentContextId);
-                if (childMetadata)
-                    serializedObject._childMetadata.push(childMetadata);
-                else
-                    // otherwise we copy of property as is
-                    serializedObject[prop] = context[prop];
+                let isPropertyArray = context[prop] instanceof Array;
+                let childMetadata = this.observeProperty(context, prop, refIds, extensionId, metadata.parentId);
+
+                // populate the metadata.value object with primitive properties
+                // complex properties are added to metadata.childMetadata
+                if (this._utilities.isPrimitive(childMetadata)){
+                    metadata.value[prop] = childMetadata;
+                }else{
+                    metadata.childMetadata.push(childMetadata as ISerializedObject);
+                }
             }
         }
-        return serializedObject;
+    }
+
+    private getContextIdType(contextId: string): string {
+        let type = this._contextBindingMap.has(contextId) ? 'o' : (this._collectionBindingMap.has(contextId) ? 'a' : '');
+        return type;
+    }
+
+    private getBindingMap(contextId: string): ICollectionBindingMap | IObjectBindingMap | undefined {
+        let bindingMap = this._contextBindingMap.get(contextId)
+        if (bindingMap)
+            return bindingMap;
+
+        let collectionBindingMap = this._collectionBindingMap.get(contextId);
+        return collectionBindingMap;
+    }
+
+    private getBindingMapByContext(context: Object): ICollectionBindingMap | IObjectBindingMap | undefined {
+        let contextId = this._contextIdMap.get(context);
+        if (!contextId)
+            return undefined;
+        return this.getBindingMap(contextId);
     }
 
     public getContextById(contextId: string): Object | null {
         let existingObject: Object | null = null;
-        this._contextIDMap.forEach((value, key) => {
+        this._contextIdMap.forEach((value, key) => {
             if (value === contextId)
                 existingObject = key;
         })
@@ -386,115 +610,79 @@ export class BindingEngine {
     }
 
     public getIdByContext(context: Object): string | null {
-        let existingContextId = this._contextIDMap.get(context);
+        let existingContextId = this._contextIdMap.get(context);
         return existingContextId === void(0) ? null : existingContextId;
     }
 
-    /**
-     * Recursively observe
-     * I THINK ARRAYS OF ARRAYS NEED TO BE OBSERVED DIRECTLY IN PROXIEDOBSERVABLES
-     * BECAUSE BINDINGENGINE ONLY DEALS WITH OBJECTS WITH PROPERTIES, NOT ARRAYS
-     * OR NOT.... MORE THOUGHT NEEDED ON HANDLING OBSERVATION OF ARRAYS OF OBJECTS
-     * @param context 
-     * @param extensionId 
-     */
-    // private _observeArray(context: any[], extensionId: string = ""): void{
-    //     if (context && 
-    //         context === Object(context) && 
-    //         (context instanceof Array) &&
-    //         (context as any[]).length > 0){
-    //         let a = context as any[];
-    //         if (a.length === 0)
-    //             return;
-    //         // For each element in the array, 
-    //         a.forEach((item) => {
-    //             if (item && item === Object(item)){ 
-    //                 if (!(item instanceof Array) &&
-    //                     this._utilities.classOf(item) !== '[object Function]'){
-
-    //                     // If it's an object (and not array or function), observe it
-    //                     this._recursiveObserve(item, extensionId);
-    //                 }
-    //                 if (item instanceof Array) {
-    //                     // If it's another array, observe it
-    //                     this._observeArray(item, extensionId);
-    //                 }
-    //             }
-                
-    //         });
-    //     }
-
-    // }
-
-    
     public unobserveBlade(context: Object): void {
-        this._unobserve(context, '');
+        this.unobserve(context, '', '');
     }
 
     /**
      * Unobserve a specific context.
      * @param context 
      */
-    public _unobserve(context: Object, parentContextId: string, contextId: string = '', inRecursion: boolean = false): void {
-        if (!contextId){
-            // get this context from the map
-            let foundContextId = this._contextIDMap.get(context);
-            if (!foundContextId) {
-                throw new Error("Couldn't find context ID when unobserving context.")
-            }
-            contextId = foundContextId;
-        }
+    public unobserve(context: Object, parentContextId: string, parentProperty: string, contextId: string = '', inRecursion: boolean = false): void {
+        // if (!contextId){
+        //     // get this context from the map
+        //     let foundContextId = this._contextIdMap.get(context);
+        //     if (!foundContextId) {
+        //         throw new Error("Couldn't find context Id when unobserving context.")
+        //     }
+        //     contextId = foundContextId;
+        // }
 
-        if (!inRecursion){
-            this._seen = [];
-        }
+        // if (!inRecursion){
+        //     this._seen = [];
+        // }
+ 
+        // // Verify that the context isn't being referenced by other parent objects
+        // // before disposing of the observers
+        // let bindingMap = this._contextBindingMap.get(contextId);
+        // if (!bindingMap){
+        //     throw new Error(`Couldn't find binding map when unobserving context: ${contextId}`)
+        // }
+        // // If parent of the context (and contexts can have zero, one or more parents) doesn't exist
+        // // AND the context doesn't have any parent references (or has one parent reference, which we can
+        // // assume is for the current call), then it's safe to unobserve
+        // // OR
+        // // If there is a parent of the context and it matches the passed parent and it's the only parent reference, 
+        // // then it's safe to unobserve
+        // let parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`
+        // if ((!parentContextId && (bindingMap.isRoot || bindingMap.parentContextIds.size <= 1)) ||
+        // (parentContextId && bindingMap.parentContextIds.has(parentPropertyKey) && bindingMap.parentContextIds.size === 1))
+        // {
+        //     // Must be an object, so add a temporary flag property to objects to prevent infinite loop from circular references
+        //     context[this._seenFlag] = true;
+        //     this._seen.push(context);
 
-        // Verify that the context isn't being referenced by other parent objects
-        // before disposing of the observers
-        let bindingMap = this._contextBindingMap.get(contextId);
-        if (!bindingMap){
-            throw new Error(`Couldn't find binding map when unobserving context: ${contextId}`)
-        }
-        // If parent of the context (and contexts can have zero, one or more parents) doesn't exist
-        // AND the context doesn't have any parent references (or has one parent reference, which we can
-        // assume is for the current call), then it's safe to unobserve
-        // OR
-        // If there is a parent of the context and it matches the passed parent and it's the only parent reference, 
-        // then it's safe to unobserve
-        if ((!parentContextId && (bindingMap.isRoot || bindingMap.parentContextIds.size <= 1)) ||
-        (parentContextId && bindingMap.parentContextIds.has(parentContextId) && bindingMap.parentContextIds.size === 1))
-        {
-            // Must be an object, so add a temporary flag property to objects to prevent infinite loop from circular references
-            context[this._seenFlag] = true;
-            this._seen.push(context);
+        //     // First recursively dispose of child objects
+        //     // Search for child objects by finding all contexts which have a parent reference to the current context
+        //     this._contextBindingMap.forEach((bindingMap, key) => {
+        //         if (bindingMap.parentContextIds.has(contextId)){
+        //             let childObject = this.getContextById(key);
+        //             // If the child object has already been checked, skip it to prevent infinite loops
+        //             if (childObject != null && !childObject.hasOwnProperty(this._seenFlag)){
+        //                 this.unobserve(childObject, contextId as string, key, true);
+        //             }
+        //         }
+        //     });
 
-            // First recursively dispose of child objects
-            // Search for child objects by finding all contexts which have a parent reference to the current context
-            this._contextBindingMap.forEach((bindingMap, key) => {
-                if (bindingMap.parentContextIds.has(contextId)){
-                    let childObject = this.getContextById(key);
-                    // If the child object has already been checked, skip it to prevent infinite loops
-                    if (childObject != null && !childObject.hasOwnProperty(this._seenFlag)){
-                        this._unobserve(childObject, contextId as string, key, true);
-                    }
-                }
-            });
+        //     ((bindingMap && bindingMap.observers) || []).forEach((proxiedObservable) => {
+        //         proxiedObservable.dispose();
+        //     });
 
-            ((bindingMap && bindingMap.observers) || []).forEach((proxiedObservable) => {
-                proxiedObservable.dispose();
-            });
+        //     // remove the context from the map
+        //     this._contextIdMap.delete(context);
+        //     this._contextBindingMap.delete(contextId);
+        // }
 
-            // remove the context from the map
-            this._contextIDMap.delete(context);
-            this._contextBindingMap.delete(contextId);
-        }
-
-        if (!inRecursion){
-            // Remove the temporary flags from the objects
-            this._seen.forEach((o) => {
-                delete o[this._seenFlag];
-            });
-        }
+        // if (!inRecursion){
+        //     // Remove the temporary flags from the objects
+        //     this._seen.forEach((o) => {
+        //         delete o[this._seenFlag];
+        //     });
+        // }
     }
 
     /**
@@ -506,7 +694,7 @@ export class BindingEngine {
                 bindingMap.observers.forEach((proxiedObservable) => proxiedObservable.dispose());
         });
 
-        this._contextIDMap = new Map();
+        this._contextIdMap = new Map();
         this._contextBindingMap.clear();
     }
 }

@@ -1,6 +1,7 @@
 import {IBaseElement} from './../components/BaseElement'
 import * as tapc from './../tapcModules'
 import {IButton} from './../components/Button'
+import * as tapm from './../../metadata/metadata'
 
 export interface IBaseBlade {
     title: string;
@@ -28,6 +29,8 @@ export class BaseBlade implements IBaseBlade {
     title: string;
     subtitle: string;
     // TODO: how can we make this limited to the developers?
+    // Use a getter/setter for this and check the RpcClient.InstanceId?
+    @tapm.tapmNoObserve()
     content: IBaseElement[] = [];
 
     canActivate?(): boolean|Promise<boolean>;

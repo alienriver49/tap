@@ -2,13 +2,13 @@ import { inject } from 'aurelia-framework'
 import * as tapc from './tapcModules'
 import {IBaseElement} from './components/BaseElement'
 import {BaseElementContainer} from './components/BaseElementContainer'
-import BaseBlade from './viewModels/viewModels.baseBlade'
+import {BaseBlade} from './viewModels/viewModels.baseBlade'
 import ConventionEngine from './conventionEngine'
 import Utilities from './../utilities/utilities'
 
-const attrRegExp: RegExp = /^attribute(.*)/;
-const privateAttrRegExp: RegExp = /^_attribute(.*)/;
-const eventRegExp: RegExp = /^event(.*)/;
+// const attrRegExp: RegExp = /^attribute(.*)/;
+// const privateAttrRegExp: RegExp = /^_attribute(.*)/;
+// const eventRegExp: RegExp = /^event(.*)/;
 const bindRegExp = /^@(.*)/;
 
 @inject(ConventionEngine, Utilities)
@@ -141,13 +141,13 @@ export class BladeParser {
      * @param prop 
      */
     private _setAttributes(el: HTMLElement, node: IBaseElement, prop: string): void {
-        let match: RegExpExecArray | null;
+        let match: string | undefined;
         let bindMatch: RegExpExecArray | null;
         let value = node[prop];
         // TODO: support attributes without values, like form's 'novalidate'
-        //if (value && ((match = attrRegExp.exec(prop)) || (match = privateAttrRegExp.exec(prop)) )){
-        if (value && (match = attrRegExp.exec(prop))) {
-            let attribute = this._utilities.camelCaseToHyphen(match[1]);
+        // Use property metadata to identify properties for attributes and events
+        if (value && (match = node.getAttributeName(prop)) && match !== void(0)) {
+            let attribute = this._utilities.camelCaseToHyphen(match);
             // If the attribute value starts with '@', then bind it,
             // else if, check for the repeat attribute
             // otherwise use literal value
@@ -159,8 +159,8 @@ export class BladeParser {
                 el.setAttribute(attribute, value);
             }
         }
-        if (value && (match = eventRegExp.exec(prop))) {
-            el.setAttribute(`${match[1]}.delegate`, value);
+        if (value && (match = node.getEventName(prop)) && match !== void(0)) {
+            el.setAttribute(`${match}.delegate`, value);
         }
     }
 }

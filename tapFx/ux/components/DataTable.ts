@@ -29,8 +29,12 @@ export class DataTable extends BaseElement implements IDataTable {
     }
 
     private _attributeColumnConfiguration: string;
+
+    @BaseElement.tapcAttribute("title")
     attributeTitle: string;
+    @BaseElement.tapcAttribute("totalItems")
     attributeTotalItems: string;
+    @BaseElement.tapcAttribute("data")
     attributeData: string;
 
     /**
@@ -47,6 +51,7 @@ export class DataTable extends BaseElement implements IDataTable {
     }
 
     // ES6 style getters are defined on the prototype
+    @BaseElement.tapcAttribute("columnConfiguration")
     public get attributeColumnConfiguration() {
         return this._attributeColumnConfiguration;
     }

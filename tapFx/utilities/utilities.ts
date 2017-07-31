@@ -98,6 +98,12 @@ export class Utilities {
     getRandomNoun(): string {
         return this._randomNouns[this.getRandomInt(0, this._randomNouns.length - 1)]
     }
+    isPrimitive(obj: any): boolean {
+        let t = typeof obj;
+        return t !== 'object' && 
+               t !== 'function';
+    }    
+
 }
 
 export default Utilities;

@@ -1,4 +1,5 @@
 import {BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig} from './BaseElementContainer'
+import {BaseElement} from './BaseElement'
 
 export interface ILabelConfig extends IBaseElementContainerConfig {
     for?: string;
@@ -22,6 +23,8 @@ export class Label extends BaseElementContainer implements ILabel {
         }
     }
 
+    @BaseElement.tapcAttribute("for")
     attributeFor: string;
+    @BaseElement.tapcAttribute("type")
     attributeValue: string;
 }

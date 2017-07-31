@@ -1,4 +1,5 @@
 import {BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig} from './BaseElementContainer'
+import {BaseElement} from './BaseElement'
 
 export interface IOptionConfig extends IBaseElementContainerConfig {
     disabled?: string;
@@ -28,8 +29,15 @@ export class Option extends BaseElementContainer implements IOption {
         this.attributeModel = config.model || '';
     }
 
+    @BaseElement.tapcAttribute("disabled")
     attributeDisabled: string;
+
+    @BaseElement.tapcAttribute("selected")
     attributeSelected: string;
+
+    @BaseElement.tapcAttribute("value")
     attributeValue: string;
+
+    @BaseElement.tapcAttribute("model")
     attributeModel: string;
 }

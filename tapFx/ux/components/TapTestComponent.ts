@@ -21,7 +21,10 @@ export class TapTestComponent extends BaseElement implements ITapTestComponent {
         this.attributeRaised = config.raised || '';
     }
 
+    @BaseElement.tapcAttribute("clearText")
     attributeClearText: string;
+    @BaseElement.tapcAttribute("display")
     attributeDisplay: string;
+    @BaseElement.tapcAttribute("raised")
     attributeRaised: string;
 }

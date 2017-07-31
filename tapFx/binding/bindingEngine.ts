@@ -4,6 +4,7 @@ import RpcClient from './../rpc/client'
 import {ProxiedObservable} from './proxiedObservable'
 import {ProxiedCollectionObservable, IArrayBindingSync, IArrayChangedSplice} from './proxiedCollectionObservable'
 import * as tapm from './../metadata/metadata'
+import moment from 'moment';
 
 export interface ISerializedObject{
     property: string;
@@ -50,6 +51,15 @@ export interface IBindingEngine {
     resolveSerializedObject(obj: ISerializedObject, node?: Object, firstTime?: boolean): Object;
     observeObject(metadata: ISerializedObject, context: Object, refIds: Set<string>, extensionId: string): ISerializedObject;
     unobserve(context: Object, parentContextId: string, contextId?: string, inRecursion?: boolean): void; 
+}
+
+export class SerializedType {
+    public static readonly Primitive: string = 'p';
+    public static readonly Array: string = 'a';
+    public static readonly Object: string = 'o';
+    public static readonly Date: string = 'd';
+    public static readonly Set: string = 's';
+    public static readonly Map: string = 'm';
 }
 
 @inject(Utilities, RpcClient, Factory.of(ProxiedObservable), Factory.of(ProxiedCollectionObservable))
@@ -107,22 +117,28 @@ export class BindingEngine {
                     // If so, we assume it's being observed and assign that to the parent object
                     data.value = existingChildObject;
                 }else{
-                    if (this._utilities.isObject(data.value)){
-                        let resolvedObject: Object = {};
-                        Object.assign(resolvedObject, data.value);
-                        data.value = resolvedObject;
-                        resolvedObject = this.resolveSerializedObject(data, resolvedObject, true);
-                        // Then begin observing it (this handles observation of both objects and arrays)
-                        // data.value is changed by observeObject, so don't use it after this
-                        this.observeObject(data, resolvedObject, new Set<string>(), observer.extensionId);
-                        data.value = resolvedObject;
-                    }
-                    if (data.value instanceof Array){
-                        let resolvedArray: any[] = data.value as any[];
-                        this.resolveSerializedObject(data, {}, true);
-                        // data.value is changed by observeObject, so don't use it after this
-                        this.observeObject(data, data.value, new Set<string>(), observer.extensionId);
-                        data.value = resolvedArray;
+                    switch(data.type.toLowerCase()){
+                        case SerializedType.Object:
+                            let resolvedObject: Object = {};
+                            Object.assign(resolvedObject, data.value);
+                            data.value = resolvedObject;
+                            resolvedObject = this.resolveSerializedObject(data, resolvedObject, true);
+                            // Then begin observing it (this handles observation of both objects and arrays)
+                            // data.value is changed by observeObject, so don't use it after this
+                            this.observeObject(data, resolvedObject, new Set<string>(), observer.extensionId);
+                            data.value = resolvedObject;
+                            break;
+                        case SerializedType.Array:
+                            let resolvedArray: any[] = data.value as any[];
+                            this.resolveSerializedObject(data, {}, true);
+                            // data.value is changed by observeObject, so don't use it after this
+                            this.observeObject(data, data.value, new Set<string>(), observer.extensionId);
+                            data.value = resolvedArray;
+                            break;
+                        case SerializedType.Date:
+                            // Deserialize ISO date string to Date object
+                            data.value = moment(data.value).toDate();
+                            break;
                     }
                 }
              }
@@ -174,18 +190,24 @@ export class BindingEngine {
                             // If so, we assume it's being observed and assign that to the parent object
                             theArray[index] = existingChildObject;
                         }else{
-                            if (['a', 'o'].indexOf(serializedObject.type) < 0)
-                                theArray[index] = serializedObject.value;
-                            if (serializedObject.type === "a"){
-                                let resolvedObject: Object = {};
-                                Object.assign(resolvedObject, serializedObject);
-                                serializedObject.value = resolvedObject;
-                                resolvedObject = this.resolveSerializedObject(serializedObject, resolvedObject, false);
-                                theArray[index] = resolvedObject;
-                            }
-                            if (serializedObject.type === "o"){
-                                theArray[index] = serializedObject.value;
-                                this.resolveSerializedObject(serializedObject, {}, false);
+                            switch(serializedObject.type){
+                                case SerializedType.Array:
+                                    let resolvedObject: Object = {};
+                                    Object.assign(resolvedObject, serializedObject);
+                                    serializedObject.value = resolvedObject;
+                                    resolvedObject = this.resolveSerializedObject(serializedObject, resolvedObject, false);
+                                    theArray[index] = resolvedObject;
+                                    break;
+                                case SerializedType.Object:
+                                    theArray[index] = serializedObject.value;
+                                    this.resolveSerializedObject(serializedObject, {}, false);
+                                    break;
+                                case SerializedType.Date:
+                                    theArray[index] = moment(serializedObject.value).toDate();
+                                    break;
+                                default:
+                                    theArray[index] = serializedObject.value;
+                                    break;
                             }
                         }
                     }
@@ -215,7 +237,7 @@ export class BindingEngine {
                 splice.added.forEach((element: any, index: number, theArray: any[]) => {
                     if (!this._utilities.isPrimitive(element)){
                         let metadata = addedMetadata[index];
-                        if (this._utilities.isObject(element) || element instanceof Array){
+                        if ([SerializedType.Object, SerializedType.Array].indexOf(metadata.type) >= 0){
                             this.observeObject(metadata, element, new Set<string>(), observer.extensionId);
                         }
                     }
@@ -251,7 +273,7 @@ export class BindingEngine {
 
         // Recursively register any child objects first
         // For objects, they're in the childMetadata
-        if (obj.type === 'o'){
+        if (obj.type === SerializedType.Object){
             obj.childMetadata.forEach((metadata) => {
                 // Check if there is already a mapped context with the passed Id
                 let existingChildObject = this.getContextById(metadata.contextId);
@@ -261,8 +283,15 @@ export class BindingEngine {
                     (obj.value as Object)[metadata.property] = existingChildObject;
                 }else{
                     if (metadata.value){
-                        if (['a', 'o'].indexOf(metadata.type) >= 0)
-                            this.resolveSerializedObject(metadata);
+                        switch(metadata.type){
+                            case SerializedType.Object:
+                            case SerializedType.Array:
+                                this.resolveSerializedObject(metadata);
+                                break;
+                            case SerializedType.Date:
+                                metadata.value = moment(metadata.value).toDate();
+                                break;
+                        }
                         // And reinstantiate on parent (updates node via object reference)
                         (obj.value as Object)[metadata.property] = metadata.value;
                     }else{
@@ -274,7 +303,7 @@ export class BindingEngine {
         }
 
         // For collections, they're in the value collection
-        if (obj.type === 'a'){
+        if (obj.type === SerializedType.Array){
             (obj.value as any[]).forEach((element: any, index: number, theArray: any[]) => {
                 if (this._utilities.isPrimitive(element)){
                     theArray[index] = element;
@@ -288,8 +317,15 @@ export class BindingEngine {
                         theArray[serializedElement.property] = existingChildObject;
                     }else{
                         if (serializedElement.value){
-                            if (['a', 'o'].indexOf(serializedElement.type) >= 0)
-                                this.resolveSerializedObject(serializedElement);
+                            switch(serializedElement.type){
+                                case SerializedType.Object:
+                                case SerializedType.Array:
+                                    this.resolveSerializedObject(serializedElement);
+                                    break;
+                                case SerializedType.Date:
+                                    serializedElement.value = moment(serializedElement.value).toDate();
+                                    break;
+                            }
                             // And reinstantiate on parent (updates node via array reference)
                             theArray[serializedElement.property] = serializedElement.value;
                         }else{
@@ -431,9 +467,20 @@ export class BindingEngine {
                 };
                 this.observeObject(metadata, propertyValue, refIds, extensionId);
                 return metadata;
-            }else{
-                return propertyValue;
             }
+            // Dates are serialized as ISO strings
+            if (propertyValue instanceof Date){
+                let metadata: ISerializedObject =  {
+                    property: property,
+                    contextId: '',
+                    parentId: contextId,
+                    value: (propertyValue as Date).toISOString(),
+                    type: SerializedType.Date,
+                    childMetadata: [] 
+                };
+                return metadata;
+            }
+            return propertyValue;
         }else{
             return propertyValue;
         }
@@ -453,7 +500,7 @@ export class BindingEngine {
         if (!(collection instanceof Array))
             throw new Error('observeCollection: collection must be a valid array')
 
-        metadata.type = 'a';
+        metadata.type = SerializedType.Array;
         let serializedArray: any[] = [];
 
         // make sure the collection is not currently being observed
@@ -480,10 +527,16 @@ export class BindingEngine {
                         contextId: '',
                         parentId: metadata.contextId,
                         value: null,
-                        type: '',
+                        type: SerializedType.Primitive,
                         childMetadata: [] 
                     };
-                    this.observeObject(elementMetadata, element, refIds, extensionId);
+                    if (element instanceof Date){
+                        elementMetadata.type = SerializedType.Date;
+                        elementMetadata.value = (element as Date).toISOString();
+                    }
+                    if (this._utilities.isObject(element) || element instanceof Array){
+                        this.observeObject(elementMetadata, element, refIds, extensionId);
+                    }
                     serializedArray[index] = elementMetadata
                 }
             })
@@ -578,7 +631,7 @@ export class BindingEngine {
     }
 
     private getContextIdType(contextId: string): string {
-        let type = this._contextBindingMap.has(contextId) ? 'o' : (this._collectionBindingMap.has(contextId) ? 'a' : '');
+        let type = this._contextBindingMap.has(contextId) ? SerializedType.Object : (this._collectionBindingMap.has(contextId) ? SerializedType.Array : '');
         return type;
     }
 

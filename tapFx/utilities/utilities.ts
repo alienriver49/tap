@@ -66,15 +66,12 @@ export class Utilities {
     }
 
     /** 
-     * Test if the passed value is an object, but not an array or function
-     * There are some more Javascript types that are objects that should 
-     * probably be checked for as well
+     * Test if the passed value is a plain object and not some derived object
+     * like Array, Date, Map, etc
      * @param obj 
      */
     isObject(obj: any): boolean {
-        return (obj === Object(obj) && 
-            !(obj instanceof Array) &&
-            this.classOf(obj) !== '[object Function]');
+        return (obj === Object(obj) && this.classOf(obj) === '[object Object]');
     }
 
     /**

@@ -1,0 +1,8 @@
+{
+  "name": "tap-fx-utilities",
+  "version": "0.1.0",
+  "description": "Utilities module for TAP",
+  "main": "tap-fx-utilities.js",
+  "typings": "tap-fx-utilities.d.ts",
+  "license": "MIT"
+}

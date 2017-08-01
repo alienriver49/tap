@@ -3,6 +3,7 @@
 
 # Temporary files
 *~
+*.tgz
 
 # Git
 !.git*
@@ -24,6 +25,7 @@ jspm_packages/
 
 # Distribution
 dist/
+release/
 
 # Visual Studio
 .vs/

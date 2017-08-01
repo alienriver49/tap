@@ -1,12 +1,12 @@
-import Utilities from './tapFx/utilities/utilities'
-import RpcClient from './tapFx/rpc/client'
-import BindingEngine from './tapFx/binding/bindingEngine'
-import BaseExtension from './tapFx/core/extension/baseExtension'
-import BaseBlade from './tapFx/ux/viewModels/viewModels.baseBlade'
-import Extension from './tapFx/core/extension/extension';
-import ConventionEngine from './tapFx/ux/conventionEngine'
-import Http from './tapFx/core/http/http'
-import Security from './tapFx/security/security'
+import { Utilities } from './src/fx/utilities/utilities';
+import { RpcClient } from './src/fx/rpc/client';
+import { BindingEngine } from './src/fx/binding/bindingEngine';
+import { BaseExtension } from './src/fx/core/extension/baseExtension';
+import { BaseBlade } from './src/fx/ux/viewModels/viewModels.baseBlade';
+import { Extension } from './src/fx/core/extension/extension';
+import { ConventionEngine } from './src/fx/ux/conventionEngine';
+import { Http } from './src/fx/core/http/http';
+import { Security } from './src/fx/security/security';
 import { Aurelia } from 'aurelia-framework';
 
 declare global {

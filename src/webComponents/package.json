@@ -1,0 +1,15 @@
+{
+  "name": "tap-web-components",
+  "version": "0.1.0",
+  "description": "The Titanium Application Portal Web Components.",
+  "main": "tap-web-components.js",
+  "typings": "typings/index.d.ts",
+  "license": "MIT",
+  "peerDependencies": {
+    "@material/button": "^0.3.10",
+    "@material/checkbox": "^0.4.1",
+    "@material/ripple": "^0.8.1",
+    "aurelia-framework": "1.1.4",
+    "aurelia-templating": "^1.4.2"
+  }
+}

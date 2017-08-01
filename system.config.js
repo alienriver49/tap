@@ -67,7 +67,8 @@ System.config({
     "bootstrap-css": "github:twbs/bootstrap@3.3.7/css/bootstrap.min.css",
     "css": "github:systemjs/plugin-css@0.1.35",
     "material-components-web": "npm:material-components-web@0.15.0",
-    "tap-fx": "tapFx/index",
+    //"tap-fx": "tapFx/index",
+    "tap-fx": "npm:tap-fx@0.1.0",
     "typescript": "npm:typescript@2.4.1",
     "github:jspm/nodelibs-assert@0.1.0": {
       "assert": "npm:assert@1.4.1"

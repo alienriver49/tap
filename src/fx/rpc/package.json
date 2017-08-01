@@ -1,0 +1,12 @@
+{
+  "name": "tap-fx-rpc",
+  "version": "0.1.0",
+  "description": "RPC module for TAP",
+  "main": "tap-fx-rpc.js",
+  "typings": "tap-fx-rpc.d.ts",
+  "license": "MIT",
+  "peerDependencies": {
+    "aurelia-dependency-injection": "^1.3.1",
+    "tap-fx-utilities": "0.1.0"
+  }
+}

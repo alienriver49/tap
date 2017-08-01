@@ -1,0 +1,8 @@
+{
+  "name": "tap-fx-ux",
+  "version": "0.1.0",
+  "description": "UX module for TAP",
+  "main": "/tap-fx-ux.js",
+  "typings": "tap-fx-ux.d.ts",
+  "license": "MIT"
+}

@@ -92,6 +92,9 @@ export class Utilities {
     }
 
     private _randomNouns: string[] = ['Pizza', 'Paper', 'Pencils', 'Rubber ducks', 'Coffee', 'Boxes', 'Books', 'Tea', 'Toys', 'Trinkets', 'Shinies', 'Telescope', 'Bike'];
+    /**
+     * Gets a random noun from an array of nouns.
+     */
     getRandomNoun(): string {
         return this._randomNouns[this.getRandomInt(0, this._randomNouns.length - 1)]
     }

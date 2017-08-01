@@ -19,6 +19,7 @@ export class Icon extends BaseElementContainer implements IIcon {
         if (config === void 0) { config = {}; }
         super(config);
 
+        // if there's no content, we will add the default icon class (since this means they aren't putting an image in this icon)
         if (this.content.length === 0) {
             this.addClass(DefaultIconClass);
         }

@@ -108,9 +108,29 @@ export class Extension extends BaseExtension {
      * @param viewName 
      */
     addBlade(blade: BaseBlade, viewName: string): void {
-        this._bladeEngine.performActivation(blade).then((canActivate) => {
-            if (canActivate) {
-                this._performAddBlade(blade, viewName);
+        // create a journey promise which resolves to true
+        let journeyPromise: Promise<boolean> = Promise.resolve(true);
+        // if not journeying, we will want to remove the previous blade
+        if (!this.journeyOn) {
+            // though there should only be one blade ever with journey off (current implementation) we will still grab all blade mappings and get the latest in case our implementation changes in the future
+            let bladeMappings = this._getBladeMappings();
+            // only do this if we there are currently blades
+            if (bladeMappings.length > 0) {
+                // if removing the previous blade, set the journey promise to the result from that removal (whether it was successfully removed)
+                let removedBlade = bladeMappings[bladeMappings.length - 1]
+                journeyPromise = this._removeBladeRange(removedBlade.blade)
+            }
+        }
+
+        journeyPromise.then((canAdd) => {
+            if (canAdd) {
+                this._bladeEngine.performActivation(blade).then((canActivate) => {
+                    if (canActivate) {
+                        this._performAddBlade(blade, viewName);
+                    } else {
+                        this._addBladeFailed();
+                    }
+                });
             } else {
                 this._addBladeFailed();
             }
@@ -156,7 +176,7 @@ export class Extension extends BaseExtension {
      * @param blades
      */
     removeBlades(...blades: BaseBlade[]): void {
-        // find the earliest blade from the passed set and remove the range of blades starting with that blade
+        // find the earliest blade from the passed array and remove the range of blades starting with that blade
         let earliestBlade = this._findEarliestBlade(blades);
         if (earliestBlade) this._removeBladeRange(earliestBlade);
     }

@@ -60,4 +60,16 @@ export class BaseBlade implements IBaseBlade {
             )
         )
     }
+
+    /**
+     * Add blade menu content to the blade.
+     * @param munuContent 
+     */
+    addMenuContent(...munuContent: IBaseElement[]) {
+        this.content.push(
+            new tapc.Content().addClass('blade-menu-content').addToContainer(
+                ...munuContent
+            )
+        )
+    }
 }

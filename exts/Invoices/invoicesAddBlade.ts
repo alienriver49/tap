@@ -18,6 +18,12 @@ export class InvoicesAddBlade extends ViewModels.FormBlade {
 
     invoice: IInvoiceDto;
 
+    paymentMethods: string[] = [
+        'Check',
+        'Electronic Funds',
+        'Direct Disbursement'
+    ]
+
     constructor() {
         super();
         this._tapFx = getTapFx();
@@ -30,6 +36,34 @@ export class InvoicesAddBlade extends ViewModels.FormBlade {
             new tapc.Button({name: 'items'}).addText('Items'),
             new tapc.Button({name: 'allocations'}).addText('Allocations'),
             new tapc.Button({name: 'attachments'}).addText('Attachments'),
+        );
+
+        this.addMenuContent(
+            new tapc.Form()
+                .addLabelInput(
+                    new tapc.Label({for: 'invoiceDate'}).addText('Invoice Date'),
+                    new tapc.Input({name: 'invoiceDate', type: tapc.InputType.Date})
+                )
+                .addLabelInput(
+                    new tapc.Label({for: 'dueDate'}).addText('Due Date'),
+                    new tapc.Input({name: 'dueDate', type: tapc.InputType.Date})
+                )
+                .addLabelInput(
+                    new tapc.Label({for: 'vendorAddress'}).addText('Vendor Address'),
+                    new tapc.TextArea({name: 'vendorAddress'})
+                )
+                .addLabelInput(
+                    new tapc.Label({for: 'description'}).addText('Description'),
+                    new tapc.TextArea({name: 'description'})
+                )
+                .addToContainer(
+                    new tapc.Label({for: 'paymentMethods'}).addText('Payment Method'),
+                    new tapc.Content({repeat: 'paymentMethod of paymentMethods'}).addToContainer(
+                        new tapc.Input({name: 'paymentMethods', type: tapc.InputType.Radio, model: '@paymentMethod', checked: '@selectedPaymentMethod'}),
+                        new tapc.Text({text: ' '}),
+                        new tapc.Text({text: '@paymentMethod'})
+                    ),
+                )
         );
 
         this.content.push(new tapc.Content().addClass('cline'));

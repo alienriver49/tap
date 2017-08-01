@@ -46,7 +46,9 @@ export class InvoicesBrowseBlade extends ViewModels.BrowseBlade {
 
     private _buildContent(): void {
         this.addActionButtons(
-            new tapc.Button({name: 'new'}).addIcon('glyphicon-plus-sign').addText('New'),
+            new tapc.Button({name: 'new'}).addToContainer(
+                new tapc.Link({href: '#Invoices/AddInvoice'}).addIcon('glyphicon-plus-sign').addText('New')
+            ),
             new tapc.Button({name: 'refresh'}).addIcon('glyphicon-repeat').addText('Refresh')
         );
 
@@ -82,13 +84,6 @@ export class InvoicesBrowseBlade extends ViewModels.BrowseBlade {
         this.subtitle = '';
 
         return this._getInvoices();
-    }
-
-    onButtonNewClicked(): void {
-        console.log('[Invoices-Browse] New clicked');
-        // TODO: make sure th
-        let addInvoiceBlade = new InvoicesAddBlade();
-        this._tapFx.Extension.addBlade(addInvoiceBlade, '');
     }
 
     onButtonRefreshClicked(): void {

@@ -1,7 +1,8 @@
 /// <reference path="./../../typings.d.ts" />
 import {InvoicesBrowseBlade} from './invoicesBrowseBlade'
-import BaseBlade from './../../tapFx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
+import { BaseBlade } from './../../tapFx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
 import {getTapFx, BaseExtension} from 'tap-fx'
+import {InvoicesAddBlade} from './invoicesAddBlade'
 
 export class Invoices extends BaseExtension {
     constructor(
@@ -12,6 +13,8 @@ export class Invoices extends BaseExtension {
 
     private _tapFx: ITapFx;
 
+    addInvoiceBlade: InvoicesAddBlade;
+
     public init(): void {
         console.log('[Invoices] Index.init');
         let blade = new InvoicesBrowseBlade();
@@ -20,6 +23,11 @@ export class Invoices extends BaseExtension {
 
     public updateParams(params: any[], queryParams: Object): void {
         console.log('[Invoices] Updating extension parameters.');
+
+        if (params[0] === 'AddInvoice') {
+            this.addInvoiceBlade = new InvoicesAddBlade();
+            this.addBlade(this.addInvoiceBlade, '');
+        }
 
     }
 

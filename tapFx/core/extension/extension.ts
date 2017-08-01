@@ -109,9 +109,29 @@ export class Extension extends BaseExtension {
      * @param viewName 
      */
     addBlade(blade: BaseBlade, viewName: string): void {
-        this._bladeEngine.performActivation(blade).then((canActivate) => {
-            if (canActivate) {
-                this._performAddBlade(blade, viewName);
+        // create a journey promise which resolves to true
+        let journeyPromise: Promise<boolean> = Promise.resolve(true);
+        // if not journeying, we will want to remove the previous blade
+        if (!this.journeyOn) {
+            // though there should only be one blade ever with journey off (current implementation) we will still grab all blade mappings and get the latest in case our implementation changes in the future
+            let bladeMappings = this._getBladeMappings();
+            // only do this if we there are currently blades
+            if (bladeMappings.length > 0) {
+                // if removing the previous blade, set the journey promise to the result from that removal (whether it was successfully removed)
+                let removedBlade = bladeMappings[bladeMappings.length - 1]
+                journeyPromise = this._removeBladeRange(removedBlade.blade)
+            }
+        }
+
+        journeyPromise.then((canAdd) => {
+            if (canAdd) {
+                this._bladeEngine.performActivation(blade).then((canActivate) => {
+                    if (canActivate) {
+                        this._performAddBlade(blade, viewName);
+                    } else {
+                        this._addBladeFailed();
+                    }
+                });
             } else {
                 this._addBladeFailed();
             }
@@ -124,20 +144,6 @@ export class Extension extends BaseExtension {
      * @param viewName 
      */
     private _performAddBlade(blade: BaseBlade, viewName: string): void {
-        // if not journeying, we will want to remove the latest blade's view from the DOM
-        if (!this.journeyOn) {
-            let bladeMappings = this._getBladeMappings();
-            // only do this if we there are currently blades
-            if (bladeMappings.length > 0) {
-                let currentBlade = bladeMappings[bladeMappings.length - 1]
-                let returnData: Object = {
-                    extensionId: this._rpc.InstanceId,
-                    bladeId: currentBlade.bladeInfo.bladeId
-                };
-                this._rpc.publish('shell.removeBladeView', '', returnData);
-            }
-        }
-
         let bladeInfo = this._registerBladeBindings(blade);
         // Get the extension Id from RPC and pass it to the shell
         bladeInfo.extensionId = this._rpc.InstanceId;
@@ -253,20 +259,6 @@ export class Extension extends BaseExtension {
             manualRemoval: manualRemoval
         };
         this._rpc.publish('shell.removeBlade', '', returnData);
-
-        // if not journeying, we will want to re-add the previous blade's view back to the DOM
-        if (!this.journeyOn) {
-            let bladeMappings = this._getBladeMappings();
-            // only do this if we there are currently blades
-            if (bladeMappings.length > 0) {
-                let currentBlade = bladeMappings[bladeMappings.length - 1]
-                let returnData: Object = {
-                    extensionId: this._rpc.InstanceId,
-                    bladeId: currentBlade.bladeInfo.bladeId
-                };
-                this._rpc.publish('shell.addBladeView', '', returnData);
-            }
-        }
     }
 
     // TODO: determine what we need to implement for this and implement it.

@@ -51,7 +51,9 @@ class LandingBlade extends ViewModels.BaseBlade {
                 new tapc.Content().addToContainer(
                     new tapc.Form().addLabelInput(
                         new tapc.Label({for: 'text'}).addText('Blade text'),
-                        new tapc.Input({name: 'text', value: '@text'})
+                        //new tapc.Input({name: 'text', value:`@text}`})
+                        // Example of using Name(Of()) for type safety, although it makes for pretty ugly code
+                        new tapc.Input({name: 'text', value:`@${this.Name(this.Of(() => this.text))}`})
                     ),
                 ),
                 new tapc.Content().addToContainer(

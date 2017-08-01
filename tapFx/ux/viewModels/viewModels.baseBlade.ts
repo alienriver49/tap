@@ -2,6 +2,7 @@ import {IBaseElement} from './../components/BaseElement'
 import * as tapc from './../tapcModules'
 import {IButton} from './../components/Button'
 import * as tapm from './../../metadata/metadata'
+import {Utilities} from './../../utilities/utilities'
 
 export interface IBaseBlade {
     title: string;
@@ -14,7 +15,14 @@ export interface IBaseBlade {
     deactivate?(): Promise<void>|void;
 
     addMenu(...munuItems: IButton[]);
+
+    // Name and Of are used together to simulate nameof functionality
+    // similar to C#
+    // EX: this.Name(this.Of(() => this.address.line1));
+    Name(fnString: string): string;
+    Of(fn: any): string;
 }
+
 
 // TODO: research extending BaseElementContainer, since we already have content: IBaseElement[] and we want the blade to be an actual element on the page anyway (like a div), it might add functionality. would want to research the integration with bladeParser
 export class BaseBlade implements IBaseBlade {
@@ -25,6 +33,9 @@ export class BaseBlade implements IBaseBlade {
             new tapc.Heading({name: 'subtitle', importance: 3 }).addText('@subtitle')
         );
     }
+
+    public Of = Utilities.Of;
+    public Name = Utilities.Name;
 
     title: string;
     subtitle: string;

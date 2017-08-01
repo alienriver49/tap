@@ -95,12 +95,73 @@ export class Utilities {
     getRandomNoun(): string {
         return this._randomNouns[this.getRandomInt(0, this._randomNouns.length - 1)]
     }
-    isPrimitive(obj: any): boolean {
-        let t = typeof obj;
+
+    /**
+     * Determine if the passed value is a primitive javascript object
+     * @param value 
+     */
+    public isPrimitive(value: any): boolean {
+        let t = typeof value;
         return t !== 'object' && 
                t !== 'function';
     }    
 
+    /**
+     * For use with Name function to simulate the C# nameof function
+     * This function just returns the passed function as a string
+     * EX: this.Name(this.Of(() => this.address.line1));
+     * @param fn 
+     */
+    public static Of(fn: any): string {
+        var fnString = fn.toString();
+        return fnString;
+    }     
+
+    /**
+     * For use with Of function to simulate the C# nameof function
+     * This function parses a function as a string and just returns the return value of it
+     * (which is the what we want, the string name of a variable)
+     * EX: this.Name(this.Of(() => this.address.line1));
+     * @param fn 
+     */
+    public static Name(fnString: string): string {
+        // fnString should look something like: function () { return _this.canActivate; }
+        const nameofRegExp = /_this\.(.*);/;
+        let match: RegExpExecArray | null;
+        if(match = nameofRegExp.exec(fnString)){
+            return match[1];
+        }else{
+            throw new Error(`Could not parse nameof string`);
+        }
+    }
+
+    /**
+     * This function is for use as a class decorator to add the Name and Of
+     * functions on the class prototype
+     * Works well... except Typescript doesn't know about the new functions on the class,
+     * so doesn't have intellisense for them and underlines them with red as errors when
+     * you try to use them
+     * @param constructor 
+     */
+    public static includeNameof(constructor: Function) {
+        constructor.prototype.Of = Utilities.Of;
+        constructor.prototype.Name = Utilities.Name;
+    }
+
+    /**
+     * Alternative method to implement C# nameof functionality
+     * Makes use of the ES6 property shorthand feature where
+     * {x} is a shortcut for {x: x}
+     * https://stackoverflow.com/questions/37057211/how-to-get-the-name-of-a-variable-in-javascript-like-nameof-operator-in-c
+     * Works great, however the property cannot have any dot notation in it, which
+     * severely limits it's usefulness, since you can't use it with something like this.address
+     * or address.line1
+     * EX: this._tapFx.Utilities.nameof({address})
+     * @param obj 
+     */
+    public static nameof(obj: Object): string {
+        return Object.keys(obj)[0];
+    }
 }
 
 export default Utilities;

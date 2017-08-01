@@ -6,16 +6,32 @@ import {ProxiedCollectionObservable, IArrayBindingSync, IArrayChangedSplice} fro
 import * as tapm from './../metadata/metadata'
 import moment from 'moment';
 
+/**
+ * This defines the format of objects being serialized between windows
+ */
 export interface ISerializedObject{
-    property: string;
-    contextId: string;
-    parentId: string;
-    value: any;
+    // Name of property or index of this data on a parent object or collection
+    property: string;   
+    // The GUID that identifies this data in the binding maps (not used for primitives)
+    contextId: string;  
+    // The GUID that identifies the object or collection that this data lives on
+    parentId: string;   
+    // For primitives, the actual value of the data
+    // For dates, the ISO string value of the date
+    // For collections, the collection where each element may be a primitive or another ISerializedObject
+    // For objects, a plain object with all primitive properties, complex properties for the object are
+    //      defined in the childMetadata array
+    value: any;         
+    // Defines the type of this data (see SerializedType for possible values)
     type: string;
+    // If the data is an object with non-primitive properties, they require their metadata and that
+    // is stored in this childMetadata array
     childMetadata: ISerializedObject[];
 }
 
-// Reference to an object that could not be resolved
+/**
+ * Reference to an object that could not be currently resolved
+ */
 export interface IUnresolvedRef {
     context: Object,
     property: string,
@@ -23,7 +39,9 @@ export interface IUnresolvedRef {
 }
 
 interface IObjectBindingMap {
+    // For a particular object, these are all the property observers
     observers: ProxiedObservable[];
+    // Not currently used
     functions: string[];
     // This is used as our ref counts
     // When observing a property, update this with a comma-delimited string of 
@@ -35,6 +53,8 @@ interface IObjectBindingMap {
 }
 
 interface ICollectionBindingMap {
+    // For a particular collection, this is the collection observer that
+    // watches for changes to the contents of the collection
     observer: ProxiedCollectionObservable | null;
     // This is used as our ref counts
     // When observing an object or array and one of it's properties or indexes is an array, 
@@ -53,12 +73,17 @@ export interface IBindingEngine {
     unobserve(context: Object, parentContextId: string, contextId?: string, inRecursion?: boolean): void; 
 }
 
+/**
+ * Defines the valid types allowed on ISerializedObject
+ */
 export class SerializedType {
     public static readonly Primitive: string = 'p';
     public static readonly Array: string = 'a';
     public static readonly Object: string = 'o';
     public static readonly Date: string = 'd';
+    // Not currently used
     public static readonly Set: string = 's';
+    // Not currently used
     public static readonly Map: string = 'm';
 }
 
@@ -250,6 +275,21 @@ export class BindingEngine {
     }
 
 
+    /**
+     * Given a serialized object, this will
+     * 1) add an entry to the contextIdMap and appropriate bindingMap (if not already mapped)
+     * 2) for each property or element that is a serialized object, it will attempt to find
+     *      that object in the contextIdMap based on the passed contextId or
+     *      recursively invoke this function if a value for the property/element was passed or
+     *      finally add the property/element to the list of unresolved references
+     * 3) If specified, all unresolved references will attempt to be resolved at the top-level call
+     * 4) An unserialized object/collection is returned that is basically the top-level serialized
+     *      object with all properties/elements property resolved to values and no metadata properties
+     *      included
+     * @param obj The object that should be resolved
+     * @param node The unserialized version of the object with no metadata properties
+     * @param firstTime 
+     */
     public resolveSerializedObject(obj: ISerializedObject, node: Object = {}, firstTime: boolean = false): Object {
         if (firstTime){
             this._seen = [];
@@ -360,7 +400,8 @@ export class BindingEngine {
      * Associates an Id with a context.
      * @param context Context owning the observable properties.
      * @param contextId An Id to associate with the context (auto-generated if not passed)
-     * @param parentContextId The context Id of the parent context
+     * @param parentContextId The context Id of the parent context, used to track object references for unobservation
+     * @param parentProperty The index or property name on the parent context, used to track object references for unobservation
      */
     public resolveId(context: Object, contextId: string = '', parentContextId: string = '', parentProperty: string = ''): string {
         // If the context is an array, check if it's been mapped to a proxy already
@@ -429,6 +470,14 @@ export class BindingEngine {
         }
     }
 
+    /**
+     * Add a ProxiedObservable to watch for changes to a specific property on an object
+     * @param context 
+     * @param property 
+     * @param refIds 
+     * @param extensionId 
+     * @param parentContextId 
+     */
     public observeProperty(context: Object, property: string, refIds: Set<string>, extensionId: string = "", parentContextId: string = ''): ISerializedObject | number | string | boolean | Symbol | null | undefined {
         // if it is the first property to be observed on the context, keep track of the context as being observed
         let contextId = this._contextIdMap.get(context);

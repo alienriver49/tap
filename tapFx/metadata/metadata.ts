@@ -27,5 +27,3 @@ export function noObserve(target: Object, propertyName: string): boolean {
     let result = Reflect.hasMetadata(tapmNoObserveMetadataKey, target, propertyName);
     return result ? true : false;
 }
-
-

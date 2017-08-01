@@ -11,7 +11,11 @@
     "emitDecoratorMetadata": true,
     "strictNullChecks": true,
     "sourceMap": true,
-    "lib": ["es2015", "dom"]
+    "lib": ["es2015", "dom"],
+    "baseUrl": ".",
+    "paths": {
+          "tap-fx": ["tapFx/index"]
+    }
   },
   "exclude": [
     "node_modules",

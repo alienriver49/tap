@@ -59,8 +59,9 @@ header .title {
     width: 100%;
 }
 
-#extension-container .extension .blade .blade-content {
+#extension-container .extension .blade .blade-menu-content {
     float: left;
+    padding-left: 20px;
 }
 
 

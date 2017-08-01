@@ -23,6 +23,7 @@ export class InputType {
     public static readonly Checkbox: string = 'checkbox';
     public static readonly Radio: string = 'radio';
     public static readonly File: string = 'checkbox';
+    public static readonly Date: string = 'date';
 }
 
 export interface IInput extends IBaseElement {

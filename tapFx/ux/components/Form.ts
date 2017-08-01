@@ -2,6 +2,7 @@ import {BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig
 import {Content} from './Content'
 import {Label, ILabel, ILabelConfig} from './Label'
 import {Input, IInput, IInputConfig} from './Input'
+import {ITextArea} from './TextArea'
 
 export interface IFormConfig extends IBaseElementContainerConfig {
     
@@ -26,7 +27,7 @@ export class Form extends BaseElementContainer implements IForm {
      * @param input 
      * @chainable
      */
-    addLabelInput(label: ILabel, input: IInput): this {
+    addLabelInput(label: ILabel, input: IInput | ITextArea): this {
         this.addToContainer(
             new Content().addToContainer(
                 label,

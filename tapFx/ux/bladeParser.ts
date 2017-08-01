@@ -79,8 +79,15 @@ export class BladeParser {
         if (node instanceof tapc.Image) {
             el = document.createElement('image');
         }
+        // note: we may want a general use "span" component, if that is the case, Icon would just use that during creation
         if (node instanceof tapc.Icon) {
             el = document.createElement('span');
+        }
+        if (node instanceof tapc.Link) {
+            el = document.createElement('a');
+        }
+        if (node instanceof tapc.TextArea) {
+            el = document.createElement('textarea');
         }
         if (node instanceof tapc.Text) {
             let textNode = document.createTextNode(node.text);

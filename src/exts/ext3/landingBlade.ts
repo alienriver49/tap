@@ -21,7 +21,13 @@ class LandingBlade extends ViewModels.BaseBlade {
         {header: 'Has Pool', property: 'hasPool'}
     ];
     public data: School[];
-    public numbers: number[] = [6, 7, 8];
+    public numbers: number[] = [6, 7, 8];    
+    public testSet: Set<number> = new Set<number>([10, 11, 12]);
+    public dict: Map<string, Address> = new Map<string, Address>([
+        ['one', new Address({line1: '1 Maple St', town: 'Portland', state: 'ME', zip: '04102'})],
+        ['two', new Address({line1: '2 Oak St', town: 'Portland', state: 'ME', zip: '04102'})], 
+        ['three', new Address({line1: '3 Elm St', town: 'Portland', state: 'ME', zip: '04102'})] 
+    ]);
     public twoD: number[][] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
 
     constructor() {
@@ -80,7 +86,27 @@ class LandingBlade extends ViewModels.BaseBlade {
                     new tapc.Button({name: 'test'}).addText('Test random array modification by index'),
                     new tapc.Button({name: 'changeItemProp'}).addText('Change prop on array child object'),
                 ),
-                new tapc.DataTable({id: 'test-table', data: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig')
+                new tapc.DataTable({id: 'test-table', data: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig'),
+                new tapc.Content().addText('Repeat with Map    ').addToContainer(
+                    new tapc.Button({name: 'addMapData'}).addText('Add element to map'),
+                    new tapc.Button({name: 'removeMapData'}).addText('Remove element from map'),
+                    new tapc.Button({name: 'changeMapDataValue'}).addText('Change element value in map'),
+                    new tapc.Button({name: 'changeMapData'}).addText('Change map object'),
+                ),
+                new tapc.List({name: 'mapTest', repeat: '[key, value] of dict'}).addText('${key}: ${value.line1}'),
+                new tapc.Content().addText('Repeat with Set    ').addToContainer(
+                    new tapc.Button({name: 'addSetData'}).addText('Add element to set'),
+                    new tapc.Button({name: 'removeSetData'}).addText('Remove element from set'),
+                    new tapc.Button({name: 'changeSetData'}).addText('Change set object'),
+                ),
+                new tapc.List({name: 'setList', repeat: 'value of testSet'}).addText('@value'),
+                new tapc.Content().addText('List with explicit items'),
+                new tapc.List({name: 'listTest'}).addToContainer(
+                    new tapc.ListItem().addText('fee'), 
+                    new tapc.ListItem().addText('fi'), 
+                    new tapc.ListItem().addText('fo'), 
+                    new tapc.ListItem().addText('fum'), 
+                )
             )
         );
     }
@@ -192,7 +218,8 @@ class LandingBlade extends ViewModels.BaseBlade {
 
     public onButtonChangeItemPropClick(): void {
         const index = this._tapFx.Utilities.getRandomInt(0, this.data.length - 1);
-        this.data[index].name = `New Name ${this._tapFx.Utilities.getRandomInt(0, 1000)}`;
+        this.data[index].grades = [23, 24, 25];
+        //this.data[index].name = `New Name ${this._tapFx.Utilities.getRandomInt(0, 1000)}`;
     }
 
     public _childPropToggle: boolean = true;
@@ -219,4 +246,77 @@ class LandingBlade extends ViewModels.BaseBlade {
         }
         this._childObjToggle = !this._childObjToggle;
     }
+
+    // add an element to the set
+    public onButtonAddSetDataClick(): void {
+        this.testSet.add(this._tapFx.Utilities.getRandomInt(this.testSet.size, 100));
+    }
+
+    // delete first element in the set
+    public onButtonRemoveSetDataClick(): void {
+        const val = this.testSet.values().next().value;
+        this.testSet.delete(val);
+    }
+
+    // add an element to the Map
+    public onButtonAddMapDataClick(): void {
+        let go = true;
+        while (go) {
+            const key = this._tapFx.Utilities.getRandomInt(this.testSet.size, 100);
+            if (!this.dict.has(key.toString())) {
+                go = false;
+                this.dict.set(key.toString(),  new Address({line1: `${key} New St`, town: 'Portland', state: 'ME', zip: '04102'}));
+            }
+        }
+    }
+
+    // delete first element in the Map
+    public onButtonRemoveMapDataClick(): void {
+        const key: string = this.dict.keys().next().value;
+        this.dict.delete(key);
+    }
+
+    // Change data value on random element in the Map
+    public onButtonChangeMapDataValueClick(): void {
+        let index = this._tapFx.Utilities.getRandomInt(0, this.dict.size - 1);
+        const keys = this.dict.keys();
+        let key = keys.next().value;
+        while (index) {
+            key = keys.next().value;
+            index--;
+        }
+        const stNum = this._tapFx.Utilities.getRandomInt(100, 1000);
+        this.dict.set(key,  new Address({line1: `${stNum} Changed St`, town: 'Portland', state: 'ME', zip: '04102'}));
+        
+    }
+
+
+    public _mapDataToggle: boolean = true;
+    public onButtonChangeMapDataClick(): void {
+        if (this._mapDataToggle) {
+            this.dict = new Map<string, Address>([
+                ['four', new Address({line1: '4 Birch St', town: 'Portland', state: 'ME', zip: '04102'})], 
+                ['five', new Address({line1: '5 Cherry St', town: 'Portland', state: 'ME', zip: '04102'})], 
+                ['six', new Address({line1: '6 Pine St', town: 'Portland', state: 'ME', zip: '04102'})] 
+            ]);
+        } else {
+            this.dict = new Map<string, Address>([
+                ['one', new Address({line1: '1 Maple St', town: 'Portland', state: 'ME', zip: '04102'})], 
+                ['two', new Address({line1: '2 Oak St', town: 'Portland', state: 'ME', zip: '04102'})], 
+                ['three', new Address({line1: '3 Elm St', town: 'Portland', state: 'ME', zip: '04102'})] 
+            ]);
+        }
+        this._mapDataToggle = !this._mapDataToggle;
+    }
+
+    public _setDataToggle: boolean = true;
+    public onButtonChangeSetDataClick(): void {
+        if (this._setDataToggle) {
+            this.testSet = new Set<number>([21, 22, 23]);
+        } else {
+            this.testSet = new Set<number>([10, 11, 12]);
+        }
+        this._setDataToggle = !this._setDataToggle;
+    }
+
 }

@@ -10,6 +10,8 @@ export * from './components/Button';
 export * from './components/Image';
 export * from './components/Icon';
 export * from './components/Link';
+export * from './components/List';
+export * from './components/ListItem';
 export * from './components/TextArea';
 export * from './components/MdcCheckbox';
 export * from './components/TapTestComponent';

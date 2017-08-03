@@ -116,6 +116,22 @@ export class Utilities {
     }    
 
     /**
+     * Determine if the passed value is a collection type (Array, Map or Set)
+     * @param value 
+     */
+    public isCollectionType(value: any): boolean {
+        return value instanceof Array || value instanceof Map || value instanceof Set;
+    }    
+
+    /**
+     * Determine if the passed value is a Date, Object or collection type
+     * @param value 
+     */
+    public isDateObjectCollectionType(value: any): boolean {
+        return value instanceof Date || this.isObject(value) || this.isCollectionType(value);
+    }
+
+    /**
      * For use with Name function to simulate the C# nameof function
      * This function just returns the passed function as a string
      * EX: this.Name(this.Of(() => this.address.line1));

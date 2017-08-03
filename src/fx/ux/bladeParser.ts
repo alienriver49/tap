@@ -67,6 +67,34 @@ export class BladeParser {
         if (node instanceof tapc.Label) {
             el = document.createElement('label');
         }
+        if (node instanceof tapc.List) {
+            const list = node as tapc.List;
+            if (list.isOrdered && !list.attributeRepeat) {
+                el = document.createElement('ol');
+            } else {
+                el = document.createElement('ul');
+            }
+
+            // Special handling for repeats
+            if (list.attributeRepeat) {
+                if (list.content && list.content.length !== 1) {
+                    throw new Error(`When using repeat with a List, the list must contain 1 child element`);
+                }
+                // repeat-for goes on the <li> node
+                const li = document.createElement('li');
+                li.setAttribute(`repeat.for`, list.attributeRepeat);
+                el.appendChild(li);
+                el.style.listStyle = 'none';
+                // now add the content as the template
+                this.parseNode(li, node.content[0]);
+                // Clear repeat and content, so it doesn't interfere with remaining logic
+                list.attributeRepeat = '';
+                list.content = [];
+            }
+        }
+        if (node instanceof tapc.ListItem) {
+            el = document.createElement('li');
+        }
         if (node instanceof tapc.Select) {
             el = document.createElement('select');
         }
@@ -90,13 +118,12 @@ export class BladeParser {
             el = document.createElement('textarea');
         }
         if (node instanceof tapc.Text) {
+            // TODO add support for multiple interpolations (@ symbols) in the text
             const textNode = document.createTextNode(node.text);
-
             bindMatch = bindRegExp.exec(node.text);
             if (bindMatch) {
                 textNode.data = '${' + bindMatch[1] + '}';
             }
-
             parent.appendChild(textNode);
         }
         if (node instanceof tapc.TapTestComponent) {
@@ -161,8 +188,8 @@ export class BladeParser {
         // TODO: support attributes without values, like form's 'novalidate'
         // Use property metadata to identify properties for attributes and events
         match = node.getAttributeName(prop);
-
         if (value && match && match !== void(0)) {
+            const isRepeatFor = node.isRepeatFor(prop);
             const attribute = this._utilities.camelCaseToHyphen(match);
             // If the attribute value starts with '@', then bind it,
             // else if, check for the repeat attribute
@@ -171,7 +198,7 @@ export class BladeParser {
 
             if (bindMatch) {
                 el.setAttribute(`${attribute}.bind`, bindMatch[1]);
-            } else if (attribute === 'repeat') {
+            } else if (isRepeatFor) {
                 el.setAttribute(`${attribute}.for`, value);
             } else {
                 el.setAttribute(attribute, value);

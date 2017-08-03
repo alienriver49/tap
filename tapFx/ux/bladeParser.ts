@@ -67,6 +67,32 @@ export class BladeParser {
         if (node instanceof tapc.Label) {
             el = document.createElement('label');
         }
+        if (node instanceof tapc.List) {
+            let list = node as tapc.List;
+            if (list.isOrdered && !list.attributeRepeat)
+                el = document.createElement('ol');
+            else
+                el = document.createElement('ul');
+            // Special handling for repeats
+            if (list.attributeRepeat){
+                if (list.content && list.content.length !== 1){
+                    throw new Error(`When using repeat with a List, the list must contain 1 child element`)
+                }
+                // repeat-for goes on the <li> node
+                let li = document.createElement('li');
+                li.setAttribute(`repeat.for`, list.attributeRepeat);
+                el.appendChild(li);
+                el.style.listStyle = 'none';
+                // now add the content as the template
+                this.parseNode(li, node.content[0]);
+                // Clear repeat and content, so it doesn't interfere with remaining logic
+                list.attributeRepeat = '';
+                list.content = [];
+            }
+        }
+        if (node instanceof tapc.ListItem) {
+            el = document.createElement('li');
+        }
         if (node instanceof tapc.Select) {
             el = document.createElement('select');
         }
@@ -90,6 +116,7 @@ export class BladeParser {
             el = document.createElement('textarea');
         }
         if (node instanceof tapc.Text) {
+            // TODO add support for multiple interpolations (@ symbols) in the text
             let textNode = document.createTextNode(node.text);
             if (bindMatch = bindRegExp.exec(node.text))
                 textNode.data = '${'+ bindMatch[1] + '}';
@@ -154,13 +181,14 @@ export class BladeParser {
         // TODO: support attributes without values, like form's 'novalidate'
         // Use property metadata to identify properties for attributes and events
         if (value && (match = node.getAttributeName(prop)) && match !== void(0)) {
+            let isRepeatFor = node.isRepeatFor(prop);
             let attribute = this._utilities.camelCaseToHyphen(match);
             // If the attribute value starts with '@', then bind it,
             // else if, check for the repeat attribute
             // otherwise use literal value
             if (bindMatch = bindRegExp.exec(value)) {
                 el.setAttribute(`${attribute}.bind`, bindMatch[1]);
-            } else if (attribute === 'repeat') {
+            } else if (isRepeatFor) {
                 el.setAttribute(`${attribute}.for`, value);
             } else {
                 el.setAttribute(attribute, value);

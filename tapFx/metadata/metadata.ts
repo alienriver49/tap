@@ -7,23 +7,43 @@
  */
 import 'reflect-metadata'
 
-const tapmNoObserveMetadataKey = Symbol("tapcNoObserve");
+const NoObserveMetadataKey = Symbol("tapcNoObserve");
+const NoSyncMetadataKey = Symbol("tapcNoSync");
 
 /**
  * Use this to decorate properties that should not be observed in the extension
  * @decorator
  */
-export function tapmNoObserve(): any {
-    return Reflect.metadata(tapmNoObserveMetadataKey, null);
+export function NoObserve(): any {
+    return Reflect.metadata(NoObserveMetadataKey, true);
 }
 
 /**
- *  Return the value of the tapcAttribute decorator for the passed property
+ *  Return the value of the tapmNoObserve decorator for the passed property
  * or else return undefined (checks prototype chain)
  * @param target The target object
  * @param propertyName The property name to check
  */
-export function noObserve(target: Object, propertyName: string): boolean {
-    let result = Reflect.hasMetadata(tapmNoObserveMetadataKey, target, propertyName);
+export function HasNoObserve(target: Object, propertyName: string): boolean {
+    let result = Reflect.hasMetadata(NoObserveMetadataKey, target, propertyName);
+    return result ? true : false;
+}
+
+/**
+ * Use this to decorate functions that should not be synced to the portal
+ * @decorator
+ */
+export function NoSync(): any {
+    return Reflect.metadata(NoSyncMetadataKey, true);
+}
+
+/**
+ *  Return the value of the tapmNoSync decorator for the passed function
+ * or else return undefined (checks prototype chain)
+ * @param target The target object
+ * @param propertyName The property name to check
+ */
+export function HasNoSync(target: Object, propertyName: string): boolean {
+    let result = Reflect.hasMetadata(NoSyncMetadataKey, target, propertyName);
     return result ? true : false;
 }

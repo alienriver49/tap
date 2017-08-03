@@ -74,7 +74,7 @@ export class Extension {
         // add primitive properties to blade and set it up
         Object.assign(blade, obj.value);
         obj.value = blade;
-        this._tapFx.BindingEngine.resolveSerializedObject(obj, blade, true);
+        this._tapFx.BindingEngine.resolveSerializedObject(obj, true);
 
         let metadata: ISerializedObject =  {
                 property: '',

@@ -70,9 +70,12 @@ export class ProxiedObservable {
                 this.bindingEngine.unobserve(oldValue, '', oldContextId);
         }
 
+        if (!this._utilities.isPrimitive(newValue) && !this._utilities.isDateObjectCollectionType(newValue))
+            throw new Error(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Observed properties can only be primitives, Dates,objects, arrays, sets and maps`)
+
         // If the new value is an object, we need to recursively observe it too
         // and pass appropriate metadata
-        if (newValue instanceof Array || this._utilities.isObject(newValue)){
+        if (this._utilities.isDateObjectCollectionType(newValue)){
             // Check if objects have changed
             // The old value should have an existing context Id, so if the new value
             // is the same object, it should have the same context Id and no change
@@ -116,7 +119,7 @@ export class ProxiedObservable {
     public observe(): void {
         if (this._observer) 
             throw new Error("Property is already being observed.");
-
+        
         this._observer = this._observerLocator.getObserver(this._context, this._property);
 
         this._observer.subscribe(this._boundPropertyChanged);

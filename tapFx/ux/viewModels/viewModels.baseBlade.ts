@@ -41,7 +41,7 @@ export class BaseBlade implements IBaseBlade {
     subtitle: string;
     // TODO: how can we make this limited to the developers?
     // Use a getter/setter for this and check the RpcClient.InstanceId?
-    @tapm.tapmNoObserve()
+    @tapm.NoObserve()
     content: IBaseElement[] = [];
 
     canActivate?(): boolean|Promise<boolean>;

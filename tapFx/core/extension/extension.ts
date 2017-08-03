@@ -267,10 +267,6 @@ export class Extension extends BaseExtension {
     }
 
     private _registerBladeBindings(blade: BaseBlade): any {
-
-        //let bladeId = this._bindingEngine.resolveId(blade);
-
-        //let serializedBlade: ISerializedObject = {_childMetadata: [], _syncObjectContextId: ''};
         let refIds: Set<string> = new Set<string>(); 
         let metadata: ISerializedObject =  {
                 property: '',
@@ -296,33 +292,23 @@ export class Extension extends BaseExtension {
     private _registerBladeFunctions(blade: BaseBlade, bladeId: string): string[] {
         let subscriptionArray: RpcClientSubscription[] = [];
         let returnFuncs: string[] = [];
-        // for now, don't sync the activation lifecycle functions over
-        let funcIgnoreArray = ['constructor', 'activate', 'canActivate', 'deactivate', 'canDeactivate'];
+
         // get the functions from the blade prototype
         let bladeFuncs = this._getBladeFunctions(blade);
         for (let func of bladeFuncs) {
             let funcName = func.funcName;
-            let funcDesc = func.funcDesc;
-            // ignore private functions beginning with _, similar to property observing
-            // for now, we will use a function ignore array to ignore functions we don't want to listen for (like 'constructor')
-            // TODO: determine how to attach get and set functions
-            if (funcName.charAt(0) !== '_' &&
-                funcIgnoreArray.indexOf(funcName) === -1/* &&
-                funcDesc.get === undefined*/
-            ) {
-                // add a subscription which will call the blade's original function with the passed function args
-                let subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + funcName, (data) => {
-                    // call the function and get the result
-                    console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + funcName);
-                    let result = blade[funcName](...data.functionArgs);
+            // add a subscription which will call the blade's original function with the passed function args
+            let subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + funcName, (data) => {
+                // call the function and get the result
+                console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Received message from function: ` + funcName);
+                let result = blade[funcName](...data.functionArgs);
 
-                    // publish the result back to the shell
-                    console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Publishing result from function: ` + funcName);
-                    this._rpc.publish('shell.' + bladeId + '.' + funcName, '', result);
-                });
-                subscriptionArray.push(subscription);
-                returnFuncs.push(funcName);
-            }
+                // publish the result back to the shell
+                console.log(`[TAP-FX][${this._className}][${this._rpc.InstanceId}] Publishing result from function: ` + funcName);
+                this._rpc.publish('shell.' + bladeId + '.' + funcName, '', result);
+            });
+            subscriptionArray.push(subscription);
+            returnFuncs.push(funcName);
         }
 
         // convention - add a subscription for the onButtonRemoveClick which calls the removeBlade function
@@ -355,9 +341,22 @@ export class Extension extends BaseExtension {
         let bladeProto = Object.getPrototypeOf(blade);
         let bladeFuncs = Object.getOwnPropertyNames(bladeProto);
 
+        // for now, don't sync the activation lifecycle functions over
+        let funcIgnoreArray = ['constructor', 'activate', 'canActivate', 'deactivate', 'canDeactivate'];
+
+        let funcs: IFunction[] = [];
         // now lets map that to an array of function information
-        let funcs = bladeFuncs.map((funcName: string): IFunction => {
-            return { funcName: funcName, funcDesc: Object.getOwnPropertyDescriptor(bladeProto, funcName) };
+        bladeFuncs.forEach((funcName: string) => {
+            let funcDesc: PropertyDescriptor = Object.getOwnPropertyDescriptor(bladeProto, funcName)
+
+            // ignore private functions beginning with _, similar to property observing
+            // for now, we will use a function ignore array to ignore functions we don't want to listen for (like 'constructor')
+            // TODO: determine how to attach get and set functions
+            if (funcName.charAt(0) !== '_' &&
+                funcIgnoreArray.indexOf(funcName) === -1/* &&
+                funcDesc.get === undefined*/){
+                    funcs.push({ funcName: funcName, funcDesc: funcDesc});
+                }
         });
 
         return funcs;

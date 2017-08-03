@@ -33,6 +33,7 @@ export interface IBaseElement {
     // Functions to check for decorator metadata
     getEventName(propertyName: string): string | undefined;
     getAttributeName(propertyName: string): string | undefined;
+    isRepeatFor(propertyName: string): boolean;
 }
 
 /**
@@ -66,6 +67,7 @@ export class BaseElement implements IBaseElement {
     @BaseElement.tapcAttribute("hide")
     attributeHide: string;
     @BaseElement.tapcAttribute("repeat")
+    @BaseElement.tapcRepeatFor()
     attributeRepeat: string;
 
     private get _classes(): string[] {
@@ -86,6 +88,7 @@ export class BaseElement implements IBaseElement {
 
     static tapcAttributeMetadataKey = Symbol("tapcAttribute");
     static tapcEventMetadataKey = Symbol("tapcEvent");
+    static tapcRepeatForMetadataKey = Symbol("tapcRepeat");
 
     static tapcAttribute (attributeName: string): any {
         return Reflect.metadata(BaseElement.tapcAttributeMetadataKey, attributeName);
@@ -93,6 +96,10 @@ export class BaseElement implements IBaseElement {
 
     static tapcEvent(eventName: string): any {
         return Reflect.metadata(BaseElement.tapcEventMetadataKey, eventName);
+    }
+
+    static tapcRepeatFor(): any {
+        return Reflect.metadata(BaseElement.tapcRepeatForMetadataKey, true);
     }
 
     /**
@@ -113,6 +120,15 @@ export class BaseElement implements IBaseElement {
     public getEventName(propertyName: string): string | undefined{
         let result = Reflect.getMetadata(BaseElement.tapcEventMetadataKey, this, propertyName);
         return result;
+    }
+
+    /**
+     * If the property is for a repeat.for, then it should have the tapcRepeat decorator to indicate that
+     * @param propertyName The propertyname to check
+     */
+    public isRepeatFor(propertyName: string): boolean {
+        let result = Reflect.hasMetadata(BaseElement.tapcRepeatForMetadataKey, this, propertyName);
+        return result ? true : false;
     }
 }
 

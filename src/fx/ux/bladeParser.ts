@@ -1,14 +1,14 @@
 import { inject } from 'aurelia-framework';
 import * as tapc from './tapcModules';
-import { tapcBase } from './components/tapcBase';
-import { tapcBaseContainer } from './components/tapcBaseContainer';
+import { IBaseElement } from './components/BaseElement';
+import { BaseElementContainer } from './components/BaseElementContainer';
 import { BaseBlade } from './viewModels/viewModels.baseBlade';
 import { ConventionEngine } from './conventionEngine';
 import { Utilities } from './../utilities/utilities';
 
-const attrRegExp: RegExp = /^attribute(.*)/;
-const privateAttrRegExp: RegExp = /^_attribute(.*)/;
-const eventRegExp: RegExp = /^event(.*)/;
+// const attrRegExp: RegExp = /^attribute(.*)/;
+// const privateAttrRegExp: RegExp = /^_attribute(.*)/;
+// const eventRegExp: RegExp = /^event(.*)/;
 const bindRegExp = /^@(.*)/;
 
 @inject(ConventionEngine, Utilities)
@@ -28,25 +28,16 @@ export class BladeParser {
     public parseBladeToHTML(blade: BaseBlade, bladeFunctions: string[]): string {
         // Can't get innerHtml or outerHtml property from template element,
         // so use a div element as the parent with the 'blade' class added
-        let parent: HTMLDivElement = document.createElement('div');
+        const parent: HTMLDivElement = document.createElement('div');
         parent.classList.add('blade');
-
-        // add a remove blade button with the 'removeBladeButton' class added
-        let removeBladeButton = document.createElement('button');
-        removeBladeButton.classList.add('removeBladeButton', 'btn', 'btn-primary');
-        removeBladeButton.name = 'remove';
-        removeBladeButton.textContent = 'Remove';
-        //removeBladeButton.attributes.setNamedItem(styleAttr);
-        parent.appendChild(removeBladeButton);
-
 
         // POC: Could render different types of blades differently
         /*if (blade instanceof FormBlade) {
 
         }*/
-        let bladeContent = blade.content;
-        for (let i = 0; i < bladeContent.length; i++) {
-            let el = this.parseNode(parent, bladeContent[i]);
+        const bladeContent = blade.content;
+        for (const baseElement of bladeContent) {
+            const el = this.parseNode(parent, baseElement);
         }
 
         // use the convention engine to attach click handlers
@@ -60,36 +51,46 @@ export class BladeParser {
      * @param parent 
      * @param node 
      */
-    public parseNode(parent: Element, node: tapcBase): void {
+    public parseNode(parent: Element, node: IBaseElement): void {
         let bindMatch: RegExpExecArray | null;
         let el: HTMLElement | null = null; 
 
-        if (node instanceof tapc.tapcHeading) {
+        if (node instanceof tapc.Heading) {
             el = document.createElement('h' + node.importance);
         }
-        if (node instanceof tapc.tapcDiv) {
+        if (node instanceof tapc.Content) {
             el = document.createElement('div');
         }
-        if (node instanceof tapc.tapcForm) {
+        if (node instanceof tapc.Form) {
             el = document.createElement('form');
         }
-        if (node instanceof tapc.tapcLabel) {
+        if (node instanceof tapc.Label) {
             el = document.createElement('label');
         }
-        if (node instanceof tapc.tapcSelect) {
+        if (node instanceof tapc.Select) {
             el = document.createElement('select');
         }
-        if (node instanceof tapc.tapcOption) {
+        if (node instanceof tapc.Option) {
             el = document.createElement('option');
         }
-        /*if (node instanceof tapc.tapcLineBreak) {
-            el = document.createElement('br');
-        }*/
-        if (node instanceof tapc.tapcInput) {
+        if (node instanceof tapc.Input) {
             el = document.createElement('input');
         }
-        if (node instanceof tapc.tapcText) {
-            let textNode = document.createTextNode(node.text);
+        if (node instanceof tapc.Image) {
+            el = document.createElement('image');
+        }
+        // note: we may want a general use "span" component, if that is the case, Icon would just use that during creation
+        if (node instanceof tapc.Icon) {
+            el = document.createElement('span');
+        }
+        if (node instanceof tapc.Link) {
+            el = document.createElement('a');
+        }
+        if (node instanceof tapc.TextArea) {
+            el = document.createElement('textarea');
+        }
+        if (node instanceof tapc.Text) {
+            const textNode = document.createTextNode(node.text);
 
             bindMatch = bindRegExp.exec(node.text);
             if (bindMatch) {
@@ -98,27 +99,26 @@ export class BladeParser {
 
             parent.appendChild(textNode);
         }
-        if (node instanceof tapc.tapcTapTestComponent) {
+        if (node instanceof tapc.TapTestComponent) {
             el = document.createElement('tap-test-component');
         }
-        if (node instanceof tapc.tapcDataTable) {
-            let dataTable = node as tapc.tapcDataTable;
-            
+        if (node instanceof tapc.DataTable) {
+            const dataTable = node as tapc.DataTable;
             if (!dataTable.attributeColumnConfiguration) {
                 throw new Error(`Column configuration must be set on tapcDataTable`);
             }
 
             el = document.createElement('tap-data-table');
         }
-        if (node instanceof tapc.tapcMdcCheckbox) {
+        if (node instanceof tapc.MdcCheckbox) {
             el = document.createElement('mdc-checkbox');
         }
-        if (node instanceof tapc.tapcButton) {
+        if (node instanceof tapc.Button) {
             el = document.createElement('button');
         }
         if (el) {
             // Add attribute and event handlers
-            for (let prop in node) {
+            for (const prop in node) {
                 if (node.hasOwnProperty(prop)) {
                     this._setAttributes(el, node, prop);
                 }
@@ -136,9 +136,9 @@ export class BladeParser {
             }
 
             // Recursively parse any content
-            if (node instanceof tapcBaseContainer) {  
-                for (let i = 0; i < node.content.length; i++) {
-                    this.parseNode(el, node.content[i]);
+            if (node instanceof BaseElementContainer) {
+                for (const baseElement of node.content) {
+                    this.parseNode(el, baseElement);
                 }
             }
         }
@@ -154,18 +154,22 @@ export class BladeParser {
      * @param node 
      * @param prop 
      */
-    private _setAttributes(el: HTMLElement, node: tapcBase, prop: string): void {
-        let match: RegExpExecArray | null;
+    private _setAttributes(el: HTMLElement, node: IBaseElement, prop: string): void {
+        let match: string | undefined;
         let bindMatch: RegExpExecArray | null;
-        let value = node[prop];
+        const value = node[prop];
         // TODO: support attributes without values, like form's 'novalidate'
-        //if (value && ((match = attrRegExp.exec(prop)) || (match = privateAttrRegExp.exec(prop)) )){
-        if (value && (match = attrRegExp.exec(prop))) {
-            let attribute = this._utilities.camelCaseToHyphen(match[1]);
+        // Use property metadata to identify properties for attributes and events
+        match = node.getAttributeName(prop);
+
+        if (value && match && match !== void(0)) {
+            const attribute = this._utilities.camelCaseToHyphen(match);
             // If the attribute value starts with '@', then bind it,
             // else if, check for the repeat attribute
             // otherwise use literal value
-            if (bindMatch = bindRegExp.exec(value)) {
+            bindMatch = bindRegExp.exec(value);
+
+            if (bindMatch) {
                 el.setAttribute(`${attribute}.bind`, bindMatch[1]);
             } else if (attribute === 'repeat') {
                 el.setAttribute(`${attribute}.for`, value);
@@ -173,8 +177,11 @@ export class BladeParser {
                 el.setAttribute(attribute, value);
             }
         }
-        if (value && (match = eventRegExp.exec(prop))) {
-            el.setAttribute(`${match[1]}.delegate`, value);
+
+        match = node.getEventName(prop);
+        
+        if (value && match && match !== void(0)) {
+            el.setAttribute(`${match}.delegate`, value);
         }
     }
 }

@@ -1,12 +1,14 @@
-import { inject, Factory } from 'aurelia-framework'
+import { inject, Factory } from 'aurelia-framework';
 import { EventAggregator } from 'aurelia-event-aggregator';
-import { ExtensionCommandResult, ExtensionCommandQueue }  from './extensionCommandQueue'
-import ExtensionLoaderEngine from './extensionLoaderEngine'
-import Extension from './extension'
-import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
+
+import { ITapFx } from '../../fx/core/bootstrap';
+import { ExtensionCommandResult, ExtensionCommandQueue } from './extensionCommandQueue';
+import { ExtensionLoaderEngine } from './extensionLoaderEngine';
+import { Extension } from './extension';
+import { PortalBlade, IPortalBladeConfig } from './viewModels.portalBlade';
 
 @inject(EventAggregator, ExtensionCommandQueue, ExtensionLoaderEngine, Factory.of(Extension), 'TapFx')
-class ExtensionManager {
+export class ExtensionManager {
     constructor(
         private _eventAggregator: EventAggregator,
         private _extensionCommandQueue: ExtensionCommandQueue,
@@ -38,7 +40,7 @@ class ExtensionManager {
     /**
      * Loaded extensions currently being managed by the extension manager.
      */
-    extensions: Extension[] = [];
+    public extensions: Extension[] = [];
 
     /**
      * Maps extension names to their ids. This gets set when the load command is received and the key is removed when the unload command is received.
@@ -51,11 +53,11 @@ class ExtensionManager {
      */
     private _onAddBlade(data: any): void {
         console.log('[SHELL] Received addBlade message: ', data);
-        let extensionId = data.extensionId;
-        let extension = this._findExtension(extensionId);
+        const extensionId = data.extensionId;
+        const extension = this._findExtension(extensionId);
         if (extension) {
             // add the blade to the extension
-            let bladeConfig: IPortalBladeConfig = {
+            const bladeConfig: IPortalBladeConfig = {
                 bladeId: data.bladeId,
                 serializedBlade: data.serializedBlade,
                 viewName: data.viewName,
@@ -63,11 +65,13 @@ class ExtensionManager {
                 serializedView: data.view
             };
             // add the blade to the extension
-            let blade = extension.addBlade(bladeConfig);
+            const blade = extension.addBlade(bladeConfig);
 
             // since we know the current command is the extension load command, we will resolve this one. for now, this works since commands are sequential and we know to only call this when appropriate
-            let defer = this._extensionCommandQueue.current.defer;
-            if (defer) defer.resolve({ successful: true, message: 'extension loaded'});
+            const defer = this._extensionCommandQueue.current.defer;
+            if (defer) {
+                defer.resolve({ successful: true, message: 'extension loaded'});
+            }
         }
     }
 
@@ -77,8 +81,8 @@ class ExtensionManager {
      */
     private _onAddBladeFailed(data: any): void {
         console.log('[SHELL] Received addBladeFailed message: ', data);
-        let extensionId = data.extensionId;
-        let extension = this._findExtension(extensionId);
+        const extensionId = data.extensionId;
+        const extension = this._findExtension(extensionId);
         if (extension) {
             // if the extension has no blades then that means we just want to remove it. this would most likely be a case where the initial blade of the extension failed to load, which would mean the extension failed to load.
             if (extension.blades.length === 0) {
@@ -86,13 +90,15 @@ class ExtensionManager {
                 this._performRemoveExtension(extension);
 
                 // TODO: research resolving vs. rejecting
-                let defer = this._extensionCommandQueue.current.defer;
-                if (defer) defer.resolve({ successful: false, message: 'extension load failed'});
+                const defer = this._extensionCommandQueue.current.defer;
+                if (defer) {
+                  defer.resolve({ successful: false, message: 'extension load failed'});
+                }
 
                 // since the extension failed to load we will clear the queue and reroute to the portal index. note: this could go to the previous extension in the future
-                let urlFragment = '/';
+                const urlFragment = '/';
                 this._extensionCommandQueue.clear();
-                this._eventAggregator.publish('shell.router.reroute', { urlFragment: urlFragment });
+                this._eventAggregator.publish('shell.router.reroute', { urlFragment });
             }
         }
     }
@@ -103,17 +109,21 @@ class ExtensionManager {
      */
     private _onRemoveExtension(data: any): void {
         console.log('[SHELL] Received removeExtension message: ', data);
-        let extensionId = data.extensionId;
-        let extension = this._findExtension(extensionId);
-        let defer = this._extensionCommandQueue.current.defer;
+        const extensionId = data.extensionId;
+        const extension = this._findExtension(extensionId);
+        const defer = this._extensionCommandQueue.current.defer;
         if (extension) {
             // remove the extension (blades are taken care of by tap-fx and the remove blade RPC subscription)
             this._performRemoveExtension(extension);
 
             console.log('[SHELL] Finish unloading extension: ' + extension.name);
-            if (defer) defer.resolve({ successful: true, message: 'extension unloaded'});
+            if (defer) {
+                defer.resolve({ successful: true, message: 'extension unloaded'});
+            }
         } else {
-            if (defer) defer.resolve({ successful: false, message: 'extension unload failed: extension not found'});
+            if (defer) {
+                defer.resolve({ successful: false, message: 'extension unload failed: extension not found'});
+            }
         }
     }
 
@@ -123,9 +133,9 @@ class ExtensionManager {
      */
     private _onRemoveExtensionFailed(data: any): void {
         console.log('[SHELL] Received removeExtensionFailed message: ', data);
-        let extensionId = data.extensionId;
-        let extension = this._findExtension(extensionId);
-        let defer = this._extensionCommandQueue.current.defer;
+        const extensionId = data.extensionId;
+        const extension = this._findExtension(extensionId);
+        const defer = this._extensionCommandQueue.current.defer;
         if (extension) {
             // TODO: this needs to redirect to the previous URL since the extension didn't unload (so the URL needs to reflect the correct location)
             //let urlFragment = '/';
@@ -133,9 +143,13 @@ class ExtensionManager {
             //this._eventAggregator.publish('shell.router.reroute', { urlFragment: urlFragment });
 
             console.log('[SHELL] Failed unloading extension: ' + extension.name);
-            if (defer) defer.resolve({ successful: false, message: 'extension unload failed'});
+            if (defer) {
+                defer.resolve({ successful: false, message: 'extension unload failed'});
+            }
         } else {
-            if (defer) defer.resolve({ successful: false, message: 'extension unload failed: extension not found'});
+            if (defer) {
+                defer.resolve({ successful: false, message: 'extension unload failed: extension not found'});
+            }
         }
     }
 
@@ -145,14 +159,14 @@ class ExtensionManager {
      */
     private _onRemoveBlade(data: any): void {
         console.log('[SHELL] Received removeBlade message: ', data);
-        let extensionId = data.extensionId;
-        let extension = this._findExtension(extensionId);
+        const extensionId = data.extensionId;
+        const extension = this._findExtension(extensionId);
         if (extension) {
             // remove the blade
             extension.removeBlade(data.bladeId);
 
             console.log('[SHELL] Finish removing blade for extension: ' + extension.name);
-            // if there are no more blades, remove the extension
+            // if the blade was removed by the user (using the remove button) and there are no more blades, remove the extension
             if (data.manualRemoval && extension.blades.length === 0) {
                 console.log('[SHELL] No more blades left - unloading extension: ' + extension.name);
                 // remove the extension
@@ -185,9 +199,9 @@ class ExtensionManager {
      * @param params 
      * @param queryParams 
      */
-    loadExtension(extensionName: string, params: any[], queryParams: Object): void {
+    public loadExtension(extensionName: string, params: any[], queryParams: object): void {
         // get a new extension id
-        let extensionId = this._tapFx.Utilities.newGuid();
+        const extensionId = this._tapFx.Utilities.newGuid();
         this._extensionIdMap.set(extensionName, extensionId);
 
         // queue the load command
@@ -198,8 +212,9 @@ class ExtensionManager {
         });
 
         // if we have params or query params, queue an event following the load command which will update those params
-        if (params.length > 0 || Object.keys(queryParams).length > 0)
+        if (params.length > 0 || Object.keys(queryParams).length > 0) {
             this._queueUpdateExtensionParams(extensionId, params, queryParams);
+        }
     }
 
     /**
@@ -208,8 +223,8 @@ class ExtensionManager {
      * @param params 
      * @param queryParams 
      */
-    updateExtensionParams(extensionName: string, params: any[], queryParams: Object): void {
-        let extensionId = this._extensionIdMap.get(extensionName);
+    public updateExtensionParams(extensionName: string, params: any[], queryParams: object): void {
+        const extensionId = this._extensionIdMap.get(extensionName);
         if (extensionId) {
             this._queueUpdateExtensionParams(extensionId, params, queryParams);
         } else {
@@ -223,15 +238,17 @@ class ExtensionManager {
      * @param params 
      * @param queryParams 
      */
-    private _queueUpdateExtensionParams(extensionId: string, params: any[], queryParams: Object): void {
+    private _queueUpdateExtensionParams(extensionId: string, params: any[], queryParams: object): void {
         this._extensionCommandQueue.queueCommand(extensionId, () => {
             // update params for that extension
-            this._tapFx.Rpc.publish('tapfx.updateExtensionParams', extensionId, { params: params, queryParams: queryParams });
+            this._tapFx.Rpc.publish('tapfx.updateExtensionParams', extensionId, { params, queryParams });
 
             // for now, automatically resolve (otherwise the queue will get stuck / timeout)
             // note: in the future, should probably subscribe to a 'shell.updateExtensionParams' from the extension to detect when the update params completed and then resolve. similar to what loadExtension and unloadExtension do
-            let defer = this._extensionCommandQueue.current.defer;
-            if (defer) defer.resolve({ successful: true, message: 'extension params updated'});
+            const defer = this._extensionCommandQueue.current.defer;
+            if (defer) {
+                defer.resolve({ successful: true, message: 'extension params updated'});
+            }
         });
     }
 
@@ -239,8 +256,8 @@ class ExtensionManager {
      * Unload an extension.
      * @param extensionName 
      */
-    unloadExtension(extensionName: string): void {
-        let extensionId = this._extensionIdMap.get(extensionName);
+    public unloadExtension(extensionName: string): void {
+        const extensionId = this._extensionIdMap.get(extensionName);
         if (extensionId) {
             this._extensionCommandQueue.queueCommand(extensionId, () => {
                 this._tapFx.Rpc.publish('tapfx.removeExtension', extensionId);
@@ -271,5 +288,3 @@ class ExtensionManager {
         });
     }
 }
-
-export default ExtensionManager;

@@ -1,9 +1,12 @@
 import { inject } from 'aurelia-framework';
 import { FetchConfig } from 'aurelia-auth';
-import Router from './commanding/router';
-import ExtensionManager from './extensionManagement/extensionManager'; // imported and injected for use on the view
+
+import { Router } from './commanding/router';
+import { ExtensionManager } from './extensionManagement/extensionManager'; // imported and injected for use on the view
+
+import 'bootstrap';
 import './app.css';
-import './../tapFx/ux/cssModules';
+import '../fx/ux/cssModules';
 
 @inject(FetchConfig, Router, ExtensionManager)
 export class App {
@@ -17,7 +20,7 @@ export class App {
     /**
      * Called when the app view is activated.
      */
-    activate() {
+    public activate() {
         console.log('[SHELL] App activate');
         this.fetchConfig.configure();
     }
@@ -25,7 +28,7 @@ export class App {
     /**
      * Called by the extension iframes custom element.
      */
-    extensionIframesReady() {
+    public extensionIframesReady() {
         console.log('[SHELL] App activateRouter');
         this.router.activate();
     }

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { relative } from 'path';
-import { dest } from 'gulp';
+import { src, dest } from 'gulp';
 import * as gulpTypeScript from 'gulp-typescript';
 import * as merge from 'merge2';
 import * as ts from 'typescript';
@@ -10,7 +10,7 @@ import * as gulpIf from 'gulp-if';
 import * as gulpReplace from 'gulp-replace';
 
 import { getPackageDirectories } from './directory-utils';
-import { TAP_FX_ROOT, MODULE_PACKAGE_PREFIX } from '../constants';
+import { TAP_FX_ROOT, MODULE_PACKAGE_PREFIX, DEFAULT_COMPILER_OPTIONS } from '../constants';
 
 /** Checks and reports diagnostics if present. */
 function reportDiagnostics(diagnostics: ts.Diagnostic[], baseDir?: string) {
@@ -39,8 +39,8 @@ function formatDiagnostics(diagnostics: ts.Diagnostic[], baseDir = ''): string {
 
 /** Reads an input file and transpiles it into a new file. */
 export function transpileFile(inputPath: string, outputPath: string, options: ts.CompilerOptions) {
-  let inputFile = readFileSync(inputPath, 'utf-8');
-  let transpiled = ts.transpileModule(inputFile, { compilerOptions: options });
+  const inputFile = readFileSync(inputPath, 'utf-8');
+  const transpiled = ts.transpileModule(inputFile, { compilerOptions: options });
 
   if (transpiled.diagnostics) {
     reportDiagnostics(transpiled.diagnostics as ts.Diagnostic[]);
@@ -56,28 +56,34 @@ export function transpileFile(inputPath: string, outputPath: string, options: ts
 /** Creates a TypeScript project from the provided tsconfig and emits the 
  * .js and .d.ts files in the provided output directory with sourcemaps.
  */
-export function compileTypeScript(tsconfigPath: string, outputDir: string, fixupRelativePaths: boolean = false): NodeJS.ReadWriteStream {
-  let moduleNames: string = '';  
-  let tsProject = gulpTypeScript.createProject(tsconfigPath);
-  let tsResult = tsProject.src()
+export function compileTypeScript(rootDir: string, outputDir: string, fixupRelativePaths: boolean = false): NodeJS.ReadWriteStream {
+  let moduleNames: string = '';
+  //const tsProject = gulpTypeScript.createProject(tsconfigPath, tsconfigOverrides);
+  const tsResult = src([
+                    `${rootDir}/**/*!(.spec).ts`,
+                  ])//tsProject.src()
                   .pipe(gulpSourcemaps.init())
-                  .pipe(tsProject());
+                  .pipe(gulpTypeScript(DEFAULT_COMPILER_OPTIONS));
+                  //.pipe(tsProject());
 
   if (fixupRelativePaths) {    
     moduleNames = getPackageDirectories(TAP_FX_ROOT).join('|');
   }
 
-  let relativeModuleImportRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s["'])(?:\\.{1,2}\\/)[./]*?(${moduleNames})\\/?(?:.*)(["'];?)$`, 'gm');
+  const tapFxImportRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s["'])(?:\\.{1,2}\\/)[./]*?(?:fx\/)?(${moduleNames})\\/?(?:.*)(["'];?)(.*)$`, 'gm');
+  const tapImportRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s["'])(?:\\.{1,2}\\/)[./]*?(?:fx\/)?(webComponents|portal)\\/?(?:.*)(["'];?)(.*)$`, 'gm');
 
   return merge([
     // Declaration files
     tsResult.dts
-      .pipe(gulpIf(fixupRelativePaths, gulpReplace(relativeModuleImportRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3`)))
+      .pipe(gulpIf(fixupRelativePaths, gulpReplace(tapFxImportRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3$4`)))
+      .pipe(gulpIf(fixupRelativePaths, gulpReplace(tapImportRegEx, '$1tap-$2$3$4')))
       .pipe(dest(outputDir)),
 
     // JavaScript files
     tsResult.js
-      .pipe(gulpIf(fixupRelativePaths, gulpReplace(relativeModuleImportRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3`)))
+      .pipe(gulpIf(fixupRelativePaths, gulpReplace(tapFxImportRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3$4`)))
+      .pipe(gulpIf(fixupRelativePaths, gulpReplace(tapImportRegEx, '$1$tap-2$3$4')))
       .pipe(gulpSourcemaps.write()).pipe(dest(outputDir))
   ]);
 }

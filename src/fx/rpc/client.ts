@@ -1,10 +1,11 @@
 import { inject } from 'aurelia-dependency-injection';
+
 import { Utilities } from '../utilities/utilities';
 
 /**
  * Object returned by the call to subscribe that contains an unsubscribe function
  */
-export interface RpcClientSubscription {
+export interface IRpcClientSubscription {
     unsubscribe: () => void;
 }
 
@@ -12,7 +13,7 @@ export interface RpcClientSubscription {
  * Object passed to the subscription callbacks when a message of the associated
  * type arrives
  */
-export interface RpcClientSubscriptionCallbackData {
+export interface IRpcClientSubscriptionCallbackData {
     messageType: string;
     data: any;
 }
@@ -20,7 +21,7 @@ export interface RpcClientSubscriptionCallbackData {
 /**
  * Subscription notification callback function signature
  */
-export declare type RpcClientSubscriptionCallback = (RpcClientSubscriptionCallbackData) => void;
+export declare type RpcClientSubscriptionCallback = (rpcClientSubscriptionCallbackData) => void;
 
 /**
  * Properties of the dispatched message object which extends MessageEvent.
@@ -63,14 +64,15 @@ export class RpcClient {
         window.addEventListener('message', this._onWindowMessage, false);
         this._setInternalId();
         this._inIFrame();
-        console.log(`[TAP-FX][${this._className}][${this._guid}][${this._isInIFrame ? "IFRAME" : "SHELL"}] RpcClient constructor`);
+        console.log(`[TAP-FX][${this._className}][${this._guid}][${this._isInIFrame ? 'IFRAME' : 'SHELL'}] RpcClient constructor`);
     }
 
+    public instanceId: string = 'all';
+
     private _guid: string;  // Internal instance identifier
-    private _className: string = (this as Object).constructor.name;
+    private _className: string = (this as object).constructor.name;
     private _subscriptionLookup: { [messageType: string]: RpcClientSubscriptionCallback[] } = {};
     private _isInIFrame: boolean | null = null;
-    public InstanceId: string = 'all';
     private _useFrameIdAddressing: boolean = false;
 
     /**
@@ -103,7 +105,7 @@ export class RpcClient {
     private _onWindowMessage = ((message: IDispatchedMessage): void => {
         // Ignore messages that have a different destination Ids unless the instance accepts all messages 
         if (message && message.data && message.data.messageType && message.data.destId /*&& message.data.messageData*/ &&
-            (message.data.destId === this.InstanceId || this.InstanceId === 'all' || message.data.destId === 'all')) {
+            (message.data.destId === this.instanceId || this.instanceId === 'all' || message.data.destId === 'all')) {
             this._notifySubscriber(message.data.messageType, message.data.messageData);
         }
     }).bind(this);
@@ -139,17 +141,17 @@ export class RpcClient {
      * @returns {RpcClientSubscription} An object that contains a reference to an unsubscribe
      * function that should be called when the subscription is no longer needed 
      */
-    subscribe(messageType: string, callback: RpcClientSubscriptionCallback): RpcClientSubscription {
+    public subscribe(messageType: string, callback: RpcClientSubscriptionCallback): IRpcClientSubscription {
         if (!messageType || typeof messageType !== 'string') {
             throw new Error('RpcClient.subscribe: Event type was invalid.');
         }
 
-        let subscribers = this._subscriptionLookup[messageType] || (this._subscriptionLookup[messageType] = []);
+        const subscribers = this._subscriptionLookup[messageType] || (this._subscriptionLookup[messageType] = []);
         subscribers.push(callback);
 
         return {
             unsubscribe: (): void => {
-                let index = subscribers.indexOf(callback);
+                const index = subscribers.indexOf(callback);
                 if (index !== -1) {
                     subscribers.splice(index, 1);
                 }
@@ -166,7 +168,7 @@ export class RpcClient {
      * @param {any?} data - data to pass 
      * @returns {void} 
      */
-    publish(messageType: string, destId?: string, data?: any): void {
+    public publish(messageType: string, destId?: string, data?: any): void {
         if (!messageType || typeof messageType !== 'string') {
             throw new Error('RpcClient.publish: Message type was invalid.');
         }
@@ -180,9 +182,9 @@ export class RpcClient {
             destId = 'all';
         }
 
-        let message: IMessageEventData = {
-            messageType: messageType,
-            destId: destId,
+        const message: IMessageEventData = {
+            messageType,
+            destId,
             messageData: data
         };
 
@@ -201,7 +203,7 @@ export class RpcClient {
                 messageSent = true;
             } else {
                 // If the destination isn't all children, then only post message to frame with matching Id
-                let frameId = window.frames[i].getAttribute('id');
+                const frameId = window.frames[i].getAttribute('id');
                 if (frameId && frameId === destId) {
                     window.frames[i].postMessage(message, '*');
                     messageSent = true;
@@ -219,11 +221,11 @@ export class RpcClient {
      * @param {string} id Unique string identifying the instance
      * @returns {void} 
      */
-    setInstanceId(id?: string): void {
+    public setInstanceId(id?: string): void {
         // if not specified we will look for it on the iframe
         if (id === undefined) {
             if (this._inIFrame()) {
-                let iframeWindow = window.frameElement;
+                const iframeWindow = window.frameElement;
                 if (!iframeWindow) {
                     throw new Error('Could not find frameElement');
                 }
@@ -238,7 +240,8 @@ export class RpcClient {
         if (!id || typeof id !== 'string') {
             throw new Error('RpcClient.setInstanceId: id was invalid.');
         }
-        this.InstanceId = id;
+
+        this.instanceId = id;
     }
 
     /**
@@ -248,8 +251,7 @@ export class RpcClient {
      * that matches the id parameter and will be used to only send messages to the appropriate iframe windows
      * @returns {void} 
      */
-    setUseFrameIdAddressing(useFrameIdAddressing: boolean): void {
+    public setUseFrameIdAddressing(useFrameIdAddressing: boolean): void {
         this._useFrameIdAddressing = useFrameIdAddressing;
     }
-
 }

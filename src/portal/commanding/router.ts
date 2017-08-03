@@ -1,14 +1,15 @@
-import { inject } from 'aurelia-framework'
-import { History } from 'aurelia-history'
+import { inject } from 'aurelia-framework';
+import { History } from 'aurelia-history';
 import { EventAggregator, Subscription } from 'aurelia-event-aggregator';
-import CommandManager from './commandManager'
+
+import { CommandManager } from './commandManager';
 
 interface IRouterReroute {
     urlFragment: string;
 }
 
 @inject(History, EventAggregator, CommandManager)
-class Router {
+export class Router {
     constructor(
         private _history: History,
         private _eventAggregator: EventAggregator,
@@ -25,12 +26,12 @@ class Router {
     /**
      * Flag for if the router active.
      */
-    isActive: boolean;
+    public isActive: boolean;
 
     /**
      * Get the current url.
      */
-    get currentUrl(): string {
+    public get currentUrl(): string {
         return this._currUrlFragment;
     }
 
@@ -51,7 +52,7 @@ class Router {
     /**
      * Activate the router.
      */
-    activate(): void {
+    public activate(): void {
         if (this.isActive) {
             return;
         }
@@ -62,12 +63,12 @@ class Router {
         this._history.setTitle('Titanium Application Portal');
 
         // create a reroute subscription
-        let subscription = this._eventAggregator.subscribe('shell.router.reroute', (response: IRouterReroute) => {
+        const subscription = this._eventAggregator.subscribe('shell.router.reroute', (response: IRouterReroute) => {
             console.log('[SHELL] Router rerouting to url fragment: ' + response.urlFragment);
             // overwrite these to the root since we want to reroute from root
             this._prevUrlFragment = this._currUrlFragment = this._rootUrlFragment;
             // navigate to the urlFragment and don't trigger the routeHandler by default (which would trigger our _loadUrl function)
-            let triggerRouter = false;
+            const triggerRouter = false;
             this._history.navigate(response.urlFragment, { trigger: triggerRouter });
         });
         this._subscriptions.push(subscription);
@@ -76,7 +77,7 @@ class Router {
     /**
      * Deactivate the router.
      */
-    deactivate(): void {
+    public deactivate(): void {
         this._reset();
 
         this._history.deactivate();
@@ -106,5 +107,3 @@ class Router {
         this._subscriptions = [];
     }
 }
-
-export default Router;

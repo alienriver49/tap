@@ -1,9 +1,12 @@
-import {inject, bindable, bindingMode, DOM, View} from 'aurelia-framework';
+import { inject, bindable, bindingMode, DOM, View } from 'aurelia-framework';
+
+import { ButtonClass, BUTTON_BASE_CLASS } from '../../fx/ux/components/Button';
+import './tap-data-table.css';
 
 // Copied from mun-browse.IColumnConfiguration
 export interface ITapDataTableColumnConfiguration {
     identifier?: string;
-    isMultiselect?: boolean,
+    isMultiselect?: boolean;
     property?: string;
     header?: string;
     filter?: string;
@@ -18,7 +21,7 @@ export interface ITapDataTableColumnConfiguration {
     sortDirection?: string;
     isSorted?: boolean;
     initialSort?: string;
-    //filterOptions?: IFilterOption[];
+    // filterOptions?: IFilterOption[];
     filterValue?: any;
     filterType?: string;
     filterPlaceholder?: string | { from: string, to: string };
@@ -27,29 +30,43 @@ export interface ITapDataTableColumnConfiguration {
     canSelect?: boolean;
     template?: string;
     templateUrl?: string;
-    //templateActionFn?: (column: IColumnConfiguration, record: any, params: any) => void;
+    // templateActionFn?: (column: IColumnConfiguration, record: any, params: any) => void;
     isVisible?: boolean;
     isHidable?: boolean;
     isDraggable?: boolean;
 }
 
 @inject(Element)
-export class TapDataTableCustomElement{
-    @bindable({ defaultBindingMode: bindingMode.oneWay }) columnConfiguration: ITapDataTableColumnConfiguration[];
-    @bindable({ defaultBindingMode: bindingMode.twoWay }) data: any[]; 
+export class TapDataTableCustomElement {
+    @bindable({ defaultBindingMode: bindingMode.oneWay }) 
+    public title: string;
 
-    constructor(private element: Element){
+    @bindable({ defaultBindingMode: bindingMode.oneWay }) 
+    public totalItems: number;
+
+    @bindable({ defaultBindingMode: bindingMode.oneWay }) 
+    public columnConfiguration: ITapDataTableColumnConfiguration[];
+
+    @bindable({ defaultBindingMode: bindingMode.twoWay }) 
+    public data: any[];
+
+    public buttonClassBase: string = BUTTON_BASE_CLASS;
+    public buttonClass: ButtonClass = ButtonClass;
+
+    constructor(
+        private _element: Element
+    ) {
     }
 
-    public created(owningView: View, myView: View){
-        let dmf = myView;
+    public created(owningView: View, myView: View) {
+        //let dmf = myView;
     }
 
-    public attached(){
-        let dmf = 'test';
+    public attached() {
+        //let dmf = 'test';
     }
 
-    public bind(bindingContext: Object){
-        let dmf = bindingContext;
+    public bind(bindingContext: object) {
+        //let dmf = bindingContext;
     }
 }

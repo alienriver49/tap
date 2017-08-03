@@ -15,7 +15,7 @@ export var config = {
       scope: ['munisWebApi'],
       scopeDelimiter: ' ',
       state: '',  // Where do we get the value for this param??
-      nonce: function() { return Math.random(); },
+      nonce: () => Math.random(),
       redirectUri: window.location.origin || window.location.protocol + '//' + window.location.host,
       requiredUrlParams: ['scope', 'nonce', 'state'],
       optionalUrlParams: [],

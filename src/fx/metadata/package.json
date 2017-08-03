@@ -1,0 +1,11 @@
+{
+  "name": "tap-fx-metadata",
+  "version": "0.1.0",
+  "description": "Metadata module for TAP",
+  "main": "tap-fx-core.js",
+  "typings": "src/index.d.ts",
+  "license": "MIT",
+  "dependencies": {
+    "reflect-metadata": "^0.1.10"
+  }
+}

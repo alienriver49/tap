@@ -1,9 +1,11 @@
-import { inject } from 'aurelia-framework'
-import ExtensionManager from './../extensionManagement/extensionManager'
-import Command from './command'
+import { inject } from 'aurelia-framework';
+
+import { ITapFx } from '../../fx/core/bootstrap';
+import { ExtensionManager } from './../extensionManagement/extensionManager';
+import { Command } from './command';
 
 @inject(ExtensionManager, 'TapFx')
-class CommandManager {
+export class CommandManager {
     constructor(
         private _extensionManager: ExtensionManager,
         private _tapFx: ITapFx,
@@ -15,12 +17,12 @@ class CommandManager {
      * @param from The URL fragment being navigated from.
      * @param to The URL fragment being navigated to.
      */
-    handleRouteChange(from: string, to: string): void {
+    public handleRouteChange(from: string, to: string): void {
         console.log('[SHELL] Handle route change from "' + from + '" to "' + to + '".');
 
         // resolve the URL fragments into usable commands.
-        let fromCommand = this.resolveUrlToCommand(from);
-        let toCommand = this.resolveUrlToCommand(to);
+        const fromCommand = this.resolveUrlToCommand(from);
+        const toCommand = this.resolveUrlToCommand(to);
 
         // if both extensions are blank '' it means we don't need to load any extension since this is the portal home
         if (fromCommand.extensionName === toCommand.extensionName && toCommand.extensionName === '') {
@@ -47,19 +49,19 @@ class CommandManager {
      * Resolve a URL fragment to a command. If split, this would be part of the Extension Resolver Engine.
      * @param url 
      */
-    resolveUrlToCommand(url: string): Command {
+    public resolveUrlToCommand(url: string): Command {
         // URL fragment parsing (may change this to use a regex in the future)
         let fragment: string = url;
         let queryString: string = '';
-        let queryIndex = fragment.indexOf('?');
+        const queryIndex = fragment.indexOf('?');
         if (queryIndex !== -1) {
             fragment = url.substr(0, queryIndex);
             queryString = url.substr(queryIndex + 1);
         }
-        let fragmentArr = fragment.slice(1).split('/');
+        const fragmentArr = fragment.slice(1).split('/');
         
         // form the command
-        let command = new Command();
+        const command = new Command();
         command.extensionName = fragmentArr[0];
         command.params = (fragmentArr.length > 1 ? fragmentArr.slice(1) : []);
         command.queryParams = (queryString.length > 0 ? this._tapFx.Utilities.convertQueryStringToObject(queryString) : {});
@@ -94,5 +96,3 @@ class CommandManager {
         this._extensionManager.unloadExtension(command.extensionName);
     }
 }
-
-export default CommandManager;

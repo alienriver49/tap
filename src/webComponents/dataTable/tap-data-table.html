@@ -1,19 +1,15 @@
 <template>
-    <div style="border: 2px solid black; padding: 10px; margin: 10px">
-        <div><strong>${title}</strong></div>
-        <table border="1">
+    <div class="tap-data-table">
+        <div><strong>${title} ${ totalItems ? '(' + totalItems + ')' : ''}</strong></div>
+        <table class="table">
             <thead>
                 <tr>
-                    <th repeat.for='column of columnConfiguration'>${column.header}</th>
+                    <th repeat.for='column of columnConfiguration' class.bind="column.headerClass">${column.header}</th>
                 </tr>
             </thead>
             <tbody>
                 <tr repeat.for='row of data'>
-                    <td if.bind='row[columnConfiguration[0].property] !== void(0)'>${row[columnConfiguration[0].property]}</td>
-                    <td if.bind='row[columnConfiguration[1].property] !== void(0)'>${row[columnConfiguration[1].property]}</td>
-                    <td if.bind='row[columnConfiguration[2].property] !== void(0)'>${row[columnConfiguration[2].property]}</td>
-                    <td if.bind='row[columnConfiguration[3].property] !== void(0)'>${row[columnConfiguration[3].property]}</td>
-                    <td if.bind='row[columnConfiguration[4].property] !== void(0)'>${row[columnConfiguration[4].property]}</td>
+                    <td repeat.for="column of columnConfiguration" class.bind="column.columnClass" if.bind='row[column.property] !== void(0)'>${row[column.property] | formatCell:column}</td>
                 </tr>
             </tbody>
         <table>

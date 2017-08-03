@@ -1,11 +1,13 @@
 import { join } from 'path';
 import * as rollup from 'rollup';
 
-const rollupTypeScript = require('rollup-plugin-typescript');
-const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const rollupNodeResolve = require('rollup-plugin-node-resolve');
+const rollupPostCss = require('rollup-plugin-postcss');
+const rollupPluginCommonJs = require('rollup-plugin-commonjs');
 
-import { TAP_FX_ROOT } from '../constants';
+import { getPackageDirectories } from './directory-utils';
+import { kebabCase } from './string-utils';
+import { TAP_FX_ROOT, MODULE_PACKAGE_PREFIX, DEFAULT_COMPILER_OPTIONS } from '../constants';
 
 export interface IRollupBundleConfig {
     entry: string;
@@ -13,38 +15,45 @@ export interface IRollupBundleConfig {
     format: 'es' | 'umd';
     dest: string;
     version: string;
-    tsconfigPath: string;
 }
 
-const ROLLUP_GLOBALS = {
+const ROLLUP_GLOBALS: any = {
     'aurelia-bootstrapper': 'aurelia-bootstrapper',
     'aurelia-dependency-injection': 'aurelia-dependency-injection',
     'aurelia-binding': 'aurelia-binding',
     'aurelia-framework': 'aurelia-framework',
     'aurelia-fetch-client': 'aurelia-fetch-client',
     'aurelia-auth': 'aurelia-auth',
-    'tap-fx-binding': 'tap-fx-binding',
-    'tap-fx-core': 'tap-fx-core',
-    'tap-fx-rpc': 'tap-fx-rpc',
-    'tap-fx-security': 'tap-fx-security',
-    'tap-fx-utilities': 'tap-fx-utilities',
-    'tap-fx-ux': 'tap-fx-ux'
+    'numeral': 'numeral',
+    'moment': 'moment',
+    'reflect-metadata': 'reflect-metadata'
 };
+
+// Add the TAP packages to the rollup globals
+const moduleNames = getPackageDirectories(TAP_FX_ROOT);
+moduleNames.forEach(name => {
+    const fullPackageName = MODULE_PACKAGE_PREFIX + kebabCase(name);
+    ROLLUP_GLOBALS[fullPackageName] = fullPackageName;
+});
 
 /**
  * Creates a rollup bundle from the provided configuration.
  * @param config The rollup bundle configuration options.
  */
 export function createModuleBundle(config: IRollupBundleConfig): Promise<void> {
-    let bundleOptions = {
+    const bundleOptions = {
         context: 'this',
         external: Object.keys(ROLLUP_GLOBALS),
         entry: config.entry,
         plugins: [
             rollupNodeResolve(),
-            rollupTypeScript({
-                typescript: require('typescript'),
-                tsconfig: require(config.tsconfigPath)
+            rollupPostCss({
+                extensions: ['.css']
+            }),
+            rollupPluginCommonJs({
+                namedExports: {
+                    'node_modules\aurelia-event-aggregator\dist\commonjs\aurelia-event-aggregator.js': ['EventAggregator']
+                }
             })
         ]
     };
@@ -55,10 +64,10 @@ export function createModuleBundle(config: IRollupBundleConfig): Promise<void> {
     * License: MIT
     */`;
 
-    let writeOptions = {
+    const writeOptions = {
         moduleId: '',
         moduleName: config.moduleName,
-        banner: banner,
+        banner,
         format: config.format,
         dest: config.dest,
         globals: ROLLUP_GLOBALS,

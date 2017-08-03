@@ -1,7 +1,11 @@
-import { tapcForm, ITapcFormConfig } from './../components/tapcForm';
-import { BaseBlade } from './viewModels.baseBlade';
+import { BaseBlade, IBaseBlade } from './viewModels.baseBlade';
+import { Form, IFormConfig } from './../components/Form';
 
-export class FormBlade extends BaseBlade {
+export interface IFormBlade extends IBaseBlade {
+    addForm(formConfig?: IFormConfig): Form;
+}
+
+export class FormBlade extends BaseBlade implements IFormBlade {
     constructor() {
         super();
     }
@@ -10,8 +14,8 @@ export class FormBlade extends BaseBlade {
      * Add a form to this blade and return a reference to that form.
      * @param formConfig 
      */
-    public addForm(formConfig?: ITapcFormConfig): tapcForm {
-        let form = new tapcForm(formConfig);
+    public addForm(formConfig?: IFormConfig): Form {
+        const form = new Form(formConfig);
 
         this.content.push(form);
 

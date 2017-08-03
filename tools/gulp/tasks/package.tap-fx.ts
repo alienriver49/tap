@@ -11,13 +11,14 @@ import {
     TAP_FX_ES2015_BUNDLE_NAME,
     TAP_FX_PACKAGE_JSON_PATH,
     RELEASE_TAP_FX_ROOT,
-    RELEASE_TAP_FX_TYPINGS_ROOT
+    RELEASE_TAP_FX_BUILD_ROOT
  } from '../constants';
 import { compileTypeScript, transpileFile } from '../utils/ts-helper';
+import { lintTs } from '../utils/lint-utils';
 
 task('build:tap-fx', (done) => {    
     return runSequence(
-        //'lint:ts',
+        'lint:ts:tap-fx',
         'clean:release:tap-fx',
         'compile:tap-fx',
         'bundle:tap-fx',
@@ -27,20 +28,24 @@ task('build:tap-fx', (done) => {
     );
 });
 
+/** Lints the TypeScript for the tap-fx package */
+task('lint:ts:tap-fx', () => {
+    return lintTs([join(TAP_FX_ROOT, '**/*!(.spec).ts')]);
+});
+
 task('compile:tap-fx', () => {
-    let tsconfigPath = join(TAP_FX_ROOT, 'tsconfig.json');
-    return compileTypeScript(tsconfigPath, RELEASE_TAP_FX_TYPINGS_ROOT);
+    //const tsconfigPath = join(TAP_FX_ROOT, 'tsconfig.json');
+    return compileTypeScript(TAP_FX_ROOT, RELEASE_TAP_FX_BUILD_ROOT);
 });
 
 /** Creates the tap-fx bundle */
 task('bundle:tap-fx', () => {
     return createModuleBundle({
         moduleName: 'tap-fx',
-        entry: join(RELEASE_TAP_FX_TYPINGS_ROOT, 'index.js'),
+        entry: join(RELEASE_TAP_FX_BUILD_ROOT, 'index.js'),
         dest: join(RELEASE_TAP_FX_ROOT, TAP_FX_ES2015_BUNDLE_NAME),
         format: 'es',
-        version: require(`${TAP_FX_ROOT}/package.json`).version,
-        tsconfigPath: join(TAP_FX_ROOT, 'tsconfig.json')
+        version: require(`${TAP_FX_ROOT}/package.json`).version
     });
 });
 
@@ -51,5 +56,5 @@ task('copy:package:tap-fx', () => {
 
 /** Cleans all javascript files from the built typings */
 task('clean:tap-fx:javascript', () => {
-    return del([join(RELEASE_TAP_FX_TYPINGS_ROOT, '**/*.js')]);
+    return del([join(RELEASE_TAP_FX_BUILD_ROOT, '**/*.js')]);
 });

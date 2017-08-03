@@ -19,19 +19,19 @@ System.config({
   },
 
   packages: {
-    "exts": {
+    "src/exts": {
       "defaultJSExtensions": true,
       "defaultExtension": "ts"
     },
-    "portal": {
+    "src/portal": {
       "defaultJSExtensions": true,
       "defaultExtension": "ts"
     },
-    "tapFx": {
+    "src/fx": {
       "defaultJSExtensions": true,
       "defaultExtension": "ts"
     },
-    "webComponents": {
+    "src/webComponents": {
       "defaultJSExtensions": true,
       "defaultExtension": "ts"
     }
@@ -67,8 +67,10 @@ System.config({
     "bootstrap-css": "github:twbs/bootstrap@3.3.7/css/bootstrap.min.css",
     "css": "github:systemjs/plugin-css@0.1.35",
     "material-components-web": "npm:material-components-web@0.15.0",
-    //"tap-fx": "tapFx/index",
-    "tap-fx": "npm:tap-fx@0.1.0",
+    "moment": "npm:moment@2.18.1",
+    "numeral": "npm:numeral@2.0.6",
+    "reflect-metadata": "npm:reflect-metadata@0.1.10",
+    "tap-fx": "src/fx/index",
     "typescript": "npm:typescript@2.4.1",
     "github:jspm/nodelibs-assert@0.1.0": {
       "assert": "npm:assert@1.4.1"
@@ -607,6 +609,9 @@ System.config({
     "npm:miller-rabin@4.0.0": {
       "bn.js": "npm:bn.js@4.11.7",
       "brorand": "npm:brorand@1.1.0"
+    },
+    "npm:numeral@2.0.6": {
+      "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:os-browserify@0.1.2": {
       "os": "github:jspm/nodelibs-os@0.1.0"

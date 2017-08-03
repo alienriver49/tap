@@ -4,4 +4,5 @@ export * from './extension/extension';
 
 export * from './http/http';
 
+export * from './bootstrap';
 export * from './deferredPromise';

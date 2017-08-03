@@ -1,7 +1,18 @@
 {
+  "extends": [
+    "tslint:recommended",
+    "tslint-eslint-rules"
+  ],
   "rules": {
-    "member-access": false,    
+    "max-classes-per-file": [false],
+    "member-access": true,   
+    "member-ordering": [false],
+    "ordered-imports": [false],
+    "max-line-length": [false],
+    "comment-format": [false],
+    "one-variable-per-declaration": [false],
     "no-any": false,
+    "arrow-parens": false,
     "no-inferrable-types": false,
     "no-internal-module": true,
     "no-var-requires": false,
@@ -30,6 +41,7 @@
     "forin": true,
     "label-position": true,
     "no-arg": true,
+    "no-bitwise": false,
     "no-conditional-assignment": true,
     "no-console": [
       true,
@@ -43,6 +55,7 @@
     "no-debugger": true,
     "no-duplicate-variable": true,
     "no-empty": false,
+    "no-empty-interface": false,
     "no-eval": true,
     "no-null-keyword": false,
     "no-shadowed-variable": true,
@@ -103,8 +116,14 @@
       "check-branch",
       "check-decl",
       "check-operator",
+      "check-module",
       "check-separator",
-      "check-type"
+      "check-type",
+      "check-preblock"
     ]
-  }
+  },
+  "brace-style": [
+    true,
+    "stroustrup"
+  ]
 }

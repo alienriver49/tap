@@ -1,5 +1,5 @@
-import {inject} from 'aurelia-dependency-injection';
-import {customElement} from 'aurelia-templating';
+import { inject } from 'aurelia-dependency-injection';
+import { customElement } from 'aurelia-templating';
 
 @customElement('extension-iframes')
 @inject(Element)
@@ -15,7 +15,7 @@ export class ExtensionIframes {
      * Called when bound to the view.
      * @param bindingContext 
      */
-    bind(bindingContext: any) {
+    public bind(bindingContext: any) {
         this._bindingContext = bindingContext;
         
     }
@@ -23,7 +23,7 @@ export class ExtensionIframes {
     /**
      * Called when attached to the view.
      */
-    attached() {
+    public attached() {
         // if the parent view model (binding context) has an extensionIframesReady function, call it. used by App
         if ('extensionIframesReady' in this._bindingContext) {
             this._bindingContext.extensionIframesReady();

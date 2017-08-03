@@ -1,5 +1,7 @@
-import { inject } from 'aurelia-framework'
-import DeferredPromise from './../../tapFx/core/deferredPromise' // TODO - expose this via tapFx object
+import { inject } from 'aurelia-framework';
+
+import { ITapFx } from '../../fx/core/bootstrap';
+import { DeferredPromise } from '../../fx/core/deferredPromise'; // TODO - expose this via tapFx object
 
 /**
  * Class for storing and transferring the results of extension commands (load, unload, etc.).
@@ -10,17 +12,17 @@ export class ExtensionCommandResult {
     /**
      * Whether the extension command was successful.
      */
-    successful: boolean;
+    public successful: boolean;
     /**
      * A message to accompany the result.
      */
-    message: string;
+    public message: string;
 }
 
 /**
  * Interface for storing command information.
  */
-interface ICommand {
+export interface ICommand {
     extensionId: string;
     commandId: string;
     defer: DeferredPromise<ExtensionCommandResult>;
@@ -46,18 +48,18 @@ export class ExtensionCommandQueue {
     /**
      * Information about the current command in the queue.
      */
-    current: ICommand = {} as ICommand;
+    public current: ICommand = {} as ICommand;
 
     /**
      * Queue an extension command call.
      * @param extensionId 
      * @param commandCall 
      */
-    queueCommand(extensionId: string, commandCall: Function): void {
+    public queueCommand(extensionId: string, commandCall: () => void): void {
         // create a command id to be associated with this
-        let commandId = this._tapFx.Utilities.newGuid();
+        const commandId = this._tapFx.Utilities.newGuid();
         // new up a deferred promise
-        let defer: DeferredPromise<ExtensionCommandResult> = new DeferredPromise<ExtensionCommandResult>();
+        const defer: DeferredPromise<ExtensionCommandResult> = new DeferredPromise<ExtensionCommandResult>();
 
         // append to the promise queue
         this._commandPromiseQueue = this._commandPromiseQueue.then((result) => {
@@ -77,9 +79,7 @@ export class ExtensionCommandQueue {
     /**
      * "Clear" the queue, currently resets the promise.
      */
-    clear() {
+    public clear() {
         this._commandPromiseQueue = Promise.resolve<ExtensionCommandResult>({successful: true, message: ''});
     }
 }
-
-export default ExtensionCommandQueue;

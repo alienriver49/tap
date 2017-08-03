@@ -10,7 +10,7 @@ export class DeferredPromise<T> {
         });
     }
 
-    promise: Promise<T>;
-    resolve: (value?: T | PromiseLike<T> | undefined) => void;
-    reject: (reason?: any) => void;
+    public promise: Promise<T>;
+    public resolve: (value?: T | PromiseLike<T> | undefined) => void;
+    public reject: (reason?: any) => void;
 }

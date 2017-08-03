@@ -1,13 +1,17 @@
-import { inject, Factory} from 'aurelia-framework'
-import {Container} from 'aurelia-dependency-injection';
-import {Loader, TemplateRegistryEntry} from 'aurelia-loader';
-import {DefaultLoader, TextTemplateLoader} from 'aurelia-loader-default';
-import {BindingLanguage, ViewEngine, ModuleAnalyzer, ViewResources, View, ViewCompiler } from 'aurelia-templating';
-import {HTMLImportTemplateLoader} from 'aurelia-html-import-template-loader'
-import { TemplatingBindingLanguage } from 'aurelia-templating-binding'
-import {PortalBlade, IPortalBladeConfig} from './viewModels.portalBlade'
-import DeferredPromise from './../../tapFx/core/deferredPromise'; // TODO: add to tapFx object
-import {IChildMetadata, ISerializedObject, IUnresolvedRef} from './../../tapFx/binding/bindingEngine'; // TODO: move these to typings
+import { inject, Factory } from 'aurelia-framework';
+import { Container } from 'aurelia-dependency-injection'; 
+import { Loader, TemplateRegistryEntry } from 'aurelia-loader';
+import { DefaultLoader, TextTemplateLoader } from 'aurelia-loader-default';
+import { BindingLanguage, ViewEngine, ModuleAnalyzer, ViewResources, View, ViewCompiler } from 'aurelia-templating';
+import { HTMLImportTemplateLoader } from 'aurelia-html-import-template-loader';
+import { TemplatingBindingLanguage } from 'aurelia-templating-binding';
+
+import { ITapFx } from '../../fx/core/bootstrap';
+import { DeferredPromise } from '../../fx/core/deferredPromise'; // TODO: add to tapFx object
+import { ISerializedObject, IUnresolvedRef } from '../../fx/binding/bindingEngine'; // TODO: move these to typings
+import { Utilities } from '../../fx/utilities/utilities';
+
+import { PortalBlade, IPortalBladeConfig } from './viewModels.portalBlade';
 
 export interface IExtensionResources {
     container: Container;
@@ -19,9 +23,10 @@ export interface IExtensionResources {
     defaultLoader: DefaultLoader;
 }
 
-@inject(Container, ViewResources, Loader, TextTemplateLoader, Factory.of(PortalBlade), 'TapFx')
+@inject(Utilities, Container, ViewResources, Loader, TextTemplateLoader, Factory.of(PortalBlade), 'TapFx')
 export class Extension {
     constructor(
+        private _utilities: Utilities,
         private _globalContainer: Container,
         private _globalViewResources: ViewResources,
         private _defaultLoader: DefaultLoader,
@@ -34,11 +39,11 @@ export class Extension {
         // Create a new child container for every extension
         this._container = new Container();
         this._container.parent = _globalContainer;
-	    this._container.registerSingleton(TemplatingBindingLanguage, TemplatingBindingLanguage);
+        this._container.registerSingleton(TemplatingBindingLanguage, TemplatingBindingLanguage);
         // Create child ViewResources for every extension
         this._viewResources = new ViewResources(_globalViewResources);
         // Create loader for HTML Imports
-        this._htmlImportLoader = new HTMLImportTemplateLoader("");
+        this._htmlImportLoader = new HTMLImportTemplateLoader('');
 
         // Create a new ViewCompiler and ViewEngine for the extension
         this._viewCompiler = new ViewCompiler(this._container.get(TemplatingBindingLanguage) as BindingLanguage, this._viewResources);
@@ -61,79 +66,28 @@ export class Extension {
             viewCompiler: this._viewCompiler,
             viewEngine: this._viewEngine,
             defaultLoader: this._defaultLoader,
-        }
+        };
     }
 
-    private _seen: Object[] = [];
+    private _seen: object[] = [];
     private _seenFlag: string = '$$__checked__$$';
     private _unresolvedRefs: IUnresolvedRef[] = [];
 
-    private _registerBladeBindings(objectID: string, obj: PortalBlade | ISerializedObject, parentContextId?: string): void {
-        if (!parentContextId){
-            this._seen = [];
-            this._unresolvedRefs = [];
-        }
-        
-        // If this object has already been seen, don't dive in again
-        if (obj.hasOwnProperty(this._seenFlag))
-            return ;        
+    private _registerBladeBindings(obj: ISerializedObject, blade: PortalBlade): void {
+        // add primitive properties to blade and set it up
+        Object.assign(blade, obj.value);
+        obj.value = blade;
+        this._tapFx.BindingEngine.resolveSerializedObject(obj, blade, true);
 
-        this._tapFx.BindingEngine.resolveId(obj, objectID, parentContextId);
-
-        // Recursively register any child objects first
-        if (obj.hasOwnProperty('_childMetadata')){
-            let childMetadata: IChildMetadata[] = obj['_childMetadata'];
-            childMetadata.forEach((metadata) => {
-                // Check if there is already a mapped context with the passed Id
-                let existingChildObject = this._tapFx.BindingEngine.getContextById(metadata.contextId);
-                if (existingChildObject){
-                    // If so, we assume it's being observed and assign that to the parent object
-                    obj[metadata.property] = existingChildObject;
-                }else{
-                    // If there is a value for the object, assign it
-                    if (metadata.value){
-                        let childObject: ISerializedObject = metadata.value;
-                        // Must be an object, so add a temporary flag property to objects to prevent infinite loop from circular references
-                        obj[this._seenFlag] = true;
-                        this._seen.push(obj);
-
-                        this._registerBladeBindings(metadata.contextId, childObject, metadata.parentId);
-                        // And reinstantiate them on the parent object
-                        obj[metadata.property] = childObject;
-                    }else{
-                        // Otherwise reference will be resolved later
-                        this._unresolvedRefs.push({context: obj, property: metadata.property, refId: metadata.contextId});
-                    }
-                }
-            });
-        }
-
-        if (!parentContextId){
-            // First resolve the unresolved references
-            this._unresolvedRefs.forEach((ref) => {
-                let existingObject = this._tapFx.BindingEngine.getContextById(ref.refId);
-                if (!existingObject)
-                    throw new Error(`SHELL: Cannot resolve a reference for context Id: ${ref.refId}`);
-                ref.context[ref.property] = existingObject;
-            })
-            // Remove the temporary flags from the objects
-            this._seen.forEach((o) => {
-                delete o[this._seenFlag];
-            });
-
-            let refIds: Set<string> = new Set<string>(); 
-            for (let prop in obj) {
-                // only register blade's own properties and not those on the prototype chain
-                // anything starting with an underscore is treated as a private property and is not watched for changes
-                // skip Functions
-                if (obj.hasOwnProperty(prop) &&
-                    prop.charAt(0) !== '_' &&
-                    this._tapFx.Utilities.classOf(obj[prop]) !== '[object Function]'
-                ) {
-                    this._tapFx.BindingEngine.observe(obj, prop, refIds, this.id, parentContextId);
-                }
-            }
-        }
+        const metadata: ISerializedObject =  {
+            property: '',
+            contextId: '',
+            parentId: '',
+            value: null,
+            type: '',
+            childMetadata: [] 
+        };
+        this._tapFx.BindingEngine.observeObject(metadata, blade, new Set<string>(), this.id);
     }
 
     private _unregisterBladeBindings(blade: PortalBlade): void {
@@ -144,19 +98,19 @@ export class Extension {
         this._tapFx.BindingEngine.unobserveAll();
     }
 
-    private _registerBladeFunctions(bladeID: string, blade: PortalBlade, functions: string[]) {
+    private _registerBladeFunctions(bladeId: string, blade: PortalBlade, functions: string[]) {
         console.log('[SHELL] Attaching blade functions: ', functions);
         // loop through all the passed functions and add them as a function to the serialized blade which will publish a message with the function data
-        for (let func of functions) {
-            var extId = this.id;
+        for (const func of functions) {
+            const extId = this.id;
             blade[func] = function() {
                 // publish the function call to the extension
                 console.log('[SHELL] Publishing message from function: ' + func);
-                this._tapFx.Rpc.publish('tapfx.' + bladeID + '.' + func, extId, { functionArgs: Array.from(arguments)/*[...arguments]*/ });
+                this._tapFx.Rpc.publish('tapfx.' + bladeId + '.' + func, extId, { functionArgs: Array.from(arguments)/*[...arguments]*/ });
                 
                 // set up a subscription for any result from the calling of the function in the extension
-                let resultPromise = new DeferredPromise();
-                let subscription = this._tapFx.Rpc.subscribe('shell.' + bladeID + '.' + func, (data) => {
+                const resultPromise = new DeferredPromise();
+                const subscription = this._tapFx.Rpc.subscribe('shell.' + bladeId + '.' + func, (data) => {
                     console.log('[SHELL] Receiving result from function: ' + func + ' result: ', data);
                     resultPromise.resolve(data);
 
@@ -164,28 +118,23 @@ export class Extension {
                     subscription.unsubscribe();
                 });
 
-                return resultPromise.promise.then((result) => { return result; });
+                return resultPromise.promise.then(result => result);
             };
-        };
+        }
     }
 
     /**
      * Add a blade to an extension.
      * @param config
      */
-    addBlade(config: IPortalBladeConfig): PortalBlade {
-        // TODO: Figure this out using this._portalBladeFactory
-        let blade = new PortalBlade(this._tapFx, this, config) /*this._portalBladeFactory(this, config)*/;
+    public addBlade(config: IPortalBladeConfig): PortalBlade {
+        const blade = this._portalBladeFactory(this, config);
         // Should we move these functions to PortalBlade?
-        Object.assign(blade, config.serializedBlade);
-        this._registerBladeBindings(config.bladeId, blade);
+        this._registerBladeBindings(config.serializedBlade as ISerializedObject, blade);
         this._registerBladeFunctions(config.bladeId, blade, config.functions);
 
-        // Either load the serialized view or specified HTML file
-        if (config.serializedView)
-            blade.addViewFromSerializedHtml();
-        else
-            blade.addViewFromViewName();
+        // create and add the view for the blade
+        blade.createAndAddView();
 
         this.blades.push(blade);
         
@@ -193,15 +142,26 @@ export class Extension {
     }
 
     /**
+     * Add a blade's view to the DOM.
+     * @param bladeId 
+     */
+    public addBladeView(bladeId: string): void {
+        const blade = this.blades.find((b) => b.bladeId === bladeId);
+
+        if (blade) {
+            blade.addView();
+        }
+    }
+
+    /**
      * Remove a blade and it's binding from an extension.
      * @param bladeId 
      */
-    removeBlade(bladeId: string): void {
-        let index = this.blades.findIndex((b) => {
-            return b.bladeId === bladeId;
-        });
+    public removeBlade(bladeId: string): void {
+        const index = this.blades.findIndex((b) => b.bladeId === bladeId);
+
         if (index !== -1) {
-            let blade = this.blades[index];
+            const blade = this.blades[index];
             this._unregisterBladeBindings(blade);
             this.blades.splice(index, 1);
             blade.removeView();
@@ -209,13 +169,23 @@ export class Extension {
     }
 
     /**
+     * Remove a blades view from the DOM.
+     * @param bladeId 
+     */
+    public removeBladeView(bladeId: string): void {
+        const blade = this.blades.find((b) => b.bladeId === bladeId);
+
+        if (blade) {
+            blade.removeView();
+        }
+    }
+
+    /**
      * Remove all blades.
      */
-    removeBlades(): void {
+    public removeBlades(): void {
         this._unregisterAllBladeBindings();
         this.blades.splice(0, this.blades.length);
         this.blades.forEach((blade) => { blade.removeView(); });
     }
 }
-
-export default Extension

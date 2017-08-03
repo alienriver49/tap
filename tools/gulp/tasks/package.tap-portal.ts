@@ -7,48 +7,54 @@ import { ScriptTarget, ModuleKind, NewLineKind } from 'typescript';
 import { createModuleBundle } from '../utils/bundle-helper';
 import { copyFiles } from '../utils/file-utils';
 import { 
-    TAP_FX_ROOT, 
-    TAP_FX_ES2015_BUNDLE_NAME,
-    TAP_FX_PACKAGE_JSON_PATH,
-    RELEASE_TAP_FX_ROOT,
-    RELEASE_TAP_FX_TYPINGS_ROOT
+    TAP_PORTAL_ROOT,
+    TAP_PORTAL_ES2015_BUNDLE_NAME,
+    TAP_PORTAL_PACKAGE_JSON_PATH,
+    RELEASE_TAP_PORTAL_ROOT,
+    RELEASE_TAP_PORTAL_BUILD_ROOT
  } from '../constants';
 import { compileTypeScript, transpileFile } from '../utils/ts-helper';
+import { lintTs } from '../utils/lint-utils';
 
-task('build:tap-fx', (done) => {    
+task('build:tap-portal', (done) => {    
     return runSequence(
-        'clean:release:tap-fx',
-        'compile:tap-fx',
-        'bundle:tap-fx',
-        'clean:tap-fx:javascript',
-        'copy:package:tap-fx',
+        'lint:ts:tap-portal',
+        'clean:release:tap-portal',
+        'compile:tap-portal',
+        'bundle:tap-portal',
+        'clean:tap-portal:javascript',
+        'copy:package:tap-portal',
         done
     );
 });
 
-task('compile:tap-fx', () => {
-    let tsconfigPath = join(TAP_FX_ROOT, 'tsconfig.json');
-    return compileTypeScript(tsconfigPath, RELEASE_TAP_FX_TYPINGS_ROOT);
+/** Lints the TypeScript for the tap-portal package */
+task('lint:ts:tap-portal', () => {
+    return lintTs([join(TAP_PORTAL_ROOT, '**/*!(.spec).ts')]);
 });
 
-/** Creates the ta-fx bundle */
-task('bundle:tap-fx', () => {    
+/** Compiles the TypeScript and generates JavaScript and declaration files in the output directory. */
+task('compile:tap-portal', () => {
+    return compileTypeScript(TAP_PORTAL_ROOT, RELEASE_TAP_PORTAL_BUILD_ROOT, true);
+});
+
+/** Creates the tap-portal bundle */
+task('bundle:tap-portal', () => {    
     return createModuleBundle({
-        moduleName: 'tap-fx',
-        entry: join(RELEASE_TAP_FX_TYPINGS_ROOT, 'index.js'),
-        dest: join(RELEASE_TAP_FX_ROOT, TAP_FX_ES2015_BUNDLE_NAME),
+        moduleName: 'tap-portal',
+        entry: join(RELEASE_TAP_PORTAL_BUILD_ROOT, 'index.js'),
+        dest: join(RELEASE_TAP_PORTAL_ROOT, TAP_PORTAL_ES2015_BUNDLE_NAME),
         format: 'es',
-        version: require(`${TAP_FX_ROOT}package.json`).version,
-        tsconfigPath: join(TAP_FX_ROOT, 'tsconfig.json')
+        version: require(`${TAP_PORTAL_ROOT}/package.json`).version
     });
 });
 
 /** Copies the package.json for this package to the output directory */
-task('copy:package:tap-fx', () => {
-    return copyFiles([TAP_FX_PACKAGE_JSON_PATH], RELEASE_TAP_FX_ROOT);
+task('copy:package:tap-portal', () => {
+    return copyFiles([TAP_PORTAL_PACKAGE_JSON_PATH], RELEASE_TAP_PORTAL_ROOT);
 });
 
 /** Cleans all javascript files from the built typings */
-task('clean:tap-fx:javascript', () => {
-    return del([join(RELEASE_TAP_FX_TYPINGS_ROOT, '**/*.js')]);
+task('clean:tap-portal:javascript', () => {
+    return del([join(RELEASE_TAP_PORTAL_BUILD_ROOT, '**/*.js')]);
 });

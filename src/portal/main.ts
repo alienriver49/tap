@@ -43,8 +43,6 @@ export function configure(aurelia: Aurelia) {
             //    console.log('[SHELL] Not authenticated!');
             //    auth.authenticate('TylerId', false, {});
             //}
-
-            //delete(tapFx.Aurelia);
         });
     });
 }

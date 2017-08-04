@@ -2,6 +2,7 @@ import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfi
 import { BaseElement } from './BaseElement';
 import { Icon } from './Icon';
 import { Text } from './Text';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface ILinkConfig extends IBaseElementContainerConfig {
     href?: string;
@@ -22,7 +23,7 @@ export class Link extends BaseElementContainer implements ILink {
         this.attributeHref = config.href || '';
     }
 
-    @BaseElement.tapcAttribute('href')
+    @AttributeMetadata.Set('href')
     public attributeHref: string;
 
     /**

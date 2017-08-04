@@ -1,6 +1,6 @@
 import { BaseElement, IBaseElement, IBaseElementConfig } from './BaseElement';
-
-import { ITapDataTableColumnConfiguration } from '../../../webComponents/dataTable/tap-data-table';
+import { ITapDataTableColumnConfiguration } from './../../../webComponents/dataTable/tap-data-table';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface IDataTableConfig extends IBaseElementConfig {
     title?: string;
@@ -31,13 +31,13 @@ export class DataTable extends BaseElement implements IDataTable {
 
     private _attributeColumnConfiguration: string;
 
-    @BaseElement.tapcAttribute('title')
+    @AttributeMetadata.Set('title')
     public attributeTitle: string;
-
-    @BaseElement.tapcAttribute('totalItems')
-    public attributeTotalItems: string;
     
-    @BaseElement.tapcAttribute('data')
+    @AttributeMetadata.Set('totalItems')
+    public attributeTotalItems: string;
+
+    @AttributeMetadata.Set('data')
     public attributeData: string;
 
     /**
@@ -56,7 +56,7 @@ export class DataTable extends BaseElement implements IDataTable {
     }
 
     // ES6 style getters are defined on the prototype
-    @BaseElement.tapcAttribute('columnConfiguration')
+    @AttributeMetadata.Set('columnConfiguration')
     public get attributeColumnConfiguration() {
         return this._attributeColumnConfiguration;
     }

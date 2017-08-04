@@ -1,6 +1,5 @@
 import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
 import { BaseElement } from './BaseElement';
-import { Text } from './Text';
 import { IListItem } from './ListItem';
 
 export interface IListConfig extends IBaseElementContainerConfig {
@@ -8,6 +7,7 @@ export interface IListConfig extends IBaseElementContainerConfig {
 }
 
 export interface IList extends IBaseElementContainer {
+    content: IListItem[];
     isOrdered: boolean;
 }
 
@@ -18,12 +18,16 @@ export class List extends BaseElementContainer implements IList {
     constructor(config?: IListConfig) {
         if (config === void 0) { config = {}; }
         super(config);
-        this.isOrdered = config.isOrdered !== void(0) ? config.isOrdered : true;
+
+        this.isOrdered = config.isOrdered !== void(0) ? config.isOrdered : false;
     }
 
-    // Should it be an ordered or unordered list?
-    public isOrdered: boolean;
+    public content: IListItem[];
 
+    /**
+     * Should it be an ordered or unordered list?
+     */
+    public isOrdered: boolean;
 
     /**
      * Chainable method for adding items to a list.

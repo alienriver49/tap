@@ -6,6 +6,9 @@
  * https://www.typescriptlang.org/docs/handbook/decorators.html#metadata
  */
 import 'reflect-metadata';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
+import { EventMetadata } from './../metadata/eventMetadata';
+import { RepeatMetadata } from './../metadata/repeatMetadata';
 
 /**
  * Config interface for BaseElement creation.
@@ -52,27 +55,27 @@ export class BaseElement implements IBaseElement {
     }
 
 
-    @BaseElement.tapcAttribute('id')
+    @AttributeMetadata.Set('id')
     public attributeId: string;
 
-    @BaseElement.tapcAttribute('name')
+    @AttributeMetadata.Set('name')
     public attributeName: string;
 
-    @BaseElement.tapcAttribute('class')
+    @AttributeMetadata.Set('class')
     public attributeClass: string; // TODO: I think that we might want this to be a getter which joins a string array of classes
 
     /* Enhanced attributes from binding frameworks (i.e. Aurelia's binding engine) */
-    @BaseElement.tapcAttribute('if')
+    @AttributeMetadata.Set('if')
     public attributeIf: string;
 
-    @BaseElement.tapcAttribute('show')
+    @AttributeMetadata.Set('show')
     public attributeShow: string;
 
-    @BaseElement.tapcAttribute('hide')
+    @AttributeMetadata.Set('hide')
     public attributeHide: string;
 
-    @BaseElement.tapcAttribute('repeat')
-    @BaseElement.tapcRepeatFor()
+    @AttributeMetadata.Set('repeat')
+    @RepeatMetadata.Set()
     public attributeRepeat: string;
 
     private get _classes(): string[] {
@@ -91,48 +94,32 @@ export class BaseElement implements IBaseElement {
         return this;
     }
 
-    public static tapcAttributeMetadataKey = Symbol('tapcAttribute');
-    public static tapcEventMetadataKey = Symbol('tapcEvent');
-    public static tapcRepeatForMetadataKey = Symbol('tapcRepeat');
-
-    public static tapcAttribute(attributeName: string): any {
-        return Reflect.metadata(BaseElement.tapcAttributeMetadataKey, attributeName);
-    }
-
-    public static tapcEvent(eventName: string): any {
-        return Reflect.metadata(BaseElement.tapcEventMetadataKey, eventName);
-    }
-
-    public static tapcRepeatFor(): any {
-        return Reflect.metadata(BaseElement.tapcRepeatForMetadataKey, true);
-    }
-
     /**
-     *  Return the value of the tapcAttribute decorator for the passed property
+     * Return the value of the AttributeMetadata.Set decorator for the passed property
      * or else return undefined (checks prototype chain)
      * @param propertyName The propertyname to check
      */
     public getAttributeName(propertyName: string): string | undefined {
-        const result = Reflect.getMetadata(BaseElement.tapcAttributeMetadataKey, this, propertyName);
+        const result = Reflect.getMetadata(AttributeMetadata.Key, this, propertyName);
         return result;
     }
 
     /**
-     *  Return the value of the tapcEvent decorator for the passed property
+     * Return the value of the EventMetadata.Set decorator for the passed property
      * or else return undefined (checks prototype chain)
      * @param propertyName The propertyname to check
      */
     public getEventName(propertyName: string): string | undefined {
-        const result = Reflect.getMetadata(BaseElement.tapcEventMetadataKey, this, propertyName);
+        const result = Reflect.getMetadata(EventMetadata.Key, this, propertyName);
         return result;
     }
 
     /**
-     * If the property is for a repeat.for, then it should have the tapcRepeat decorator to indicate that
+     * If the property is for a repeat.for, then it should have the RepeatMetadata.Set decorator to indicate that
      * @param propertyName The propertyname to check
      */
     public isRepeatFor(propertyName: string): boolean {
-        const result = Reflect.hasMetadata(BaseElement.tapcRepeatForMetadataKey, this, propertyName);
+        const result = Reflect.hasMetadata(RepeatMetadata.Key, this, propertyName);
         return result ? true : false;
     }
 }

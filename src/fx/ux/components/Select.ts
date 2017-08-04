@@ -1,6 +1,7 @@
 import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
 import { BaseElement } from './BaseElement';
 import { IOption } from './Option';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface ISelectConfig extends IBaseElementContainerConfig {
     multiple?: string;
@@ -27,10 +28,10 @@ export class Select extends BaseElementContainer implements ISelect {
 
     public content: IOption[];
 
-    @BaseElement.tapcAttribute('multiple')
+    @AttributeMetadata.Set('multiple')
     public attributeMultiple: string;
 
-    @BaseElement.tapcAttribute('value')
+    @AttributeMetadata.Set('value')
     public attributeValue: string;
 
     /**

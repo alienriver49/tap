@@ -1,5 +1,6 @@
 import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
 import { BaseElement } from './BaseElement';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface IOptionConfig extends IBaseElementContainerConfig {
     disabled?: string;
@@ -29,15 +30,15 @@ export class Option extends BaseElementContainer implements IOption {
         this.attributeModel = config.model || '';
     }
 
-    @BaseElement.tapcAttribute('disabled')
+    @AttributeMetadata.Set('disabled')
     public attributeDisabled: string;
 
-    @BaseElement.tapcAttribute('selected')
+    @AttributeMetadata.Set('selected')
     public attributeSelected: string;
 
-    @BaseElement.tapcAttribute('value')
+    @AttributeMetadata.Set('value')
     public attributeValue: string;
 
-    @BaseElement.tapcAttribute('model')
+    @AttributeMetadata.Set('model')
     public attributeModel: string;
 }

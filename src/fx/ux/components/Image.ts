@@ -1,4 +1,5 @@
 import { BaseElement, IBaseElement, IBaseElementConfig } from './BaseElement';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface IImageConfig extends IBaseElementConfig {
     src?: string;
@@ -22,6 +23,6 @@ export class Image extends BaseElement implements IImage {
         this.attributeSrc = config.src || '';
     }
 
-    @BaseElement.tapcAttribute('src')
+    @AttributeMetadata.Set('src')
     public attributeSrc: string;
 }

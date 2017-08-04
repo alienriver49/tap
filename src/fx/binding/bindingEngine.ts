@@ -12,7 +12,7 @@ import { RpcClient } from '../rpc/client';
 /**
  * This defines the format of objects being serialized between windows
  */
-export interface ISerializedObject{
+export interface ISerializedObject {
     // Name of property or index of this data on a parent object or collection
     property: string;   
     // The GUID that identifies this data in the binding maps (not used for primitives)

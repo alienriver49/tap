@@ -1,5 +1,6 @@
 import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
 import { BaseElement } from './BaseElement';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface ILabelConfig extends IBaseElementContainerConfig {
     for?: string;
@@ -23,9 +24,9 @@ export class Label extends BaseElementContainer implements ILabel {
         }
     }
 
-    @BaseElement.tapcAttribute('for')
+    @AttributeMetadata.Set('for')
     public attributeFor: string;
     
-    @BaseElement.tapcAttribute('type')
+    @AttributeMetadata.Set('type')
     public attributeValue: string;
 }

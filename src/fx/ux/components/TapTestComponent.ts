@@ -1,4 +1,5 @@
 import { BaseElement, IBaseElement, IBaseElementConfig } from './BaseElement';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface ITapTestComponentConfig extends IBaseElementConfig {
     clearText?: string;
@@ -21,12 +22,12 @@ export class TapTestComponent extends BaseElement implements ITapTestComponent {
         this.attributeRaised = config.raised || '';
     }
 
-    @BaseElement.tapcAttribute('clearText')
+    @AttributeMetadata.Set('clearText')
     public attributeClearText: string;
 
-    @BaseElement.tapcAttribute('display')
+    @AttributeMetadata.Set('display')
     public attributeDisplay: string;
 
-    @BaseElement.tapcAttribute('raised')
+    @AttributeMetadata.Set('raised')
     public attributeRaised: string;
 }

@@ -129,7 +129,7 @@ export class PortalBlade {
                             // attempt to attach conventions before compiling the view
                             const docFragment = (templateRegistryEntry.template as HTMLTemplateElement).content;
                             if (this._config.functions.length > 0) {
-                                this._tapFx.ConventionEngine.attachClickHandlers(docFragment, this._config.functions);
+                                this._tapFx.ConventionEngine.attachConventions(docFragment, this, this._config.functions);
                             }
 
                             // Get associated viewFactory for template, otherwise create it and attach to templateRegistryEntry

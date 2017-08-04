@@ -86,7 +86,7 @@ export class InvoicesBrowseBlade extends ViewModels.BrowseBlade {
         return this._getInvoices();
     }
 
-    public onButtonRefreshClicked(): void {
+    public onRefreshClicked(): void {
         console.log('[Invoices-Browse] Refresh clicked');
         this._getInvoices();
     }

@@ -1,4 +1,5 @@
 import { BaseElement, IBaseElement, IBaseElementConfig } from './BaseElement';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface IInputConfig extends IBaseElementConfig {
     type?: /*InputType*/string;
@@ -46,15 +47,15 @@ export class Input extends BaseElement implements IInput {
         this.attributeModel = config.model || '';
     }
 
-    @BaseElement.tapcAttribute('type')
+    @AttributeMetadata.Set('type')
     public attributeType: string;
 
-    @BaseElement.tapcAttribute('value')
+    @AttributeMetadata.Set('value')
     public attributeValue: string;
 
-    @BaseElement.tapcAttribute('checked')
+    @AttributeMetadata.Set('checked')
     public attributeChecked: string;
 
-    @BaseElement.tapcAttribute('model')
+    @AttributeMetadata.Set('model')
     public attributeModel: string;
 }

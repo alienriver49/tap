@@ -3,6 +3,7 @@ import moment from 'moment';
 
 import { ProxiedObservable } from './proxiedObservable';
 import { ProxiedCollectionObservable, IArrayBindingSync, IArrayChangedSplice, ISetBindingSync, ISetChangeRecord, IMapBindingSync, IMapChangeRecord } from './proxiedCollectionObservable';
+import { IChildReference, BindingMap } from './bindingMap';
 
 import * as tapm from '../metadata/metadata';
 import { Utilities } from '../utilities/utilities';
@@ -41,33 +42,6 @@ export interface IUnresolvedRef {
     refId: string;
 }
 
-interface IObjectBindingMap {
-    // For a particular object, these are all the property observers
-    observers: ProxiedObservable[];
-    // Not currently used
-    functions: string[];
-    // This is used as our ref counts
-    // When observing a property, update this with a comma-delimited string of 
-    // the context's parent Id and the context's property on the parent
-    // When disposing of an observer, only dispose if the context's parent Id
-    // is included here and is the only entry
-    parentContextIds: Set<string>;
-    isRoot: boolean;
-}
-
-interface ICollectionBindingMap {
-    // For a particular collection, this is the collection observer that
-    // watches for changes to the contents of the collection
-    observer: ProxiedCollectionObservable | null;
-    // This is used as our ref counts
-    // When observing an object or array and one of it's properties or indexes is an array, 
-    // then save that parent info here.
-    // When disposing of an observer, only dispose if the context's parent Id
-    // is included here and is the only entry
-    // Values are comma-delimited string of the collection's parent context Id and
-    // the property or index on the parent 
-    parents: Set<string>;
-}
 
 export interface IBindingEngine {
     getIdByContext(context: object): string | null;
@@ -104,8 +78,7 @@ export class BindingEngine implements IBindingEngine {
 
     private _className: string = (this as object).constructor.name;
     private _contextIdMap: Map<object, string> = new Map();
-    private _contextBindingMap: Map<string, IObjectBindingMap> = new Map();
-    private _collectionBindingMap: Map<string, ICollectionBindingMap> = new Map();
+    private _contextBindingMap: Map<string, BindingMap> = new Map();
     private _seen: object[] = [];
     private _seenFlag: string = '$$__checked__$$';
     private _unresolvedRefs: IUnresolvedRef[] = [];
@@ -119,7 +92,7 @@ export class BindingEngine implements IBindingEngine {
         console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Property binding sync.`, data);
 
         const bindingMap = this.getBindingMap(data.parentId);
-        const observer = ((bindingMap && (bindingMap as IObjectBindingMap).observers) || []).find((i) => {
+        const observer = ((bindingMap && bindingMap.observers) || []).find((i) => {
             return i.property() === data.property;
         });
 
@@ -176,13 +149,13 @@ export class BindingEngine implements IBindingEngine {
      */
     private _onArrayBindingSync(data: IArrayBindingSync): void {
         console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Array binding sync.`, data);
-        const bindingMap = this._collectionBindingMap.get(data.contextId);
-        if (!bindingMap || !bindingMap.observer) {
+        const bindingMap = this._contextBindingMap.get(data.contextId);
+        if (!bindingMap || !bindingMap.collectionObserver) {
             console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Could not find collection binding map or observer for context Id "${data.contextId}"`);
             return;
         }
 
-        const observer: ProxiedCollectionObservable = bindingMap.observer; 
+        const observer: ProxiedCollectionObservable = bindingMap.collectionObserver; 
         const addedMetadata: ISerializedObject[] = [];
 
         // splice changes into the array
@@ -265,13 +238,13 @@ export class BindingEngine implements IBindingEngine {
      */
     private _onSetBindingSync(data: ISetBindingSync): void {
         console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Set binding sync.`, data);
-        const bindingMap = this._collectionBindingMap.get(data.contextId);
-        if (!bindingMap || !bindingMap.observer) {
+        const bindingMap = this._contextBindingMap.get(data.contextId);
+        if (!bindingMap || !bindingMap.collectionObserver) {
             console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Could not find collection binding map or observer for context Id "${data.contextId}"`);
             return;
         }
 
-        const observer: ProxiedCollectionObservable = bindingMap.observer; 
+        const observer: ProxiedCollectionObservable = bindingMap.collectionObserver; 
 
         // resolve updated data
         // Because the sending side serialized the changes in order,
@@ -326,13 +299,13 @@ export class BindingEngine implements IBindingEngine {
      */
     private _onMapBindingSync(data: IMapBindingSync): void {
         console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Map binding sync.`, data);
-        const bindingMap = this._collectionBindingMap.get(data.contextId);
-        if (!bindingMap || !bindingMap.observer) {
+        const bindingMap = this._contextBindingMap.get(data.contextId);
+        if (!bindingMap || !bindingMap.collectionObserver) {
             console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Could not find collection binding map or observer for context Id "${data.contextId}"`);
             return;
         }
 
-        const observer: ProxiedCollectionObservable = bindingMap.observer; 
+        const observer: ProxiedCollectionObservable = bindingMap.collectionObserver; 
 
         // resolve updated data
         this._seen = [];
@@ -750,44 +723,30 @@ export class BindingEngine implements IBindingEngine {
     }
 
     /**
-     * Associates an Id with a context.
+     * Associates an Id with a context and creates the appropriate binding map (for object or collection)
+     * Also updates the collection of children references on the parent binding map
      * @param context Context owning the observable properties.
      * @param contextId An Id to associate with the context (auto-generated if not passed)
      * @param parentContextId The context Id of the parent context, used to track object references for unobservation
      * @param parentProperty The index or property name on the parent context, used to track object references for unobservation
+     * @param isMapKey If the parent is a Map and the object is a map entry key, this should be true 
+     * @param isMapValue If the parent is a Map and the object is a map entry value, this should be true 
      */
-    public resolveId(context: object, contextId: string = '', parentContextId: string = '', parentProperty: string = ''): string {
-        // If the context is already mapped, then just return the existing contextId (and update parentContextIds)
+    public resolveId(
+        context: object, 
+        contextId: string = '', 
+        parentContextId: string = '', 
+        parentProperty: string = '',
+        isMapKey: boolean = false,
+        isMapValue: boolean = false): string {
+        let bindingMap: BindingMap | undefined;
+        // If the context is already mapped, then just return the existing contextId (and update parents)
         if (this._contextIdMap.has(context)) {
             const myContextId = this._contextIdMap.get(context) || '';
-            if (this._utilities.isCollectionType(context)) {
-                const bindingMap = this._collectionBindingMap.get(myContextId);
-                if (!bindingMap) {
-                    throw new Error(`Missing binding map for collection Id: ${myContextId}.`);
-                }
-
-                if (parentContextId) {
-                    const parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`;
-                    if (!bindingMap.parents.has(parentPropertyKey)) {
-                        bindingMap.parents.add(parentPropertyKey);
-                    }
-                }
-
+            bindingMap = this._contextBindingMap.get(myContextId);
+            if (!bindingMap) {
+                throw new Error(`Missing binding map for context Id: ${myContextId}.`);
             }
-            else {
-                const bindingMap = this._contextBindingMap.get(myContextId);
-                if (!bindingMap) {
-                    throw new Error(`Missing binding map for context Id: ${myContextId}.`);
-                }
-
-                if (parentContextId) {
-                    const parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`;
-                    if (!bindingMap.parentContextIds.has(parentPropertyKey)) {
-                        bindingMap.parentContextIds.add(parentPropertyKey);
-                    }
-                }
-            }
-            return contextId;
         }
         else {
             // Otherwise create a new Id (unless passed one) and binding mapping for the context
@@ -795,37 +754,148 @@ export class BindingEngine implements IBindingEngine {
                 contextId = this._utilities.newGuid();
             }
             this._contextIdMap.set(context, contextId);
-            if (this._utilities.isCollectionType(context)) {
-                const bindingMap: ICollectionBindingMap = {
-                    observer: null, 
-                    parents: new Set()
-                };
+            bindingMap = new BindingMap(
+                this.getContextType(context),
+                [], 
+                undefined,
+                new Map<string, IChildReference>(),
+                new Map<string, IChildReference>()
+            );
+            this._contextBindingMap.set(contextId, bindingMap);
+        }
+        // Update the parent's bindingmap children references and 
+        // the parent's reference for this object's binding map
+        this.addChildToParentBindingMap(contextId, parentContextId, parentProperty, isMapKey, isMapValue);
+        this.addParentToChildBindingMap(bindingMap, parentContextId, parentProperty, isMapKey, isMapValue);
+        return contextId;
+    }
 
-                if (parentContextId) {
-                    const parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`;
-                    if (!bindingMap.parents.has(parentPropertyKey)) {
-                        bindingMap.parents.add(parentPropertyKey);
-                    }
-                }
+    /**
+     * Update the parents map on the object binding map to include the passed parent info
+     * @param contextBindingMap 
+     * @param parentContextId 
+     * @param parentProperty  This is either:
+     *                          1) A property name if the parent is an object
+     *                          2) An index if the parent is an array
+     *                          3) not used if the parent is a Set or Map
+     * @param isMapKey If the parent is a Map and the object is a map entry key, this should be true 
+     * @param isMapValue If the parent is a Map and the object is a map entry value, this should be true 
+     */
+    private addParentToChildBindingMap(
+        contextBindingMap: BindingMap,
+        parentContextId: string, 
+        parentProperty: string, 
+        isMapKey: boolean = false,
+        isMapValue: boolean = false) {
 
-                this._collectionBindingMap.set(contextId, bindingMap);
-            }
-            else {
-                const bindingMap: IObjectBindingMap = {
-                    observers: [], 
-                    functions: [], 
-                    parentContextIds: new Set<string>(), 
-                    isRoot: !parentContextId 
-                };
-                if (parentContextId) {
-                    const parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`;
-                    if (!bindingMap.parentContextIds.has(parentPropertyKey)) {
-                        bindingMap.parentContextIds.add(parentPropertyKey);
+        if (!contextBindingMap.parents.has(parentContextId)) {
+            // No entry for the parent in the parents map, so add one
+            const ref: IChildReference = {
+                type: this.getContextIdType(parentContextId),   // ISerializedType
+                propertyIndex: new Set<string>(),   // Used for parent Objects and Arrays
+                refCount: 0,   // Only used for parent Maps 
+                isKey: false   // Only used for parent Maps 
+            };
+            switch (contextBindingMap.type) {
+                case SerializedType.OBJECT:
+                case SerializedType.ARRAY:
+                    if (parentProperty) { 
+                        ref.propertyIndex.add(parentProperty);
                     }
-                }
-                this._contextBindingMap.set(contextId, bindingMap);
+                    break;
+                case SerializedType.MAP:
+                    ref.refCount += isMapValue ? 1 : 0,   // the number of times the object is a value in the entries
+                    ref.isKey = isMapKey; // indicates the object is a key in the Map
+                    break;
+                default:
+                    break;
             }
-            return contextId;
+            contextBindingMap.parents.set(parentContextId, ref);
+        }else {
+            // Otherwise update existing reference
+            const ref = contextBindingMap.parents.get(parentContextId) as IChildReference;
+            switch (contextBindingMap.type) {
+                case SerializedType.OBJECT:
+                case SerializedType.ARRAY:
+                    if (parentProperty) { 
+                        ref.propertyIndex.add(parentProperty);  // Collection of properties or indexes of object on parent
+                    }
+                    break;
+                case SerializedType.MAP:
+                    ref.refCount += isMapValue ? 1 : 0,   // the number of times the object is a value in the entries
+                    ref.isKey = isMapKey; // indicates the object is a key in the Map
+                    break;
+                default:
+                    break;
+            }
+            contextBindingMap.parents.set(parentContextId, ref); 
+        }
+    }
+
+    /**
+     * Update the children map on the parent binding map to include the passed object info
+     * @param contextId 
+     * @param parentContextId 
+     * @param parentProperty  This is either:
+     *                          1) A property name if the parent is an object
+     *                          2) An index if the parent is an array
+     *                          3) not used if the parent is a Set or Map
+     * @param isMapKey If the parent is a Map and the object is a map entry key, this should be true 
+     * @param isMapValue If the parent is a Map and the object is a map entry value, this should be true 
+     */
+    private addChildToParentBindingMap(
+        contextId: string, 
+        parentContextId: string, 
+        parentProperty: string, 
+        isMapKey: boolean = false,
+        isMapValue: boolean = false) {
+
+        if (parentContextId) {
+            const parentBindingMap = this.getBindingMap(parentContextId);
+            if (parentBindingMap) {
+                if (!parentBindingMap.children.has(contextId)) {
+                    // No entry for the object in the children map, so add one
+                    const ref: IChildReference = {
+                        type: this.getContextIdType(contextId),   // ISerializedType
+                        propertyIndex: new Set<string>(),   // Used for parent Objects and Arrays
+                        refCount: 0,   // Only used for parent Maps 
+                        isKey: false   // Only used for parent Maps 
+                    };
+                    switch (parentBindingMap.type) {
+                        case SerializedType.OBJECT:
+                        case SerializedType.ARRAY:
+                            if (parentProperty) { 
+                                ref.propertyIndex.add(parentProperty);
+                            }
+                            break;
+                        case SerializedType.MAP:
+                            ref.refCount += isMapValue ? 1 : 0,   // the number of times the object is a value in the entries
+                            ref.isKey = isMapKey; // indicates the object is a key in the Map
+                            break;
+                        default:
+                            break;
+                    }
+                    parentBindingMap.children.set(contextId, ref);
+                }else {
+                    // Otherwise update existing reference
+                    const ref = parentBindingMap.children.get(contextId) as IChildReference;
+                    switch (parentBindingMap.type) {
+                        case SerializedType.OBJECT:
+                        case SerializedType.ARRAY:
+                            if (parentProperty) { 
+                                ref.propertyIndex.add(parentProperty);  // Collection of properties or indexes of object on parent
+                            }
+                            break;
+                        case SerializedType.MAP:
+                            ref.refCount += isMapValue ? 1 : 0,   // the number of times the object is a value in the entries
+                            ref.isKey = isMapKey; // indicates the object is a key in the Map
+                            break;
+                        default:
+                            break;
+                    }
+                    parentBindingMap.children.set(contextId, ref); 
+                }
+            }
         }
     }
 
@@ -857,7 +927,7 @@ export class BindingEngine implements IBindingEngine {
         const propertyValue = context[property];
 
         if (existingObserverIndex === -1) {
-            const observer = this._proxiedObservableFactory(contextId, context, property, extensionId);
+            const observer = this._proxiedObservableFactory(contextId, context, property, extensionId, this);
 
             observer.observe();
 
@@ -900,32 +970,22 @@ export class BindingEngine implements IBindingEngine {
             throw new Error('observeCollection: collection must be a valid collection type');
         }
 
-        if (collection instanceof Array) {
-            metadata.type = SerializedType.ARRAY;
-        }
-
-        if (collection instanceof Map) {
-            metadata.type = SerializedType.MAP;
-        }
-
-        if (collection instanceof Set) {
-            metadata.type = SerializedType.SET;
-        }
+        metadata.type = this.getContextType(collection);
 
         const serializedArray: any[] = [];
         const mapKeyMetadata: any[] = [];
 
         // make sure the collection is not currently being observed
-        const bindingMap = this._collectionBindingMap.get(metadata.contextId);
+        const bindingMap = this._contextBindingMap.get(metadata.contextId);
         if (!bindingMap) {
             throw new Error(`Missing collection binding map for context Id: ${metadata.contextId}. The binding map must first be created before observing changes in the collection.`);
         }
 
-        if (!bindingMap.observer) {
+        if (!bindingMap.collectionObserver) {
             // Observe the collection
-            const observer = this._proxiedCollectionObservableFactory(metadata.contextId, collection, extensionId);
+            const observer = this._proxiedCollectionObservableFactory(metadata.contextId, collection, extensionId, this);
             observer.observe();
-            bindingMap.observer = observer;
+            bindingMap.collectionObserver = observer;
 
             // Now iterate over the collection elements
             // If any elements are non-primitive, then we need to observe them 
@@ -1110,21 +1170,26 @@ export class BindingEngine implements IBindingEngine {
 
         return SerializedType.OBJECT;
     }
-
-    private getBindingMap(contextId: string): ICollectionBindingMap | IObjectBindingMap | undefined {
-        const bindingMap = this._contextBindingMap.get(contextId);
-
-        if (bindingMap) {
-            return bindingMap;
+    private getContextType(context: any): string {
+        if (context instanceof Set) {
+            return SerializedType.SET;
         }
-
-        const collectionBindingMap = this._collectionBindingMap.get(contextId);
-        return collectionBindingMap;
+        if (context instanceof Map) {
+            return SerializedType.MAP;
+        }
+        if (context instanceof Array) {
+            return SerializedType.ARRAY;
+        }
+        return SerializedType.OBJECT;
     }
 
-    private getBindingMapByContext(context: object): ICollectionBindingMap | IObjectBindingMap | undefined {
+    private getBindingMap(contextId: string): BindingMap | undefined {
+        const bindingMap = this._contextBindingMap.get(contextId);
+        return bindingMap;
+    }
+
+    private getBindingMapByContext(context: object): BindingMap | undefined {
         const contextId = this._contextIdMap.get(context);
-        
         if (!contextId) {
             return undefined;
         }
@@ -1161,14 +1226,15 @@ export class BindingEngine implements IBindingEngine {
      * @param context 
      */
     public unobserve(context: object, parentContextId: string, parentProperty: string, contextId: string = '', inRecursion: boolean = false): void {
-        // if (!contextId){
-        //     // get this context from the map
-        //     let foundContextId = this._contextIdMap.get(context);
-        //     if (!foundContextId) {
-        //         throw new Error("Couldn't find context Id when unobserving context.")
-        //     }
-        //     contextId = foundContextId;
-        // }
+        if (!contextId) {
+            // get this context from the map
+            const foundContextId = this.getIdByContext(context);
+            if (!foundContextId) {
+                console.warn("Couldn't find context Id when unobserving context.");
+                return;
+            }
+            contextId = foundContextId;
+        }
 
         // if (!inRecursion){
         //     this._seen = [];
@@ -1176,28 +1242,32 @@ export class BindingEngine implements IBindingEngine {
  
         // // Verify that the context isn't being referenced by other parent objects
         // // before disposing of the observers
-        // let bindingMap = this._contextBindingMap.get(contextId);
+        // let bindingMap = this.getBindingMap(contextId);
         // if (!bindingMap){
-        //     throw new Error(`Couldn't find binding map when unobserving context: ${contextId}`)
+        //     console.warn(`Couldn't find binding map when unobserving context: ${contextId}`)
+        //     return;
         // }
-        // // If parent of the context (and contexts can have zero, one or more parents) doesn't exist
+
+        // // If parent of the context (Note: contexts can have zero, one or more parents) doesn't exist
         // // AND the context doesn't have any parent references (or has one parent reference, which we can
         // // assume is for the current call), then it's safe to unobserve
         // // OR
         // // If there is a parent of the context and it matches the passed parent and it's the only parent reference, 
         // // then it's safe to unobserve
         // let parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`
-        // if ((!parentContextId && (bindingMap.isRoot || bindingMap.parentContextIds.size <= 1)) ||
-        // (parentContextId && bindingMap.parentContextIds.has(parentPropertyKey) && bindingMap.parentContextIds.size === 1))
+        // if ((!parentContextId && bindingMap.parents.size <= 1) ||
+        //     (parentContextId && bindingMap.parents.has(parentPropertyKey) && bindingMap.parents.size === 1))
         // {
-        //     // Must be an object, so add a temporary flag property to objects to prevent infinite loop from circular references
+        //     // Must be an object/collection, so add a temporary flag property to 
+        //     // it to prevent infinite loop from circular references
         //     context[this._seenFlag] = true;
         //     this._seen.push(context);
 
-        //     // First recursively dispose of child objects
-        //     // Search for child objects by finding all contexts which have a parent reference to the current context
-        //     this._contextBindingMap.forEach((bindingMap, key) => {
-        //         if (bindingMap.parentContextIds.has(contextId)){
+        //     // First recursively dispose of child objects/collections
+        //     // Search for child objects by finding all contexts 
+        //     // which have a parent reference to the current context
+        //     this._contextBindingMap.forEach((bindingMap: IObjectBindingMap, key: string) => {
+        //         if (bindingMap.parents.has(contextId)){
         //             let childObject = this.getContextById(key);
         //             // If the child object has already been checked, skip it to prevent infinite loops
         //             if (childObject != null && !childObject.hasOwnProperty(this._seenFlag)){

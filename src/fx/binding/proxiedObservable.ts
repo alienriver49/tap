@@ -24,6 +24,7 @@ export class ProxiedObservable {
         private _context: object,
         private _property: string,
         private _extensionId: string,
+        private _bindingEngine: IBindingEngine
     ) { 
     }
 
@@ -31,22 +32,9 @@ export class ProxiedObservable {
     private _className: string = (this as object).constructor.name;
     private _boundPropertyChanged = this._propertyChanged.bind(this) as (newValue: any, oldValue: any) => void;
     private _canObserveProperty: boolean = true;
-    private _bindingEngine: IBindingEngine;
 
     public get extensionId() {
         return this._extensionId;
-    }
-
-    // Using the BindingEngine in this class does introduce some circular dependencies, but they should be ok because
-    // a ProxiedObservable will only be created (injected) by the BindingEngine, but the BindingEngine isn't DI'ed into
-    // the ProxiedObservable and won't be used in the ProxiedObservable until this _propertyChanged function is called, 
-    // so we can be assured that the BindingEngine is available at this point
-    private get bindingEngine() {
-        if (!this._bindingEngine) {
-            //this._bindingEngine = getTapFx().BindingEngine; 
-        }
-
-        return this._bindingEngine;
     }
 
     private _propertyChanged(newValue: any, oldValue: any) {
@@ -69,11 +57,11 @@ export class ProxiedObservable {
         };
 
         if (this._utilities.isObject(oldValue)) {
-            const oldContextId = this.bindingEngine.getIdByContext(oldValue);
+            const oldContextId = this._bindingEngine.getIdByContext(oldValue);
             // If oldValue is an object mapped in the BindingEngine, then
             // dispose of any observers on it
             if (oldContextId) {
-                this.bindingEngine.unobserve(oldValue, '', oldContextId);
+                this._bindingEngine.unobserve(oldValue, this._contextId, this._property, oldContextId);
             }
         }
 
@@ -88,8 +76,8 @@ export class ProxiedObservable {
             // The old value should have an existing context Id, so if the new value
             // is the same object, it should have the same context Id and no change
             if (this._utilities.isObject(oldValue)) {
-                const oldContextId = this.bindingEngine.getIdByContext(oldValue);
-                const newContextId = this.bindingEngine.getIdByContext(newValue);
+                const oldContextId = this._bindingEngine.getIdByContext(oldValue);
+                const newContextId = this._bindingEngine.getIdByContext(newValue);
 
                 if (oldContextId && newContextId && oldContextId === newContextId) {
                     return;
@@ -97,7 +85,7 @@ export class ProxiedObservable {
             }
 
             // serializedValue.value is updated with the serialized object/array 
-            this.bindingEngine.observeObject(serializedValue, newValue, new Set<string>(), this._extensionId);
+            this._bindingEngine.observeObject(serializedValue, newValue, new Set<string>(), this._extensionId);
         }
 
         console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Property "${this._property}" has changed from: "${oldValue}" to: "${newValue}"`);

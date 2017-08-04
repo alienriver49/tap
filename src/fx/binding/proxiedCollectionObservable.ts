@@ -76,6 +76,7 @@ export class ProxiedCollectionObservable {
         private _contextId: string,
         private _collection: any[] | Set<any> | Map<any, any>,
         private _extensionId: string,
+        private _bindingEngine: IBindingEngine
     ) {
     }
 
@@ -85,22 +86,9 @@ export class ProxiedCollectionObservable {
     private _boundSetChanged = this._setChanged.bind(this) as (change: any) => void;
     private _boundMapChanged = this._mapChanged.bind(this) as (change: any) => void;
     private _canObserveCollection: boolean = true;
-    private _bindingEngine: IBindingEngine;
 
     public get extensionId() {
         return this._extensionId;
-    }
-
-    // Using the BindingEngine in this class does introduce some circular dependencies, but they should be ok because
-    // a ProxiedObservable will only be created (injected) by the BindingEngine, but the BindingEngine isn't DI'ed into
-    // the ProxiedObservable and won't be used in the ProxiedObservable until this _propertyChanged function is called, 
-    // so we can be assured that the BindingEngine is available at this point
-    private get bindingEngine() {
-        if (!this._bindingEngine) {
-            //this._bindingEngine = getTapFx().BindingEngine; 
-        }
-
-        return this._bindingEngine;
     }
 
     /**
@@ -143,7 +131,7 @@ export class ProxiedCollectionObservable {
                         // and pass appropriate metadata
                         if (this._utilities.isDateObjectCollectionType(element)) {
                             // serializedValue.value is updated with the serialized object/array 
-                            this.bindingEngine.observeObject(serializedValue, element, refIds, this._extensionId);
+                            this._bindingEngine.observeObject(serializedValue, element, refIds, this._extensionId);
                         }
                         
                         splice.added.push(serializedValue);
@@ -190,14 +178,14 @@ export class ProxiedCollectionObservable {
                 // and pass appropriate metadata
                 if (this._utilities.isDateObjectCollectionType(change.value)) {
                     // serializedValue.value is updated with the serialized object/array 
-                    this.bindingEngine.observeObject(serializedValue, change.value, refIds, this._extensionId);
+                    this._bindingEngine.observeObject(serializedValue, change.value, refIds, this._extensionId);
                     resolvedChange.value = serializedValue;
                     resolvedChange.contextId = serializedValue.contextId;
                 }
             }
             if (change.type === 'delete') {
                 if (this._utilities.isDateObjectCollectionType(change.value)) {
-                    resolvedChange.contextId = this.bindingEngine.getIdByContext(change.value) === undefined ? (this.bindingEngine.getIdByContext(change.value) as string) : undefined;
+                    resolvedChange.contextId = this._bindingEngine.getIdByContext(change.value) === undefined ? (this._bindingEngine.getIdByContext(change.value) as string) : undefined;
                 }
             }
             resolvedChanges.push(resolvedChange);
@@ -253,7 +241,7 @@ export class ProxiedCollectionObservable {
                 // and pass appropriate metadata, otherwise just get it's contextId
                 if (this._utilities.isDateObjectCollectionType(resolvedChange.value)) {
                     // serializedValue.value is updated with the serialized object/array 
-                    this.bindingEngine.observeObject(serializedValue, resolvedChange.value, refIds, this._extensionId);
+                    this._bindingEngine.observeObject(serializedValue, resolvedChange.value, refIds, this._extensionId);
                     resolvedChange.value = serializedValue;
                     resolvedChange.contextId = serializedValue.contextId;
                 }
@@ -275,7 +263,7 @@ export class ProxiedCollectionObservable {
                 // and pass appropriate metadata, otherwise just get it's contextId
                 if (this._utilities.isDateObjectCollectionType(change.key)) {
                     // serializedValue.value is updated with the serialized object/array 
-                    this.bindingEngine.observeObject(serializedKey, change.key, refIds, this._extensionId);
+                    this._bindingEngine.observeObject(serializedKey, change.key, refIds, this._extensionId);
                     resolvedChange.key = serializedKey;
                     resolvedChange.keyContextId = serializedKey.contextId;
                 }
@@ -283,7 +271,7 @@ export class ProxiedCollectionObservable {
 
             if (change.type === 'delete') {
                 if (this._utilities.isDateObjectCollectionType(change.oldValue)) {
-                    resolvedChange.keyContextId = this.bindingEngine.getIdByContext(change.oldValue) === undefined ? (this.bindingEngine.getIdByContext(change.oldValue) as string) : undefined;
+                    resolvedChange.keyContextId = this._bindingEngine.getIdByContext(change.oldValue) === undefined ? (this._bindingEngine.getIdByContext(change.oldValue) as string) : undefined;
                 }
             }
             resolvedChanges.push(resolvedChange);

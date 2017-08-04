@@ -44,7 +44,10 @@ export interface IBaseElement {
  */
 export class BaseElement implements IBaseElement {
     constructor(config?: IBaseElementConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+        
         this.attributeId = config.id || '';
         this.attributeName = config.name || '';
         this.attributeClass = config.class || '';
@@ -55,27 +58,27 @@ export class BaseElement implements IBaseElement {
     }
 
 
-    @AttributeMetadata.Set('id')
+    @AttributeMetadata.set('id')
     public attributeId: string;
 
-    @AttributeMetadata.Set('name')
+    @AttributeMetadata.set('name')
     public attributeName: string;
 
-    @AttributeMetadata.Set('class')
+    @AttributeMetadata.set('class')
     public attributeClass: string; // TODO: I think that we might want this to be a getter which joins a string array of classes
 
     /* Enhanced attributes from binding frameworks (i.e. Aurelia's binding engine) */
-    @AttributeMetadata.Set('if')
+    @AttributeMetadata.set('if')
     public attributeIf: string;
 
-    @AttributeMetadata.Set('show')
+    @AttributeMetadata.set('show')
     public attributeShow: string;
 
-    @AttributeMetadata.Set('hide')
+    @AttributeMetadata.set('hide')
     public attributeHide: string;
 
-    @AttributeMetadata.Set('repeat')
-    @RepeatMetadata.Set()
+    @AttributeMetadata.set('repeat')
+    @RepeatMetadata.set()
     public attributeRepeat: string;
 
     private get _classes(): string[] {
@@ -100,7 +103,7 @@ export class BaseElement implements IBaseElement {
      * @param propertyName The propertyname to check
      */
     public getAttributeName(propertyName: string): string | undefined {
-        const result = Reflect.getMetadata(AttributeMetadata.Key, this, propertyName);
+        const result = Reflect.getMetadata(AttributeMetadata.key, this, propertyName);
         return result;
     }
 
@@ -110,7 +113,7 @@ export class BaseElement implements IBaseElement {
      * @param propertyName The propertyname to check
      */
     public getEventName(propertyName: string): string | undefined {
-        const result = Reflect.getMetadata(EventMetadata.Key, this, propertyName);
+        const result = Reflect.getMetadata(EventMetadata.key, this, propertyName);
         return result;
     }
 
@@ -119,7 +122,7 @@ export class BaseElement implements IBaseElement {
      * @param propertyName The propertyname to check
      */
     public isRepeatFor(propertyName: string): boolean {
-        const result = Reflect.hasMetadata(RepeatMetadata.Key, this, propertyName);
+        const result = Reflect.hasMetadata(RepeatMetadata.key, this, propertyName);
         return result ? true : false;
     }
 }

@@ -9,7 +9,7 @@ import { BladeParser } from '../ux/bladeParser';
 import { BaseBlade } from '../ux/viewModels/viewModels.baseBlade';
 import { BrowseBlade } from '../ux/viewModels/viewModels.browseBlade';
 import { FormBlade } from '../ux/viewModels/viewModels.formBlade';
-import { Configuration } from '../configuration/config'
+import { Configuration } from '../configuration/config';
 import { Http } from './http/http';
 import { BaseExtension } from './extension/baseExtension';
 import { Extension } from './extension/extension';

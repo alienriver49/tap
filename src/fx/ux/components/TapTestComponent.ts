@@ -15,19 +15,22 @@ export interface ITapTestComponent extends IBaseElement {
 
 export class TapTestComponent extends BaseElement implements ITapTestComponent {
     constructor(config?: ITapTestComponentConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+
         super(config);
         this.attributeClearText = config.clearText || '';
         this.attributeDisplay = config.display || '';
         this.attributeRaised = config.raised || '';
     }
 
-    @AttributeMetadata.Set('clearText')
+    @AttributeMetadata.set('clearText')
     public attributeClearText: string;
 
-    @AttributeMetadata.Set('display')
+    @AttributeMetadata.set('display')
     public attributeDisplay: string;
 
-    @AttributeMetadata.Set('raised')
+    @AttributeMetadata.set('raised')
     public attributeRaised: string;
 }

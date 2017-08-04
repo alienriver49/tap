@@ -17,7 +17,10 @@ export interface IForm extends IBaseElementContainer {
  */
 export class Form extends BaseElementContainer implements IForm {
     constructor(config?: IFormConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+        
         super(config);
     }
 

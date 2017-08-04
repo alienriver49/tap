@@ -53,7 +53,8 @@ export function transpileFile(inputPath: string, outputPath: string, options: ts
   }
 }
 
-/** Creates a TypeScript project from the provided tsconfig and emits the 
+/** 
+ * Creates a TypeScript project from the provided tsconfig and emits the 
  * .js and .d.ts files in the provided output directory with sourcemaps.
  */
 export function compileTypeScript(rootDir: string, outputDir: string, fixupRelativePaths: boolean = false): NodeJS.ReadWriteStream {

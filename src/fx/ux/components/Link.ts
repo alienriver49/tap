@@ -17,13 +17,16 @@ export interface ILink extends IBaseElementContainer {
  */
 export class Link extends BaseElementContainer implements ILink {
     constructor(config?: ILinkConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+
         super(config);
         
         this.attributeHref = config.href || '';
     }
 
-    @AttributeMetadata.Set('href')
+    @AttributeMetadata.set('href')
     public attributeHref: string;
 
     /**

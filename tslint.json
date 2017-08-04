@@ -3,7 +3,20 @@
     "tslint:recommended",
     "tslint-eslint-rules"
   ],
+  "rulesDirectory": [
+    "tools/tslint-rules"
+  ],
   "rules": {
+    // Custom rules
+    "require-private-modifier": true,
+
+    // eslint rules
+    "brace-style": [
+      true,
+      "1tbs"
+    ],
+
+    // tslint rules
     "max-classes-per-file": [false],
     "member-access": true,   
     "member-ordering": [false],
@@ -84,7 +97,6 @@
         "singleline": "never"
       }
     ],
-
     "align": [true],
     "class-name": true,
     "interface-name": [true],
@@ -121,9 +133,5 @@
       "check-type",
       "check-preblock"
     ]
-  },
-  "brace-style": [
-    true,
-    "stroustrup"
-  ]
+  }
 }

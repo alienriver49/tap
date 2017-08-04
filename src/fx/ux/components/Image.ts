@@ -23,6 +23,6 @@ export class Image extends BaseElement implements IImage {
         this.attributeSrc = config.src || '';
     }
 
-    @AttributeMetadata.Set('src')
+    @AttributeMetadata.set('src')
     public attributeSrc: string;
 }

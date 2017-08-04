@@ -16,7 +16,10 @@ export interface IList extends IBaseElementContainer {
  */
 export class List extends BaseElementContainer implements IList {
     constructor(config?: IListConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+        
         super(config);
 
         this.isOrdered = config.isOrdered !== void(0) ? config.isOrdered : false;

@@ -22,5 +22,9 @@ task('build:all', (done: TaskFunction) => {
 
 /** Lints the TypeScript code for all packages. */
 task('lint:ts:all', () => {
-    return lintTs([join(SRC_ROOT, '**!(exts)/*!(.spec).ts')]);
+    return runSequence(
+        'lint:ts:tap-fx',
+        'lint:ts:tap-portal',
+        'lint:ts:tap-web-components'
+    );
 });

@@ -17,15 +17,18 @@ export interface ITextArea extends IBaseElementContainer {
  */
 export class TextArea extends BaseElementContainer implements ITextArea {
     constructor(config?: ITextAreaConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) {
+            config = {};
+        }
+
         super(config);
         this.attributeRows = config.rows || '10';
         this.attributeCols = config.cols || '40';
     }
 
-    @AttributeMetadata.Set('rows')
+    @AttributeMetadata.set('rows')
     public attributeRows: string;
 
-    @AttributeMetadata.Set('cols')
+    @AttributeMetadata.set('cols')
     public attributeCols: string;
 }

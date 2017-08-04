@@ -13,15 +13,18 @@ export interface IMdcCheckbox extends IBaseElement {
 
 export class MdcCheckbox extends BaseElement implements IMdcCheckbox {
     constructor(config?: IMdcCheckboxConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+
         super(config);
         this.attributeIsChecked = config.isChecked || '';
         this.attributeDisplay = config.display || '';
     }
 
-    @AttributeMetadata.Set('isChecked')
+    @AttributeMetadata.set('isChecked')
     public attributeIsChecked: string;
 
-    @AttributeMetadata.Set('display')
+    @AttributeMetadata.set('display')
     public attributeDisplay: string;
 }

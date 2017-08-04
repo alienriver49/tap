@@ -35,8 +35,7 @@ export class Security {
 
         if (payload[key] === undefined) {
             return null;
-        }
-        else {
+        } else {
             return payload[key];
         }
     }
@@ -58,8 +57,7 @@ export class Security {
         
         if (sub.indexOf('TYLER\\') >= 0) {
             userName = sub.substring(sub.indexOf('TYLER\\') + 6);
-        }
-        else {
+        } else {
             userName = sub;
         }
 

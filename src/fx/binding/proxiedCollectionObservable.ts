@@ -233,8 +233,7 @@ export class ProxiedCollectionObservable {
             };
 
             if ((!this._utilities.isPrimitive(change.key) && !this._utilities.isDateObjectCollectionType(change.key)) ||
-                (!this._utilities.isPrimitive(resolvedChange.value) && !this._utilities.isDateObjectCollectionType(resolvedChange.value))) 
-            {
+                (!this._utilities.isPrimitive(resolvedChange.value) && !this._utilities.isDateObjectCollectionType(resolvedChange.value))) {
                 throw new Error(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Observed Maps can only contain primitives, Dates, objects, arrays, sets and maps`);
             }
 

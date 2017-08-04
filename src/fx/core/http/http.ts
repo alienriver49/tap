@@ -12,7 +12,7 @@ export class Http {
         _fetchConfig.configure();
     }
 
-    public fetchRequest(url: string, options?: any) : Promise<Response> {
+    public fetchRequest(url: string, options?: any): Promise<Response> {
         return this._httpClient.fetch(url, options);
     }
 }

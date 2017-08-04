@@ -39,7 +39,10 @@ export interface IInput extends IBaseElement {
  */
 export class Input extends BaseElement implements IInput {
     constructor(config?: IInputConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+
         super(config);
         this.attributeType = config.type || InputType.TEXT;
         this.attributeValue = config.value || '';
@@ -47,15 +50,15 @@ export class Input extends BaseElement implements IInput {
         this.attributeModel = config.model || '';
     }
 
-    @AttributeMetadata.Set('type')
+    @AttributeMetadata.set('type')
     public attributeType: string;
 
-    @AttributeMetadata.Set('value')
+    @AttributeMetadata.set('value')
     public attributeValue: string;
 
-    @AttributeMetadata.Set('checked')
+    @AttributeMetadata.set('checked')
     public attributeChecked: string;
 
-    @AttributeMetadata.Set('model')
+    @AttributeMetadata.set('model')
     public attributeModel: string;
 }

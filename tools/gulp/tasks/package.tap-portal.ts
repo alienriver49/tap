@@ -16,6 +16,7 @@ import {
 import { compileTypeScript, transpileFile } from '../utils/ts-helper';
 import { lintTs } from '../utils/lint-utils';
 
+/** Builds the tap-portal npm package. */
 task('build:tap-portal', (done) => {    
     return runSequence(
         'lint:ts:tap-portal',

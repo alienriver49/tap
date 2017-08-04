@@ -81,7 +81,7 @@ export class Router {
         this._reset();
 
         this._history.deactivate();
-        this._subscriptions.forEach((subscription) => { subscription.dispose(); });
+        this._subscriptions.forEach(subscription => subscription.dispose());
     }
 
     /**

@@ -20,7 +20,10 @@ export interface ISelect extends IBaseElementContainer {
  */
 export class Select extends BaseElementContainer implements ISelect {
     constructor(config?: ISelectConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+
         super(config);
         this.attributeMultiple = config.multiple || '';
         this.attributeValue = config.value || '';
@@ -28,10 +31,10 @@ export class Select extends BaseElementContainer implements ISelect {
 
     public content: IOption[];
 
-    @AttributeMetadata.Set('multiple')
+    @AttributeMetadata.set('multiple')
     public attributeMultiple: string;
 
-    @AttributeMetadata.Set('value')
+    @AttributeMetadata.set('value')
     public attributeValue: string;
 
     /**

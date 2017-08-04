@@ -186,6 +186,6 @@ export class Extension {
     public removeBlades(): void {
         this._unregisterAllBladeBindings();
         this.blades.splice(0, this.blades.length);
-        this.blades.forEach((blade) => { blade.removeView(); });
+        this.blades.forEach(blade => blade.removeView());
     }
 }

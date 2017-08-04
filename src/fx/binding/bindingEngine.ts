@@ -205,8 +205,7 @@ export class BindingEngine implements IBindingEngine {
                     addedMetadata.push(element);
                     if (this._utilities.isPrimitive(element)) {
                         theArray[index] = element;
-                    }
-                    else {
+                    } else {
                         const serializedObject: ISerializedObject = element;
                         // First check if it already exists in the context
                         const existingChildObject = this.getContextById(serializedObject.contextId);
@@ -773,8 +772,7 @@ export class BindingEngine implements IBindingEngine {
                     }
                 }
 
-            }
-            else {
+            } else {
                 const bindingMap = this._contextBindingMap.get(myContextId);
                 if (!bindingMap) {
                     throw new Error(`Missing binding map for context Id: ${myContextId}.`);
@@ -788,8 +786,7 @@ export class BindingEngine implements IBindingEngine {
                 }
             }
             return contextId;
-        }
-        else {
+        } else {
             // Otherwise create a new Id (unless passed one) and binding mapping for the context
             if (!contextId) {
                 contextId = this._utilities.newGuid();
@@ -809,8 +806,7 @@ export class BindingEngine implements IBindingEngine {
                 }
 
                 this._collectionBindingMap.set(contextId, bindingMap);
-            }
-            else {
+            } else {
                 const bindingMap: IObjectBindingMap = {
                     observers: [], 
                     functions: [], 
@@ -1085,8 +1081,7 @@ export class BindingEngine implements IBindingEngine {
                 // complex properties are added to metadata.childMetadata
                 if (this._utilities.isPrimitive(childMetadata)) {
                     metadata.value[prop] = childMetadata;
-                }
-                else {
+                } else {
                     metadata.childMetadata.push(childMetadata as ISerializedObject);
                 }
             }

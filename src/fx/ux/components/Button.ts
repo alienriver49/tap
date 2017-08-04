@@ -45,7 +45,10 @@ export interface IButton extends IBaseElementContainer, IDisabled {
  */
 export class Button extends Disableable(BaseElementContainer) implements IButton {
     constructor(config?: IButtonConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+
         super(config);
         this.attributeType = config.type || ButtonType.BUTTON;
         this.eventClick = config.click || '';
@@ -59,10 +62,10 @@ export class Button extends Disableable(BaseElementContainer) implements IButton
         }
     }
 
-    @AttributeMetadata.Set('type')
+    @AttributeMetadata.set('type')
     public attributeType: string;
 
-    @EventMetadata.Set('click')
+    @EventMetadata.set('click')
     public eventClick: string;
 
     /**

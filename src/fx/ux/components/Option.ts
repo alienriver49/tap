@@ -22,7 +22,10 @@ export interface IOption extends IBaseElementContainer {
  */
 export class Option extends BaseElementContainer implements IOption {
     constructor(config?: IOptionConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+
         super(config);
         this.attributeDisabled = config.disabled || '';
         this.attributeSelected = config.selected || '';
@@ -30,15 +33,15 @@ export class Option extends BaseElementContainer implements IOption {
         this.attributeModel = config.model || '';
     }
 
-    @AttributeMetadata.Set('disabled')
+    @AttributeMetadata.set('disabled')
     public attributeDisabled: string;
 
-    @AttributeMetadata.Set('selected')
+    @AttributeMetadata.set('selected')
     public attributeSelected: string;
 
-    @AttributeMetadata.Set('value')
+    @AttributeMetadata.set('value')
     public attributeValue: string;
 
-    @AttributeMetadata.Set('model')
+    @AttributeMetadata.set('model')
     public attributeModel: string;
 }

@@ -24,9 +24,9 @@ export class Label extends BaseElementContainer implements ILabel {
         }
     }
 
-    @AttributeMetadata.Set('for')
+    @AttributeMetadata.set('for')
     public attributeFor: string;
     
-    @AttributeMetadata.Set('type')
+    @AttributeMetadata.set('type')
     public attributeValue: string;
 }

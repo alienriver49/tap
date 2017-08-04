@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 
 export class RepeatMetadata {
-    static Key: string = 'tapFxUxRepeat';
+    public static key: string = 'tapFxUxRepeat';
 
-    static Set(): any {
-        return Reflect.metadata(RepeatMetadata.Key, true);
+    public static set(): any {
+        return Reflect.metadata(RepeatMetadata.key, true);
     }
 }

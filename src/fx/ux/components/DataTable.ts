@@ -21,7 +21,10 @@ export interface IDataTable extends IBaseElement {
  */
 export class DataTable extends BaseElement implements IDataTable {
     constructor(config?: IDataTableConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+
         super(config);
 
         this.attributeTitle = config.title || '';
@@ -31,13 +34,13 @@ export class DataTable extends BaseElement implements IDataTable {
 
     private _attributeColumnConfiguration: string;
 
-    @AttributeMetadata.Set('title')
+    @AttributeMetadata.set('title')
     public attributeTitle: string;
     
-    @AttributeMetadata.Set('totalItems')
+    @AttributeMetadata.set('totalItems')
     public attributeTotalItems: string;
 
-    @AttributeMetadata.Set('data')
+    @AttributeMetadata.set('data')
     public attributeData: string;
 
     /**
@@ -56,7 +59,7 @@ export class DataTable extends BaseElement implements IDataTable {
     }
 
     // ES6 style getters are defined on the prototype
-    @AttributeMetadata.Set('columnConfiguration')
+    @AttributeMetadata.set('columnConfiguration')
     public get attributeColumnConfiguration() {
         return this._attributeColumnConfiguration;
     }

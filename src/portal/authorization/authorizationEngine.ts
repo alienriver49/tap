@@ -18,8 +18,7 @@ export class AuthorizationEngine {
         return new Promise((resolve, reject) => {
             if (this.permissions.checkMenuSecurity(resource)) {
                 resolve(true);
-            }
-            else {
+            } else {
                 reject(false);
             }
         });

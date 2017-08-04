@@ -96,8 +96,7 @@ export class RpcClient {
 
         try {
             return this._isInIFrame = (window.self !== window.top);
-        } 
-        catch (e) {
+        } catch (e) {
             return true;
         }
     }

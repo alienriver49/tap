@@ -28,7 +28,7 @@ export class ConventionEngine {
      * @param context 
      * @param functions 
      */
-    public attachConventions(nodeSelector: NodeSelector, context: Object, functions: string[]) {
+    public attachConventions(nodeSelector: NodeSelector, context: object, functions: string[]) {
         this.attachDisabled(nodeSelector, context);
         this.attachClickHandlers(nodeSelector, functions);
     }
@@ -38,9 +38,9 @@ export class ConventionEngine {
      * @param nodeSelector 
      * @param context 
      */
-    public attachDisabled(nodeSelector: NodeSelector, context: Object): void {
+    public attachDisabled(nodeSelector: NodeSelector, context: object): void {
         console.log('[TAP-FX] Attaching disabled properties via convention');
-        for (let prop in context) {
+        for (const prop in context) {
             // only check observable properties for convention
             if (this._utilities.canObserveContextProperty(context, prop)) {
                 this._attachDisabled(nodeSelector, prop);
@@ -51,19 +51,19 @@ export class ConventionEngine {
     private _attachDisabled(nodeSelector: NodeSelector, prop: string): void {
         // let's check if this propert matches our disabled regex convention
         console.log('[TAP-FX] Checking property ' + prop + ' against TAP disabled convention');
-        let result = this.disabledRegex.exec(prop);
+        const result = this.disabledRegex.exec(prop);
         // if result is set and there is a substring match
         if (result && result[1]) {
             // grab the result name and format it to our convention, i.e. Convention becomes convention, ClickMe becomes clickMe 
-            let resultName = result[1];
-            let name = this._utilities.lowerCaseFirstChar(resultName);
+            const resultName = result[1];
+            const name = this._utilities.lowerCaseFirstChar(resultName);
             // query the document fragment for the convention name
-            let element = nodeSelector.querySelector('[name="' + name + '"]');
+            const element = nodeSelector.querySelector('[name="' + name + '"]');
             // if there is an element and the disabled or disabled.bind attribute hasn't been set yet
             if (element && !element.attributes[this.disabledAttribute] && !element.attributes[this.disabledBindAttribute]) {
                 console.log('[TAP-FX] Attaching attribute ' + this.disabledBindAttribute + ' with prop ' + prop + ' to element ' + name);
                 // use our master document to create an attribute of this.disabledBindAttribute
-                let attribute = document.createAttribute(this.disabledBindAttribute);
+                const attribute = document.createAttribute(this.disabledBindAttribute);
                 // set the value of that attribute to be our property
                 attribute.value = prop;
                 // attach, woohoo!
@@ -79,7 +79,7 @@ export class ConventionEngine {
      */
     public attachClickHandlers(nodeSelector: NodeSelector, functions: string[]): void {
         console.log('[TAP-FX] Attaching click functions via convention');
-        for (let func of functions) {
+        for (const func of functions) {
             this._attachClickHandler(nodeSelector, func);
         }
     }
@@ -87,19 +87,19 @@ export class ConventionEngine {
     private _attachClickHandler(nodeSelector: NodeSelector, func: string): void {
         // let's check if this function matches our click regex convention
         console.log('[TAP-FX] Checking function ' + func + ' against TAP click convention');
-        let result = this.onClickRegex.exec(func);
+        const result = this.onClickRegex.exec(func);
         // if result is set and there is a substring match
         if (result && result[1]) {
             // grab the result name and format it to our convention, i.e. Convention becomes convention, ClickMe becomes clickMe 
-            let resultName = result[1];
-            let name = this._utilities.lowerCaseFirstChar(resultName);
+            const resultName = result[1];
+            const name = this._utilities.lowerCaseFirstChar(resultName);
             // query the document fragment for the convention name
-            let element = nodeSelector.querySelector('[name="' + name + '"]');
+            const element = nodeSelector.querySelector('[name="' + name + '"]');
             // if there is an element and the click attribute hasn't been set yet
             if (element && !element.attributes[this.onClickAttribute]) {
                 console.log('[TAP-FX] Attaching attribute ' + this.onClickAttribute + ' with function ' + func + ' to element ' + name);
                 // use our master document to create an attribute of this.onClickAttribute
-                let attribute = document.createAttribute(element.attributes[this.disabledAttribute] ? this.onClickTriggerAttribute : this.onClickAttribute);
+                const attribute = document.createAttribute(element.attributes[this.disabledAttribute] ? this.onClickTriggerAttribute : this.onClickAttribute);
                 // set the value of that attribute to be a call to our function
                 attribute.value = func + '()';
                 // attach, woohoo!

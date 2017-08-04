@@ -1,4 +1,4 @@
-import * as tapm from './../metadata/metadata'
+import * as tapm from './../metadata/metadata';
 
 export class Utilities {
     /**
@@ -64,10 +64,10 @@ export class Utilities {
      */
     public camelCaseToHyphen(str: string): string {
         str = this.lowerCaseFirstChar(str);
+
         if (/([A-Z]+)/.exec(str)) {
             return str.replace(/([A-Z])/g, (g) => `-${g[0].toLowerCase()}`);
-        }
-        else {
+        } else {
             // If there are no capital letters, just return input
             return str;
         }
@@ -112,7 +112,7 @@ export class Utilities {
      * @param context 
      * @param prop 
      */
-    canObserveContextProperty(context: Object, prop: string): boolean {
+    public canObserveContextProperty(context: object, prop: string): boolean {
         // only register objects own properties and not those on the prototype chain
         // anything starting with an underscore is treated as a private property and is not watched for changes
         // skip Functions
@@ -120,7 +120,7 @@ export class Utilities {
                 !tapm.HasNoObserve(context, prop) &&  // don't observe props with NoObserve decorator
                 prop.charAt(0) !== '_' &&
                 (this.isPrimitive(context[prop]) || this.isDateObjectCollectionType(context[prop])) &&
-                this.classOf(context[prop]) !== '[object Function]'
+                this.classOf(context[prop]) !== '[object Function]';
     }
 
     /**

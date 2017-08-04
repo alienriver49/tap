@@ -1,13 +1,13 @@
 import 'reflect-metadata';
 
 export class AttributeMetadata {
-    static Key: string = 'tapFxUxAttribute';
+    public static key: string = 'tapFxUxAttribute';
 
-    static Set(attributeName: string): any {
-        return Reflect.metadata(AttributeMetadata.Key, attributeName);
+    public static set(attributeName: string): any {
+        return Reflect.metadata(AttributeMetadata.key, attributeName);
     }
 
-    static Define(attributeName, target, propertyKey): void {
-        Reflect.defineMetadata(AttributeMetadata.Key, attributeName, target, propertyKey);
+    public static define(attributeName, target, propertyKey): void {
+        Reflect.defineMetadata(AttributeMetadata.key, attributeName, target, propertyKey);
     }
 }

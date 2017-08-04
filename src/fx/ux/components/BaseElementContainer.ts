@@ -14,7 +14,10 @@ export interface IBaseElementContainer extends IBaseElement {
  */
 export class BaseElementContainer extends BaseElement implements IBaseElementContainer {
     constructor(config?: IBaseElementContainerConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+        
         super(config);
         this.content = config.content || [];
     }

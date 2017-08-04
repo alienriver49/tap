@@ -13,7 +13,10 @@ export interface IListItem extends IBaseElementContainer {
  */
 export class ListItem extends BaseElementContainer implements IListItem {
     constructor(config?: IListItemConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
+
         super(config);
     }
 }

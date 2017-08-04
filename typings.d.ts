@@ -7,6 +7,7 @@ import { Extension } from './src/fx/core/extension/extension';
 import { ConventionEngine } from './src/fx/ux/conventionEngine';
 import { Http } from './src/fx/core/http/http';
 import { Security } from './src/fx/security/security';
+import { Configuration } from './src/fx/configuration/config'
 import { Aurelia } from 'aurelia-framework';
 
 declare global {
@@ -18,6 +19,7 @@ declare global {
         ConventionEngine: ConventionEngine,
         Aurelia: Aurelia,
         Http: Http,
-        Security: Security
+        Security: Security,
+        Configuration: Configuration
     }
 }

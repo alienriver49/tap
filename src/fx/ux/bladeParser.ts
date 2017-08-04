@@ -41,7 +41,7 @@ export class BladeParser {
         }
 
         // use the convention engine to attach click handlers
-        this._conventionEngine.attachClickHandlers(parent, bladeFunctions);
+        this._conventionEngine.attachConventions(parent, blade, bladeFunctions);
 
         return `<template>${parent.outerHTML}</template>`;
     }
@@ -117,6 +117,9 @@ export class BladeParser {
         if (node instanceof tapc.TextArea) {
             el = document.createElement('textarea');
         }
+        if (node instanceof tapc.Button) {
+            el = document.createElement('button');
+        }
         if (node instanceof tapc.Text) {
             // TODO add support for multiple interpolations (@ symbols) in the text
             const textNode = document.createTextNode(node.text);
@@ -139,9 +142,6 @@ export class BladeParser {
         }
         if (node instanceof tapc.MdcCheckbox) {
             el = document.createElement('mdc-checkbox');
-        }
-        if (node instanceof tapc.Button) {
-            el = document.createElement('button');
         }
         if (el) {
             // Add attribute and event handlers

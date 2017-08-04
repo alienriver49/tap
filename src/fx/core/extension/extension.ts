@@ -322,10 +322,10 @@ export class Extension extends BaseExtension {
             returnFuncs.push(funcName);
         }
 
-        // convention - add a subscription for the onButtonRemoveClick which calls the removeBlade function
-        const functionName = 'onButtonRemoveClick';
+        // convention - add a subscription for the onRemoveClick which calls the _removeBladeRange function
+        const functionName = 'onRemoveClick';
         const subscriptionName = this._rpc.subscribe('tapfx.' + bladeId + '.' + functionName, (data) => {
-            // call the _removeBlade function as a manual removal
+            // call the _removeBladeRange function as a manual removal
             console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Received message from function: ` + functionName);
             this._removeBladeRange(blade, true);
 

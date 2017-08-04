@@ -28,7 +28,7 @@ export interface IBaseBlade {
 export class BaseBlade implements IBaseBlade {
     constructor() {
         this.content.push(
-            new tapc.Button({name: 'remove', class: 'removeBladeButton btn-danger'}).addIcon('glyphicon-remove'),
+            new tapc.Button({name: 'remove', class: 'removeBladeButton'}).addClass(tapc.ButtonClass.DANGER).addIcon('glyphicon-remove'),
             new tapc.Heading({name: 'title', importance: 2 }).addText('@title'),
             new tapc.Heading({name: 'subtitle', importance: 3 }).addText('@subtitle')
         );

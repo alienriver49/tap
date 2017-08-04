@@ -2,10 +2,12 @@ import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfi
 import { BaseElement } from './BaseElement';
 import { Icon } from './Icon';
 import { Text } from './Text';
+import { Disableable, IDisabled, IDisabledConfig } from './../attributes/disabled';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
+import { EventMetadata } from './../metadata/eventMetadata';
 
-export interface IButtonConfig extends IBaseElementContainerConfig {
+export interface IButtonConfig extends IBaseElementContainerConfig, IDisabledConfig {
     type?: /*ButtonType*/string;
-    disabled?: string;
     click?: string;
 }
 
@@ -33,21 +35,19 @@ export class ButtonClass {
 
 const BUTTON_CLASSES: string[] = Object.keys(ButtonClass).map((s) => ButtonClass[s]);
 
-export interface IButton extends IBaseElementContainer {
+export interface IButton extends IBaseElementContainer, IDisabled {
     attributeType: string;
-    attributeDisabled: string;
     eventClick: string;
 }
 
 /**
  * Button UX component.
  */
-export class Button extends BaseElementContainer implements IButton {
+export class Button extends Disableable(BaseElementContainer) implements IButton {
     constructor(config?: IButtonConfig) {
         if (config === void 0) { config = {}; }
         super(config);
         this.attributeType = config.type || ButtonType.BUTTON;
-        this.attributeDisabled = config.disabled || '';
         this.eventClick = config.click || '';
 
         // default configuration
@@ -59,13 +59,10 @@ export class Button extends BaseElementContainer implements IButton {
         }
     }
 
-    @BaseElement.tapcAttribute('type')
+    @AttributeMetadata.Set('type')
     public attributeType: string;
 
-    @BaseElement.tapcAttribute('disabled')
-    public attributeDisabled: string;
-
-    @BaseElement.tapcEvent('click')
+    @EventMetadata.Set('click')
     public eventClick: string;
 
     /**

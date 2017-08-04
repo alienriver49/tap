@@ -79,7 +79,7 @@ export class LandingBlade extends ViewModels.BaseBlade {
                     new tapc.Button({name: 'updateChildObject'}).addText('Update property on child object'),
                     new tapc.Button({name: 'changeChildObject'}).addText('Change child object'),
                 ),
-                new tapc.Content().addText('Test syncing changing array contents and changing array').addToContainer(
+                new tapc.Content().addText('Test syncing changing array contents and changing array ').addToContainer(
                     new tapc.Button({name: 'addData'}).addText('Add row'),
                     new tapc.Button({name: 'removeData'}).addText('Remove row'),
                     new tapc.Button({name: 'changeData'}).addText('Change array'),
@@ -87,14 +87,14 @@ export class LandingBlade extends ViewModels.BaseBlade {
                     new tapc.Button({name: 'changeItemProp'}).addText('Change prop on array child object'),
                 ),
                 new tapc.DataTable({id: 'test-table', data: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig'),
-                new tapc.Content().addText('Repeat with Map    ').addToContainer(
+                new tapc.Content().addText('Repeat with Map ').addToContainer(
                     new tapc.Button({name: 'addMapData'}).addText('Add element to map'),
                     new tapc.Button({name: 'removeMapData'}).addText('Remove element from map'),
                     new tapc.Button({name: 'changeMapDataValue'}).addText('Change element value in map'),
                     new tapc.Button({name: 'changeMapData'}).addText('Change map object'),
                 ),
                 new tapc.List({name: 'mapTest', repeat: '[key, value] of dict'}).addText('${key}: ${value.line1}'),
-                new tapc.Content().addText('Repeat with Set    ').addToContainer(
+                new tapc.Content().addText('Repeat with Set ').addToContainer(
                     new tapc.Button({name: 'addSetData'}).addText('Add element to set'),
                     new tapc.Button({name: 'removeSetData'}).addText('Remove element from set'),
                     new tapc.Button({name: 'changeSetData'}).addText('Change set object'),
@@ -120,7 +120,7 @@ export class LandingBlade extends ViewModels.BaseBlade {
         this._updateDisplay();
     }
 
-    public onButtonAddDataClick(): void {
+    public onAddDataClick(): void {
         if (this._usingDataset1) {
             this.data.push(
                 new School({
@@ -138,12 +138,12 @@ export class LandingBlade extends ViewModels.BaseBlade {
         }
     }
 
-    public onButtonRemoveDataClick(): void {
+    public onRemoveDataClick(): void {
         this.data.pop();
     }
 
-    public _usingDataset1: boolean = true;
-    public onButtonChangeDataClick(): void {
+    private _usingDataset1: boolean = true;
+    public onChangeDataClick(): void {
         this._usingDataset1 = !this._usingDataset1;
         this._changeDataSet();
     }
@@ -195,7 +195,7 @@ export class LandingBlade extends ViewModels.BaseBlade {
         }
     }
 
-    public onButtonTestClick(): void {
+    public onTestClick(): void {
         const index = this._tapFx.Utilities.getRandomInt(0, this.data.length - 1);
         console.log('Array index change');
         this.data[index] = 
@@ -216,14 +216,14 @@ export class LandingBlade extends ViewModels.BaseBlade {
         // this.data.splice(1, 1, new School({ name: 'Push School ' + random(1,100), grades: [9,10,11,12], hasPool: false }));
     }
 
-    public onButtonChangeItemPropClick(): void {
+    public onChangeItemPropClick(): void {
         const index = this._tapFx.Utilities.getRandomInt(0, this.data.length - 1);
         this.data[index].grades = [23, 24, 25];
         //this.data[index].name = `New Name ${this._tapFx.Utilities.getRandomInt(0, 1000)}`;
     }
 
-    public _childPropToggle: boolean = true;
-    public onButtonUpdateChildObjectClick(): void {
+    private _childPropToggle: boolean = true;
+    public onUpdateChildObjectClick(): void {
         if (this._childPropToggle) {
             this.address.town = 'Bangor';
         }
@@ -234,8 +234,8 @@ export class LandingBlade extends ViewModels.BaseBlade {
         this._childPropToggle = !this._childPropToggle;
     }
 
-    public _childObjToggle: boolean = true;
-    public onButtonChangeChildObjectClick(): void {
+    private _childObjToggle: boolean = true;
+    public onChangeChildObjectClick(): void {
         if (this._childObjToggle) {
             this.address2 = new Address({line1: '370 US Route 1', town: 'Falmouth', state: 'ME', zip: '04096'});
             this.address2.address = this.address2;
@@ -248,18 +248,18 @@ export class LandingBlade extends ViewModels.BaseBlade {
     }
 
     // add an element to the set
-    public onButtonAddSetDataClick(): void {
+    public onAddSetDataClick(): void {
         this.testSet.add(this._tapFx.Utilities.getRandomInt(this.testSet.size, 100));
     }
 
     // delete first element in the set
-    public onButtonRemoveSetDataClick(): void {
+    public onRemoveSetDataClick(): void {
         const val = this.testSet.values().next().value;
         this.testSet.delete(val);
     }
 
     // add an element to the Map
-    public onButtonAddMapDataClick(): void {
+    public onAddMapDataClick(): void {
         let go = true;
         while (go) {
             const key = this._tapFx.Utilities.getRandomInt(this.testSet.size, 100);
@@ -271,13 +271,13 @@ export class LandingBlade extends ViewModels.BaseBlade {
     }
 
     // delete first element in the Map
-    public onButtonRemoveMapDataClick(): void {
+    public onRemoveMapDataClick(): void {
         const key: string = this.dict.keys().next().value;
         this.dict.delete(key);
     }
 
     // Change data value on random element in the Map
-    public onButtonChangeMapDataValueClick(): void {
+    public onChangeMapDataValueClick(): void {
         let index = this._tapFx.Utilities.getRandomInt(0, this.dict.size - 1);
         const keys = this.dict.keys();
         let key = keys.next().value;
@@ -291,8 +291,8 @@ export class LandingBlade extends ViewModels.BaseBlade {
     }
 
 
-    public _mapDataToggle: boolean = true;
-    public onButtonChangeMapDataClick(): void {
+    private _mapDataToggle: boolean = true;
+    public onChangeMapDataClick(): void {
         if (this._mapDataToggle) {
             this.dict = new Map<string, Address>([
                 ['four', new Address({line1: '4 Birch St', town: 'Portland', state: 'ME', zip: '04102'})], 
@@ -309,8 +309,8 @@ export class LandingBlade extends ViewModels.BaseBlade {
         this._mapDataToggle = !this._mapDataToggle;
     }
 
-    public _setDataToggle: boolean = true;
-    public onButtonChangeSetDataClick(): void {
+    private _setDataToggle: boolean = true;
+    public onChangeSetDataClick(): void {
         if (this._setDataToggle) {
             this.testSet = new Set<number>([21, 22, 23]);
         } else {

@@ -12,8 +12,7 @@ export class Http {
         _fetchConfig.configure();
     }
 
-    public fetchRequest(url: string, options?: any): Promise<Response> {
-        console.log(this._authService.getTokenPayload());
+    public fetchRequest(url: string, options?: any) : Promise<Response> {
         return this._httpClient.fetch(url, options);
     }
 }

@@ -1,4 +1,5 @@
 import { BaseElement, IBaseElement, IBaseElementConfig } from './BaseElement';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface IMdcCheckboxConfig extends IBaseElementConfig {
     isChecked?: string;
@@ -18,9 +19,9 @@ export class MdcCheckbox extends BaseElement implements IMdcCheckbox {
         this.attributeDisplay = config.display || '';
     }
 
-    @BaseElement.tapcAttribute('isChecked')
+    @AttributeMetadata.Set('isChecked')
     public attributeIsChecked: string;
 
-    @BaseElement.tapcAttribute('display')
+    @AttributeMetadata.Set('display')
     public attributeDisplay: string;
 }

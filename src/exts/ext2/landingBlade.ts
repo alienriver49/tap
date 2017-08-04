@@ -7,7 +7,7 @@ export class LandingBlade extends ViewModels.FormBlade {
     public title: string;
     public subtitle: string;
 
-    public buttonConventionDisabled = false;
+    public conventionDisabled = false;
     public showContent = true;
 
     public selectOptions = ['Option 1', 'Option 2', 'Option 3'];
@@ -33,12 +33,12 @@ export class LandingBlade extends ViewModels.FormBlade {
         this.addForm()
                 .addToContainer(
                     new tapc.Content().addToContainer(
-                        new tapc.Button({name: 'convention', disabled: '@buttonConventionDisabled' }).addText('Convention Button'),
+                        new tapc.Button({name: 'convention'}).addText('Convention Button'),
                     )
                 )
                 .addToContainer(
                     new tapc.Content().addToContainer(
-                        new tapc.Button({name: 'clickMe', click: "onButtonClickMeClick('argument 1 being passed to a function', 'argument 2 being passed to a function')" }).addText('Click Me!'),
+                        new tapc.Button({name: 'clickMe', click: "onClickMeClick('argument 1 being passed to a function', 'argument 2 being passed to a function')" }).addText('Click Me!'),
                     )
                 )
                 .addLabelInput(
@@ -129,22 +129,22 @@ export class LandingBlade extends ViewModels.FormBlade {
         return promise;
     }
     
-    public onButtonConventionClick() {
+    public onConventionClick() {
         const origSubtitle = this.subtitle;
         this.subtitle = origSubtitle + ' - Convention Button Clicked!';
-        this.buttonConventionDisabled = true;
+        this.conventionDisabled = true;
 
         const user: any = this._tapFx.Security.getUserInfo();
         console.log('[EXT-2] userInfo: ', user);
 
         setTimeout(() => {
             this.subtitle = origSubtitle;
-            this.buttonConventionDisabled = false;
+            this.conventionDisabled = false;
         }, 3000);
     }
 
-    public onButtonClickMeClick(arg: any, arg2: any) {
-        console.log('[EXT-2] onButtonClickMeClick arg 1: ' + arg + ' | arg 2: ' + arg2);
+    public onClickMeClick(arg: any, arg2: any) {
+        console.log('[EXT-2] onClickMeClick arg 1: ' + arg + ' | arg 2: ' + arg2);
         this.selectedOption = this.selectOptions[this._tapFx.Utilities.getRandomInt(0, this.selectOptions.length - 1)];
         this.selectedCheckboxes = [this.checkboxes[this._tapFx.Utilities.getRandomInt(0, this.checkboxes.length - 1)]];
         this.selectedRadio = this.radios[this._tapFx.Utilities.getRandomInt(0, this.radios.length - 1)];

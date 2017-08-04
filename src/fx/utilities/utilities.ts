@@ -1,3 +1,5 @@
+import * as tapm from './../metadata/metadata'
+
 export class Utilities {
     /**
      * Returns a new GUID.
@@ -106,6 +108,22 @@ export class Utilities {
     }
 
     /**
+     * Check if the property on the passed context can be observed.
+     * @param context 
+     * @param prop 
+     */
+    canObserveContextProperty(context: Object, prop: string): boolean {
+        // only register objects own properties and not those on the prototype chain
+        // anything starting with an underscore is treated as a private property and is not watched for changes
+        // skip Functions
+        return context.hasOwnProperty(prop) &&
+                !tapm.HasNoObserve(context, prop) &&  // don't observe props with NoObserve decorator
+                prop.charAt(0) !== '_' &&
+                (this.isPrimitive(context[prop]) || this.isDateObjectCollectionType(context[prop])) &&
+                this.classOf(context[prop]) !== '[object Function]'
+    }
+
+    /**
      * Determine if the passed value is a primitive javascript object
      * @param value 
      */
@@ -155,8 +173,7 @@ export class Utilities {
         const match: RegExpExecArray | null = nameofRegExp.exec(fnString);
         if (match) {
             return match[1];
-        }
-        else {
+        } else {
             throw new Error(`Could not parse nameof string`);
         }
     }

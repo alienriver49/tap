@@ -1,5 +1,6 @@
 import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
 import { BaseElement } from './BaseElement';
+import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface ITextAreaConfig extends IBaseElementContainerConfig {
     rows?: string;
@@ -22,9 +23,9 @@ export class TextArea extends BaseElementContainer implements ITextArea {
         this.attributeCols = config.cols || '40';
     }
 
-    @BaseElement.tapcAttribute('rows')
+    @AttributeMetadata.Set('rows')
     public attributeRows: string;
 
-    @BaseElement.tapcAttribute('cols')
+    @AttributeMetadata.Set('cols')
     public attributeCols: string;
 }

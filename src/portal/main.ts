@@ -22,6 +22,12 @@ export function configure(aurelia: Aurelia) {
         aurelia.container.registerSingleton(ExtensionLoaderEngine, ExtensionLoaderEngine);
         aurelia.container.registerSingleton(AuthorizationEngine, AuthorizationEngine);
 
+        // Check for an auth end point in the config, otherwise use what's set in authConfig.js
+        //let authEndPoint: any = tapFx.Configuration.getConfigValue('authorizationEndpoint');
+
+        //if (authEndPoint != undefined)
+        //    config.providers.TylerId.authorizationEndpoint = authEndPoint;
+
         aurelia.use
             .basicConfiguration()
             .history()
@@ -43,8 +49,6 @@ export function configure(aurelia: Aurelia) {
             //    console.log('[SHELL] Not authenticated!');
             //    auth.authenticate('TylerId', false, {});
             //}
-
-            //delete(tapFx.Aurelia);
         });
     });
 }

@@ -6,9 +6,10 @@
   "scripts": {
     "jspm": "jspm install",
     "build": "gulp build",
+    "lint": "gulp lint:ts:all",
     "test": "karma start test/karma.conf.js",
     "test:once": "npm run test -- --single-run",
-    "serve": "http-server -c 1 -o",
+    "serve": "lr-http-server -w src/**/*.ts,src/**/*.html,src/**/*.css",
     "serve:coverage": "http-server -c 1 -o -p 9875 coverage/html-report/html"
   },
   "jspm": {
@@ -85,7 +86,6 @@
     "gulp-sourcemaps": "^2.6.0",
     "gulp-tslint": "^8.1.1",
     "gulp-typescript": "^3.2.1",
-    "http-server": "^0.10.0",
     "jasmine-core": "^2.6.4",
     "jspm": "^0.16.53",
     "karma": "^1.7.0",
@@ -93,6 +93,7 @@
     "karma-jasmine": "^1.1.0",
     "karma-jspm": "^2.2.3",
     "karma-typescript": "^3.0.4",
+    "lr-http-server": "^0.1.5",
     "merge2": "^1.1.0",
     "moment": "^2.18.1",
     "numeral": "^2.0.6",
@@ -106,8 +107,5 @@
     "tslint": "^5.5.0",
     "tslint-eslint-rules": "^4.1.1",
     "typescript": "^2.4.2"
-  },
-  "dependencies": {
-    "tap-fx": "file:tap-fx-0.1.0.tgz"
   }
 }

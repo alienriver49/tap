@@ -40,19 +40,25 @@ export const TAP_WEB_COMPONENTS_ES2015_BUNDLE_NAME: string = 'tap-web-components
 export const TAP_WEB_COMPONENTS_PACKAGE_JSON_PATH: string = join(TAP_WEB_COMPONENTS_ROOT, 'package.json');
 
 export const DEFAULT_COMPILER_OPTIONS = {
-    module: 'es2015',
-    moduleResolution: 'node',
-    target: 'es2015',
-    lib: ['dom', 'es2015'],
-    sourceMap: true,
-    inlineSources: true,
-    declaration: true,
-    experimentalDecorators: true,
-    noImplicitAny: false,
-    suppressImplicitAnyIndexErrors: true,
-    allowSyntheticDefaultImports: true,
-    noImplicitReturns: true,
-    preserveConstEnums: true,
-    strictNullChecks: true,
-    pretty: true
-  };
+  module: 'es2015',
+  moduleResolution: 'node',
+  target: 'es2015',
+  lib: ['dom', 'es2015'],
+  sourceMap: true,
+  inlineSources: true,
+  declaration: true,
+  experimentalDecorators: true,
+  noImplicitAny: false,
+  suppressImplicitAnyIndexErrors: true,
+  allowSyntheticDefaultImports: true,
+  noImplicitReturns: true,
+  preserveConstEnums: true,
+  strictNullChecks: true,
+  pretty: true
+};
+
+// Extended TAP modules
+export const TAP_MODULES = [
+  'webComponents',
+  'portal'
+];

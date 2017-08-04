@@ -4,7 +4,7 @@ import { School } from './school';
 import { Address } from './address';
 import { getTapFx, ViewModels } from 'tap-fx';
 
-class LandingBlade extends ViewModels.BaseBlade {
+export class LandingBlade extends ViewModels.BaseBlade {
     private _tapFx: ITapFx;
     
     public title: string;

@@ -10,7 +10,7 @@ import * as gulpIf from 'gulp-if';
 import * as gulpReplace from 'gulp-replace';
 
 import { getPackageDirectories } from './directory-utils';
-import { TAP_FX_ROOT, MODULE_PACKAGE_PREFIX, DEFAULT_COMPILER_OPTIONS } from '../constants';
+import { TAP_FX_ROOT, MODULE_PACKAGE_PREFIX, DEFAULT_COMPILER_OPTIONS, TAP_MODULES } from '../constants';
 
 /** Checks and reports diagnostics if present. */
 function reportDiagnostics(diagnostics: ts.Diagnostic[], baseDir?: string) {
@@ -58,32 +58,26 @@ export function transpileFile(inputPath: string, outputPath: string, options: ts
  */
 export function compileTypeScript(rootDir: string, outputDir: string, fixupRelativePaths: boolean = false): NodeJS.ReadWriteStream {
   let moduleNames: string = '';
-  //const tsProject = gulpTypeScript.createProject(tsconfigPath, tsconfigOverrides);
-  const tsResult = src([
-                    `${rootDir}/**/*!(.spec).ts`,
-                  ])//tsProject.src()
+  const tsResult = src([`${rootDir}/**/*!(.spec).ts`])
                   .pipe(gulpSourcemaps.init())
                   .pipe(gulpTypeScript(DEFAULT_COMPILER_OPTIONS));
-                  //.pipe(tsProject());
 
-  if (fixupRelativePaths) {    
+  if (fixupRelativePaths) {
+    moduleNames = moduleNames.concat(...TAP_MODULES);
     moduleNames = getPackageDirectories(TAP_FX_ROOT).join('|');
   }
 
-  const tapFxImportRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s["'])(?:\\.{1,2}\\/)[./]*?(?:fx\/)?(${moduleNames})\\/?(?:.*)(["'];?)(.*)$`, 'gm');
-  const tapImportRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s["'])(?:\\.{1,2}\\/)[./]*?(?:fx\/)?(webComponents|portal)\\/?(?:.*)(["'];?)(.*)$`, 'gm');
+  const importRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s["'])(?:\\.{1,2}\\/)[./]*?(?:fx\/)?(${moduleNames})\\/?(?:.*)(["'];?)(.*)$`, 'gm');
 
   return merge([
     // Declaration files
     tsResult.dts
-      .pipe(gulpIf(fixupRelativePaths, gulpReplace(tapFxImportRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3$4`)))
-      .pipe(gulpIf(fixupRelativePaths, gulpReplace(tapImportRegEx, '$1tap-$2$3$4')))
+      .pipe(gulpIf(fixupRelativePaths, gulpReplace(importRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3$4`)))
       .pipe(dest(outputDir)),
 
     // JavaScript files
     tsResult.js
-      .pipe(gulpIf(fixupRelativePaths, gulpReplace(tapFxImportRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3$4`)))
-      .pipe(gulpIf(fixupRelativePaths, gulpReplace(tapImportRegEx, '$1$tap-2$3$4')))
+      .pipe(gulpIf(fixupRelativePaths, gulpReplace(importRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3$4`)))
       .pipe(gulpSourcemaps.write()).pipe(dest(outputDir))
   ]);
 }

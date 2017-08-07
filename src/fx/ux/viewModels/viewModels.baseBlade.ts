@@ -1,6 +1,6 @@
-import { IBaseElement } from './../components/BaseElement';
+import { IBaseElement } from './../components/baseElement';
 import * as tapc from './../tapcModules';
-import { IButton } from './../components/Button';
+import { IButton } from './../components/button';
 import * as tapm from './../../metadata/metadata';
 import { Utilities } from './../../utilities/utilities';
 

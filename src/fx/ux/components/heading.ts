@@ -1,4 +1,4 @@
-import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
+import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
 
 export interface IHeadingConfig extends IBaseElementContainerConfig {
     importance: number;

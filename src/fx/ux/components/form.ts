@@ -1,8 +1,8 @@
-import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
-import { Content } from './Content';
-import { Label, ILabel, ILabelConfig } from './Label';
-import { Input, IInput, IInputConfig } from './Input';
-import { ITextArea } from './TextArea';
+import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
+import { Content } from './content';
+import { Label, ILabel, ILabelConfig } from './label';
+import { Input, IInput, IInputConfig } from './input';
+import { ITextArea } from './textArea';
 
 export interface IFormConfig extends IBaseElementContainerConfig {
     

@@ -1,4 +1,4 @@
-import { BaseElement, IBaseElement, IBaseElementConfig } from './BaseElement';
+import { BaseElement, IBaseElement, IBaseElementConfig } from './baseElement';
 import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface IInputConfig extends IBaseElementConfig {

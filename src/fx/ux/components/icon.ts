@@ -1,5 +1,5 @@
-import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
-import { IImage } from './Image';
+import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
+import { IImage } from './image';
 
 export interface IIconConfig extends IBaseElementContainerConfig {
     

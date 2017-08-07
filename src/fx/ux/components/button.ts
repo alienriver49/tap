@@ -1,7 +1,7 @@
-import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
-import { BaseElement } from './BaseElement';
-import { Icon } from './Icon';
-import { Text } from './Text';
+import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
+import { BaseElement } from './baseElement';
+import { Icon } from './icon';
+import { Text } from './text';
 import { Disableable, IDisabled, IDisabledConfig } from './../attributes/disabled';
 import { AttributeMetadata } from './../metadata/attributeMetadata';
 import { EventMetadata } from './../metadata/eventMetadata';

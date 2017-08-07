@@ -7,7 +7,7 @@ export class Configuration {
     private _config = new Map<string, string>();
 
     constructor(public http: Http) { 
-        this._getConfig();
+        //this._getConfig();
     }
 
     /**

@@ -1,6 +1,5 @@
-import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
-import { BaseElement } from './BaseElement';
-import { IListItem } from './ListItem';
+import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
+import { IListItem } from './listItem';
 
 export interface IListConfig extends IBaseElementContainerConfig {
     isOrdered?: boolean;

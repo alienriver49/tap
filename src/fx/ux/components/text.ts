@@ -1,4 +1,4 @@
-import { BaseElement, IBaseElement, IBaseElementConfig } from './BaseElement';
+import { BaseElement, IBaseElement, IBaseElementConfig } from './baseElement';
 
 export interface ITextConfig extends IBaseElementConfig {
     text?: string;

@@ -1,5 +1,5 @@
-import { BaseElement, IBaseElement, IBaseElementConfig } from './BaseElement';
-import { Text } from './Text';
+import { BaseElement, IBaseElement, IBaseElementConfig } from './baseElement';
+import { Text } from './text';
 
 export interface IBaseElementContainerConfig extends IBaseElementConfig {
     content?: IBaseElement[];

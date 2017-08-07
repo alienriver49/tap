@@ -1,4 +1,4 @@
-import { BaseElement, IBaseElement, IBaseElementConfig } from './BaseElement';
+import { BaseElement, IBaseElement, IBaseElementConfig } from './baseElement';
 import { ITapDataTableColumnConfiguration } from './../../../webComponents/dataTable/tap-data-table';
 import { AttributeMetadata } from './../metadata/attributeMetadata';
 

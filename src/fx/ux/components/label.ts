@@ -1,5 +1,4 @@
-import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './BaseElementContainer';
-import { BaseElement } from './BaseElement';
+import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
 import { AttributeMetadata } from './../metadata/attributeMetadata';
 
 export interface ILabelConfig extends IBaseElementContainerConfig {

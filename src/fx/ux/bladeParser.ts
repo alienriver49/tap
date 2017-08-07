@@ -1,7 +1,7 @@
 import { inject } from 'aurelia-framework';
 import * as tapc from './tapcModules';
-import { IBaseElement } from './components/BaseElement';
-import { BaseElementContainer } from './components/BaseElementContainer';
+import { IBaseElement } from './components/baseElement';
+import { BaseElementContainer } from './components/baseElementContainer';
 import { BaseBlade } from './viewModels/viewModels.baseBlade';
 import { ConventionEngine } from './conventionEngine';
 import { Utilities } from './../utilities/utilities';
@@ -37,7 +37,7 @@ export class BladeParser {
         }*/
         const bladeContent = blade.content;
         for (const baseElement of bladeContent) {
-            const el = this.parseNode(parent, baseElement);
+            this.parseNode(parent, baseElement);
         }
 
         // use the convention engine to attach click handlers

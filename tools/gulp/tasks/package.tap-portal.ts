@@ -36,7 +36,7 @@ task('lint:ts:tap-portal', () => {
 
 /** Compiles the TypeScript and generates JavaScript and declaration files in the output directory. */
 task('compile:tap-portal', () => {
-    return compileTypeScript(TAP_PORTAL_ROOT, RELEASE_TAP_PORTAL_BUILD_ROOT, true);
+    return compileTypeScript(TAP_PORTAL_ROOT, RELEASE_TAP_PORTAL_BUILD_ROOT, true, 'tap-fx');
 });
 
 /** Creates the tap-portal bundle */

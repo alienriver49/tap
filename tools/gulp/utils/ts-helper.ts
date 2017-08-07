@@ -57,7 +57,7 @@ export function transpileFile(inputPath: string, outputPath: string, options: ts
  * Creates a TypeScript project from the provided tsconfig and emits the 
  * .js and .d.ts files in the provided output directory with sourcemaps.
  */
-export function compileTypeScript(rootDir: string, outputDir: string, fixupRelativePaths: boolean = false): NodeJS.ReadWriteStream {
+export function compileTypeScript(rootDir: string, outputDir: string, fixupRelativePaths: boolean = false, fixupPackage?: string): NodeJS.ReadWriteStream {
   let moduleNames: string = '';
   const tsResult = src([`${rootDir}/**/*!(.spec).ts`])
                   .pipe(gulpSourcemaps.init())
@@ -69,16 +69,21 @@ export function compileTypeScript(rootDir: string, outputDir: string, fixupRelat
   }
 
   const importRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s["'])(?:\\.{1,2}\\/)[./]*?(?:fx\/)?(${moduleNames})\\/?(?:.*)(["'];?)(.*)$`, 'gm');
+  let importTemplate: string = `$1${MODULE_PACKAGE_PREFIX}$2$3$4`;
+
+  if (fixupPackage) {
+    importTemplate = `$1${fixupPackage}$3$4`;
+  }
 
   return merge([
     // Declaration files
     tsResult.dts
-      .pipe(gulpIf(fixupRelativePaths, gulpReplace(importRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3$4`)))
+      .pipe(gulpIf(fixupRelativePaths, gulpReplace(importRegEx, importTemplate)))
       .pipe(dest(outputDir)),
 
     // JavaScript files
     tsResult.js
-      .pipe(gulpIf(fixupRelativePaths, gulpReplace(importRegEx, `$1${MODULE_PACKAGE_PREFIX}$2$3$4`)))
+      .pipe(gulpIf(fixupRelativePaths, gulpReplace(importRegEx, importTemplate)))
       .pipe(gulpSourcemaps.write()).pipe(dest(outputDir))
   ]);
 }

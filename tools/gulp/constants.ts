@@ -28,7 +28,7 @@ export const TAP_FX_PACKAGE_JSON_PATH: string = join(TAP_FX_ROOT, 'package.json'
 // portal
 export const TAP_PORTAL_ROOT: string = join(SRC_ROOT, 'portal');
 export const RELEASE_TAP_PORTAL_ROOT: string = join(RELEASE_PACKAGES_ROOT, 'tap-portal');
-export const RELEASE_TAP_PORTAL_BUILD_ROOT: string = join(RELEASE_TAP_FX_ROOT, 'src');
+export const RELEASE_TAP_PORTAL_BUILD_ROOT: string = join(RELEASE_TAP_PORTAL_ROOT, 'src');
 export const TAP_PORTAL_ES2015_BUNDLE_NAME: string = 'tap-portal.js';
 export const TAP_PORTAL_PACKAGE_JSON_PATH: string = join(TAP_PORTAL_ROOT, 'package.json');
 

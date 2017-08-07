@@ -6,5 +6,6 @@
   "typings": "src/index.d.ts",
   "license": "MIT",
   "dependencies": {
+    "tap-fx": "^0.1.0"
   }
 }

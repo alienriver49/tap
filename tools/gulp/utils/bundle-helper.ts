@@ -2,8 +2,6 @@ import { join } from 'path';
 import * as rollup from 'rollup';
 
 const rollupNodeResolve = require('rollup-plugin-node-resolve');
-const rollupPostCss = require('rollup-plugin-postcss');
-const rollupPluginCommonJs = require('rollup-plugin-commonjs');
 
 import { getPackageDirectories } from './directory-utils';
 import { kebabCase } from './string-utils';
@@ -24,9 +22,17 @@ const ROLLUP_GLOBALS: any = {
     'aurelia-framework': 'aurelia-framework',
     'aurelia-fetch-client': 'aurelia-fetch-client',
     'aurelia-auth': 'aurelia-auth',
+    'aurelia-event-aggregator': 'aurelia-event-aggregator',
+    'aurelia-templating': 'aurelia-templating',
+    'aurelia-templating-binding': 'aurelia-templating-binding',
+    'aurelia-html-import-template-loader': 'aurelia-html-import-template-loader',
+    'aurelia-loader': 'aurelia-loader',
+    'aurelia-loader-default': 'aurelia-loader-default',
+    'aurelia-history': 'aurelia-history',
     'numeral': 'numeral',
     'moment': 'moment',
-    'reflect-metadata': 'reflect-metadata'
+    'reflect-metadata': 'reflect-metadata',
+    'tap-fx': 'tap-fx'
 };
 
 // Add the TAP packages to the rollup globals
@@ -46,15 +52,7 @@ export function createModuleBundle(config: IRollupBundleConfig): Promise<void> {
         external: Object.keys(ROLLUP_GLOBALS),
         entry: config.entry,
         plugins: [
-            rollupNodeResolve(),
-            rollupPostCss({
-                extensions: ['.css']
-            }),
-            rollupPluginCommonJs({
-                namedExports: {
-                    'node_modules\aurelia-event-aggregator\dist\commonjs\aurelia-event-aggregator.js': ['EventAggregator']
-                }
-            })
+            rollupNodeResolve()
         ]
     };
 

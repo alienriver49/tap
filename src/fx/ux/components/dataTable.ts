@@ -1,6 +1,6 @@
 import { BaseElement, IBaseElement, IBaseElementConfig } from './baseElement';
-import { ITapDataTableColumnConfiguration } from './../../../webComponents/dataTable/tap-data-table';
-import { AttributeMetadata } from './../metadata/attributeMetadata';
+import { ITapDataTableColumnConfiguration } from '../../../webComponents/dataTable/tap-data-table';
+import { AttributeMetadata } from '../metadata/attributeMetadata';
 
 export interface IDataTableConfig extends IBaseElementConfig {
     title?: string;

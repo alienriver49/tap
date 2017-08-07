@@ -4,6 +4,7 @@
 # Temporary files
 *~
 *.tgz
+test/coverage
 
 # Git
 !.git*

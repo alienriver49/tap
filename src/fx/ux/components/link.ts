@@ -1,7 +1,7 @@
 import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
 import { Icon } from './icon';
 import { Text } from './text';
-import { AttributeMetadata } from './../metadata/attributeMetadata';
+import { AttributeMetadata } from '../metadata/attributeMetadata';
 
 export interface ILinkConfig extends IBaseElementContainerConfig {
     href?: string;

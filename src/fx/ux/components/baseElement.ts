@@ -6,9 +6,9 @@
  * https://www.typescriptlang.org/docs/handbook/decorators.html#metadata
  */
 import 'reflect-metadata';
-import { AttributeMetadata } from './../metadata/attributeMetadata';
-import { EventMetadata } from './../metadata/eventMetadata';
-import { RepeatMetadata } from './../metadata/repeatMetadata';
+import { AttributeMetadata } from '../metadata/attributeMetadata';
+import { EventMetadata } from '../metadata/eventMetadata';
+import { RepeatMetadata } from '../metadata/repeatMetadata';
 
 /**
  * Config interface for BaseElement creation.

@@ -1,7 +1,7 @@
 import { BaseBlade, IBaseBlade } from './viewModels.baseBlade';
-import * as tapc from './../tapcModules';
-import { IButton } from './../components/Button';
-import { IDataTable } from './../components/DataTable';
+import * as tapc from '../tapcModules';
+import { IButton } from '../components/button';
+import { IDataTable } from '../components/dataTable';
 
 export interface IBrowseBlade extends IBaseBlade {
     addActionButtons(...buttons: IButton[]): void;

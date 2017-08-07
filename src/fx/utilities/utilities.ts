@@ -1,4 +1,4 @@
-import * as tapm from './../metadata/metadata';
+import * as tapm from '../metadata/metadata';
 
 export class Utilities {
     /**

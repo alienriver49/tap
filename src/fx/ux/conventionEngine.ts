@@ -1,5 +1,5 @@
 import { inject } from 'aurelia-dependency-injection';
-import { Utilities } from './../utilities/utilities';
+import { Utilities } from '../utilities/utilities';
 
 /**
  * Engine for processing TAP conventions.

@@ -1,6 +1,6 @@
 import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
 import { IOption } from './option';
-import { AttributeMetadata } from './../metadata/attributeMetadata';
+import { AttributeMetadata } from '../metadata/attributeMetadata';
 
 export interface ISelectConfig extends IBaseElementContainerConfig {
     multiple?: string;

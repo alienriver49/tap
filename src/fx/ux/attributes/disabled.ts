@@ -1,4 +1,4 @@
-import { AttributeMetadata } from './../metadata/attributeMetadata';
+import { AttributeMetadata } from '../metadata/attributeMetadata';
 
 export interface IDisabledConfig {
     disabled?: string;

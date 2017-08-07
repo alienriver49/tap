@@ -4,8 +4,8 @@ import { TaskQueue } from 'aurelia-task-queue';
 
 import { IBindingEngine, ISerializedObject } from './bindingEngine';
 
-import { RpcClient } from './../rpc/client';
-import { Utilities } from './../utilities/utilities';
+import { RpcClient } from '../rpc/client';
+import { Utilities } from '../utilities/utilities';
 //import { getTapFx } from '../core/bootstrap';
 
 /**

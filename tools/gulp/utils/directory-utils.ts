@@ -8,7 +8,8 @@ import * as del from 'del';
  */
 export function getPackageDirectories(directoryPath: string): string[] {
     return readdirSync(directoryPath).filter(file => {
-        return statSync(join(directoryPath, file)).isDirectory() && existsSync('package.json');
+        const checkPath = join(directoryPath, file);
+        return statSync(checkPath).isDirectory() && existsSync(join(checkPath, 'package.json'));
     });
 }
 

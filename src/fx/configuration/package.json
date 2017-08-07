@@ -1,0 +1,8 @@
+{
+  "name": "tap-fx-configuration",
+  "version": "0.1.0",
+  "description": "Configuration module for TAP",
+  "main": "tap-fx-configuration.js",
+  "typings": "src/index.d.ts",
+  "license": "MIT"
+}

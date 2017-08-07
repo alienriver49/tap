@@ -4,7 +4,7 @@ import { IBaseElement } from './components/baseElement';
 import { BaseElementContainer } from './components/baseElementContainer';
 import { BaseBlade } from './viewModels/viewModels.baseBlade';
 import { ConventionEngine } from './conventionEngine';
-import { Utilities } from './../utilities/utilities';
+import { Utilities } from '../utilities/utilities';
 
 // const attrRegExp: RegExp = /^attribute(.*)/;
 // const privateAttrRegExp: RegExp = /^_attribute(.*)/;

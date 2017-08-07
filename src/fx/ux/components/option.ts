@@ -1,5 +1,5 @@
 import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
-import { AttributeMetadata } from './../metadata/attributeMetadata';
+import { AttributeMetadata } from '../metadata/attributeMetadata';
 
 export interface IOptionConfig extends IBaseElementContainerConfig {
     disabled?: string;

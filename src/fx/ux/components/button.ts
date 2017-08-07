@@ -2,9 +2,9 @@ import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfi
 import { BaseElement } from './baseElement';
 import { Icon } from './icon';
 import { Text } from './text';
-import { Disableable, IDisabled, IDisabledConfig } from './../attributes/disabled';
-import { AttributeMetadata } from './../metadata/attributeMetadata';
-import { EventMetadata } from './../metadata/eventMetadata';
+import { Disableable, IDisabled, IDisabledConfig } from '../attributes/disabled';
+import { AttributeMetadata } from '../metadata/attributeMetadata';
+import { EventMetadata } from '../metadata/eventMetadata';
 
 export interface IButtonConfig extends IBaseElementContainerConfig, IDisabledConfig {
     type?: /*ButtonType*/string;

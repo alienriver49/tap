@@ -9,6 +9,7 @@
   "rules": {
     // Custom rules
     "require-private-modifier": true,
+    "invalid-relative-import-prefix": true,
 
     // eslint rules
     "brace-style": [

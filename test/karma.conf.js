@@ -8,21 +8,30 @@ module.exports = function(config) {
 
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['jspm', 'jasmine', 'karma-typescript'],
+    frameworks: ['jasmine', 'karma-typescript'],
 
     // list of files / patterns to load in the browser
     files: [
-      '../src/tapFx/**/*.ts'
+      { pattern: '../src/fx/**/*.ts' },
+      { pattern: '../src/portal/**/*.ts' }
     ],
 
     // list of files to exclude
     exclude: [
+      // portal
+      '../src/portal/app.ts',
+      '../src/portal/main.ts',
+      '../src/portal/index.ts',
+
+      // fx
+      '../src/fx/ux/cssModules.ts'
     ],
 
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      '../src/tapFx/**/*.ts': ['karma-typescript'],
+      '../src/fx/**/*.ts': ['karma-typescript'],
+      '../src/portal/**/*.ts': ['karma-typescript']
     },
 
     // test results reporter to use
@@ -30,21 +39,11 @@ module.exports = function(config) {
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
     reporters: ['progress', 'karma-typescript'],
 
-    jspm: {
-      // Edit this to your needs 
-      loadFiles: [
-        '../src/tapFx/**/*.spec.ts'
-      ],
-      serveFiles: [
-        '../src/tapFx/**/*!(*.spec).ts'
-      ]
-    },
-
     karmaTypescriptConfig: {
-      tsconfig: './tsconfig-test.json',
+      tsconfig: '../src/tsconfig-test.json',
       reports: {
         html: {
-          directory: "coverage",
+          directory: "test/coverage",
           subdirectory: "html-report"
         }
       }
@@ -74,5 +73,5 @@ module.exports = function(config) {
     // Concurrency level
     // how many browser should be started simultaneous
     concurrency: Infinity
-  })
+  });
 };

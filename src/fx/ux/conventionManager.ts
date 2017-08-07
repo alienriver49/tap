@@ -1,6 +1,6 @@
 import { inject } from 'aurelia-dependency-injection';
 import { IBaseElement } from './components/baseElement';
-import Utilities from './../utilities/utilities';
+import { Utilities } from '../utilities/utilities';
 
 interface IElementConvention {
     elementType: IBaseElement;

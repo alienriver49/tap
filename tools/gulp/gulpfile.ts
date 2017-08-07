@@ -15,7 +15,6 @@ task('build:all', (done: TaskFunction) => {
         'build:tap-fx',
         'build:tap-fx-modules',
         'build:tap-portal',
-        'build:tap-web-components',
         done
     );
 });

@@ -1,5 +1,5 @@
 import { BaseElement, IBaseElement, IBaseElementConfig } from './baseElement';
-import { AttributeMetadata } from './../metadata/attributeMetadata';
+import { AttributeMetadata } from '../metadata/attributeMetadata';
 
 export interface IMdcCheckboxConfig extends IBaseElementConfig {
     isChecked?: string;

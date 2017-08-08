@@ -46,8 +46,8 @@ export interface IUnresolvedRef {
 export interface IBindingEngine {
     getIdByContext(context: object): string | null;
     resolveSerializedObject(obj: ISerializedObject, fixUnresolved?: boolean): object;
-    observeObject(metadata: ISerializedObject, context: object, refIds: Set<string>, extensionId: string): ISerializedObject;
-    unobserve(context: object, parentContextId: string, parentProperty: string, contextId?: string, inRecursion?: boolean ): void;
+    observeObject(metadata: ISerializedObject, context: object, refIds: Set<string>, extensionId: string, isMapKey?: boolean, isMapValue?: boolean): ISerializedObject;
+    unobserve(context: object, parentContextId: string, parentProperty: string, contextId?: string, isMapKey?: boolean, isMapValue?: boolean, onlyDoChildren?: boolean, inRecursion?: boolean ): void;
 }
 
 /**
@@ -82,6 +82,8 @@ export class BindingEngine implements IBindingEngine {
     private _seen: object[] = [];
     private _seenFlag: string = '$$__checked__$$';
     private _unresolvedRefs: IUnresolvedRef[] = [];
+    private _contextsToDelete: any[] = [];
+    private _contextIdsToDelete: string[] = [];
 
     /**
      * Handler for 'tapfx.propertyBindingSync' RPC messages 
@@ -98,17 +100,16 @@ export class BindingEngine implements IBindingEngine {
 
         if (observer) {
             // If the old value was an object, dispose of any observers
-            const context = this.getContextById(data.contextId);
-            if (context && context[data.property] && this._utilities.isObject(context[data.property])) {
-                const oldValueContext = context[data.property];
-                const oldValueContextId = this.getIdByContext(oldValueContext);
+            const context = this.getContextById(data.parentId);
+            if (context) { 
+                const oldValue = context[data.property];
                 // If oldValue is an object mapped in the BindingEngine, then
                 // dispose of any observers on it
-                if (oldValueContextId) {
-                    this.unobserve(oldValueContext, data.contextId,  data.property);
+                if (oldValue && this._contextIdMap.has(oldValue)) {
+                    const oldValueContextId = this.getIdByContext(oldValue) as string;
+                    this.unobserve(oldValue, data.parentId,  data.property, oldValueContextId, false, false, false, false);
                 }
             }
-            // TODO if the old value was an array, dispose of any observers
 
             // If the new value is an object or array, recursively register it for observation
             let resolvedValue: any = data.value;
@@ -127,7 +128,7 @@ export class BindingEngine implements IBindingEngine {
                             this.resolveSerializedObject(data, true);
                             // observeObject changes data.value to the serialized version, so save the resolved version now
                             resolvedValue = data.value;
-                            this.observeObject(data, data.value, new Set<string>(), observer.extensionId);
+                            this.observeObject(data, data.value, new Set<string>(), observer.extensionId, false, false);
                             break;
                         case SerializedType.DATE:
                             // Deserialize ISO date string to Date object
@@ -170,14 +171,32 @@ export class BindingEngine implements IBindingEngine {
 
         // step 1, resolve updated data
         data.splices.forEach((splice: IArrayChangedSplice) => {
+            // For any elements that were removed, unobserve them
+            const theArray = this.getContextById(data.contextId);
+            if (theArray) {
+                // removed array should be Array<number> at this point
+                // but is defined as a Union with Array<object>
+                splice.removed.forEach((index) => {
+                    // If removed value is an object mapped in the BindingEngine, then
+                    // dispose of any observers on it
+                    const indexNumber: number = index as number;
+                    const oldValue = theArray[indexNumber];
+                    if (this._utilities.isObject(oldValue) || this._utilities.isCollectionType(oldValue)) {
+                        const oldContextId = this.getIdByContext(oldValue);
+                        if (oldContextId) {
+                            this.unobserve(oldValue, data.contextId, indexNumber.toString(), oldContextId, false, false, false, false);
+                        }
+                    }
+                });
+            }
             // Resolve and reinstantiate any new elements
             if (splice.addedCount && splice.added) {
                 this._seen = [];
                 this._unresolvedRefs = [];
-                splice.added.forEach((element: any, index: number, theArray: any[]) => {
+                splice.added.forEach((element: any, index: number, addedArray: any[]) => {
                     addedMetadata.push(element);
                     if (this._utilities.isPrimitive(element)) {
-                        theArray[index] = element;
+                        addedArray[index] = element;
                     } else {
                         const serializedObject: ISerializedObject = element;
                         // First check if it already exists in the context
@@ -185,7 +204,7 @@ export class BindingEngine implements IBindingEngine {
 
                         if (existingChildObject) {
                             // If so, we assume it's being observed and assign that to the parent object
-                            theArray[index] = existingChildObject;
+                            addedArray[index] = existingChildObject;
                         } else {
                             switch (serializedObject.type) {
                                 case SerializedType.OBJECT:
@@ -193,10 +212,10 @@ export class BindingEngine implements IBindingEngine {
                                 case SerializedType.SET:
                                 case SerializedType.MAP:
                                     this.resolveSerializedObject(serializedObject, false);
-                                    theArray[index] = serializedObject.value;
+                                    addedArray[index] = serializedObject.value;
                                     break;
                                 case SerializedType.DATE:
-                                    theArray[index] = moment(serializedObject.value).toDate();
+                                    addedArray[index] = moment(serializedObject.value).toDate();
                                     break;
                                 default:
                                     throw new Error('Invalid serialized object type.');
@@ -212,15 +231,14 @@ export class BindingEngine implements IBindingEngine {
         this._fixUnresolvedReferences();
 
         // Step 3
-        // Observe any new elements (if they're objects or arrays)
+        // Observe any new elements (if they're objects or collection)
         data.splices.forEach((splice: IArrayChangedSplice) => {
-            // Observe new elements that are arrays or object 
             if (splice.addedCount && splice.added) {
                 splice.added.forEach((element: any, index: number, theArray: any[]) => {
                     if (!this._utilities.isPrimitive(element)) {
                         const metadata = addedMetadata[index];
-                        if ([SerializedType.OBJECT, SerializedType.ARRAY, SerializedType.MAP, SerializedType.SET].indexOf(metadata.type) >= 0) {
-                            this.observeObject(metadata, element, new Set<string>(), observer.extensionId);
+                        if ([SerializedType.OBJECT, SerializedType.ARRAY, SerializedType.SET, SerializedType.MAP].indexOf(metadata.type) >= 0) {
+                            this.observeObject(metadata, element, new Set<string>(), observer.extensionId, false, false);
                         }
                     }
                 });
@@ -269,7 +287,7 @@ export class BindingEngine implements IBindingEngine {
                                 this.resolveSerializedObject(serializedObject, true);
                                 // observeObject changes data.value to the serialized version, so save the resolved version now
                                 resolvedValue = serializedObject.value;
-                                this.observeObject(serializedObject, serializedObject.value, new Set<string>(), observer.extensionId);
+                                this.observeObject(serializedObject, serializedObject.value, new Set<string>(), observer.extensionId, false, false);
                                 break;
                             case SerializedType.DATE:
                                 resolvedValue = moment(serializedObject.value).toDate();
@@ -282,11 +300,29 @@ export class BindingEngine implements IBindingEngine {
                 }
             }
             if (change.type === 'delete') {
-                // TODO dispose of any observers on delete elements
+                // dispose of any observers on deleted elements
+                if (change.contextId) {
+                    const existingValueObject = this.getContextById(change.contextId);
+                    if (existingValueObject) {
+                        change.value = existingValueObject;
+                        this.unobserve(existingValueObject, data.contextId, '', change.contextId, false, false, false, false);
+                    }
+                } else {
+                    console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Set delete element sync messages must contain a context Id`);
+                    return;
+                }
             }
+
             if (change.type === 'clear') {
-                // TODO dispose of any observers on the set contents
+                // Set will be cleared by the updateSet statement below,
+                // but first clean up all observers on it
+                // Set onlyDoChildren parameter to true to do that
+                const theSet = this.getContextById(data.contextId);
+                if (theSet) {
+                    this.unobserve(theSet, '', '', data.contextId, false, false, true, false);
+                }
             }
+
             // Update the parent set with the content changes
             observer.updateSet(change, true);
         });
@@ -316,6 +352,15 @@ export class BindingEngine implements IBindingEngine {
 
             // An element value changed, if the new value is non-primitive, resolve and observe it
             if (change.type === 'update' || change.type === 'add') {
+                if (change.type === 'update' && change.oldValue) {
+                    // If oldValue is an object mapped in the BindingEngine, then
+                    // dispose of any observers on it (oldValue is the contextId of the old value)
+                    const oldContext = this.getContextById(change.oldValue);
+                    if (oldContext) {
+                        this.unobserve(oldContext, data.contextId, '', change.oldValue, false, true, false, false);
+                    }
+                }
+
                 if (!this._utilities.isPrimitive(change.value)) {
                     const serializedValue: ISerializedObject = change.value;
                     let resolvedValue: any = change.value;
@@ -331,7 +376,7 @@ export class BindingEngine implements IBindingEngine {
                                 this.resolveSerializedObject(serializedValue, true);
                                 // observeObject changes data.value to the serialized version, so save the resolved version now
                                 resolvedValue = serializedValue.value;
-                                this.observeObject(serializedValue, serializedValue.value, new Set<string>(), observer.extensionId);
+                                this.observeObject(serializedValue, serializedValue.value, new Set<string>(), observer.extensionId, false, true);
                                 break;
                             case SerializedType.DATE:
                                 resolvedValue = moment(serializedValue.value).toDate();
@@ -342,7 +387,6 @@ export class BindingEngine implements IBindingEngine {
                     }
                     change.value = resolvedValue;
                 }
-                // TODO, dispose of observer on oldvalue
             }
 
             // An element was added, so need to ensure both the new key and value are resolved 
@@ -366,7 +410,7 @@ export class BindingEngine implements IBindingEngine {
                                 this.resolveSerializedObject(serializedKey, true);
                                 // observeObject changes data.value to the serialized version, so save the resolved version now
                                 resolvedKey = serializedKey.value;
-                                this.observeObject(serializedKey, serializedKey.value, new Set<string>(), observer.extensionId);
+                                this.observeObject(serializedKey, serializedKey.value, new Set<string>(), observer.extensionId, true, false);
                                 break;
                             case SerializedType.DATE:
                                 change.key = moment(serializedKey.value).toDate();
@@ -379,10 +423,33 @@ export class BindingEngine implements IBindingEngine {
                 }
             }
             if (change.type === 'delete') {
-                // TODO dispose of any observers on delete elements
+                // If deleted key is an object mapped in the BindingEngine, then
+                // dispose of any observers on it
+                if (change.keyContextId) {
+                    const existingKeyObject = this.getContextById(change.keyContextId);
+                    if (existingKeyObject) {
+                        change.key = existingKeyObject;
+                        this.unobserve(existingKeyObject, data.contextId, '', change.keyContextId, true, false, false, false);
+                    }
+                }
+                // If deleted value is an object mapped in the BindingEngine, then
+                // dispose of any observers on it
+                if (change.contextId) {
+                    const existingValueObject = this.getContextById(change.contextId);
+                    if (existingValueObject) {
+                        change.value = existingValueObject;
+                        this.unobserve(existingValueObject, data.contextId, '', change.contextId, false, true, false, false);
+                    }
+                }
             }
             if (change.type === 'clear') {
-                // TODO dispose of any observers on the map contents
+                // Map will be cleared by the updateMap statement below,
+                // but first clean up all observers on it
+                // Set onlyDoChildren parameter to true to do that
+                const theMap = this.getContextById(data.contextId);
+                if (theMap) {
+                    this.unobserve(theMap, '', '', data.contextId, false, false, true, false);
+                }
             }
 
             // Update the parent Map with the content changes
@@ -491,7 +558,7 @@ export class BindingEngine implements IBindingEngine {
 
         // For sets, they're in the value collection as an array, copy values to new Set
         if (obj.type === SerializedType.SET) {
-            const collection: Set<any> = new Set<any>(obj.value as any[]);
+            const collection: Set<any> = new Set<any>();
             this.resolveId(collection, obj.contextId, obj.parentId, obj.property);
             (obj.value as any[]).forEach((element: any) => {
                 if (this._utilities.isPrimitive(element)) {
@@ -761,10 +828,16 @@ export class BindingEngine implements IBindingEngine {
             );
             this._contextBindingMap.set(contextId, bindingMap);
         }
-        // Update the parent's bindingmap children references and 
-        // the parent's reference for this object's binding map
-        this.addChildToParentBindingMap(contextId, parentContextId, parentProperty, isMapKey, isMapValue);
-        this.addParentToChildBindingMap(bindingMap, parentContextId, parentProperty, isMapKey, isMapValue);
+
+        // If there is a parent contextId and it's not the same as the object (a self-referencing object),
+        // then update the references for use later when disposing of observers
+        if (parentContextId && parentContextId !== contextId) {
+            // Update the parent's bindingmap children references and 
+            // the parent's reference for this object's binding map
+            this.addChildToParentBindingMap(contextId, parentContextId, parentProperty, isMapKey, isMapValue);
+            this.addParentToChildBindingMap(bindingMap, parentContextId, parentProperty, isMapKey, isMapValue);
+        }
+
         return contextId;
     }
 
@@ -786,47 +859,50 @@ export class BindingEngine implements IBindingEngine {
         isMapKey: boolean = false,
         isMapValue: boolean = false) {
 
-        if (!contextBindingMap.parents.has(parentContextId)) {
-            // No entry for the parent in the parents map, so add one
-            const ref: IChildReference = {
-                type: this.getContextIdType(parentContextId),   // ISerializedType
-                propertyIndex: new Set<string>(),   // Used for parent Objects and Arrays
-                refCount: 0,   // Only used for parent Maps 
-                isKey: false   // Only used for parent Maps 
-            };
-            switch (contextBindingMap.type) {
-                case SerializedType.OBJECT:
-                case SerializedType.ARRAY:
-                    if (parentProperty) { 
-                        ref.propertyIndex.add(parentProperty);
-                    }
-                    break;
-                case SerializedType.MAP:
-                    ref.refCount += isMapValue ? 1 : 0,   // the number of times the object is a value in the entries
-                    ref.isKey = isMapKey; // indicates the object is a key in the Map
-                    break;
-                default:
-                    break;
+        const parentBindingMap = this.getBindingMap(parentContextId);
+        if (parentBindingMap) {
+            if (!contextBindingMap.parents.has(parentContextId)) {
+                // No entry for the parent in the parents map, so add one
+                const ref: IChildReference = {
+                    type: this.getContextIdType(parentContextId),   // ISerializedType
+                    propertyIndex: new Set<string>(),   // Used for parent Objects and Arrays
+                    refCount: 0,   // Only used for parent Maps 
+                    isKey: false   // Only used for parent Maps 
+                };
+                switch (parentBindingMap.type) {
+                    case SerializedType.OBJECT:
+                    case SerializedType.ARRAY:
+                        if (parentProperty) { 
+                            ref.propertyIndex.add(parentProperty);
+                        }
+                        break;
+                    case SerializedType.MAP:
+                        ref.refCount = ref.refCount + (isMapValue ? 1 : 0),   // the number of times the object is a value in the entries
+                        ref.isKey = isMapKey; // indicates the object is a key in the Map
+                        break;
+                    default:
+                        break;
+                }
+                contextBindingMap.parents.set(parentContextId, ref);
+            }else {
+                // Otherwise update existing reference
+                const ref = contextBindingMap.parents.get(parentContextId) as IChildReference;
+                switch (parentBindingMap.type) {
+                    case SerializedType.OBJECT:
+                    case SerializedType.ARRAY:
+                        if (parentProperty) { 
+                            ref.propertyIndex.add(parentProperty);  // Collection of properties or indexes of object on parent
+                        }
+                        break;
+                    case SerializedType.MAP:
+                        ref.refCount = ref.refCount + (isMapValue ? 1 : 0),   // the number of times the object is a value in the entries
+                        ref.isKey = isMapKey; // indicates the object is a key in the Map
+                        break;
+                    default:
+                        break;
+                }
+                contextBindingMap.parents.set(parentContextId, ref); 
             }
-            contextBindingMap.parents.set(parentContextId, ref);
-        }else {
-            // Otherwise update existing reference
-            const ref = contextBindingMap.parents.get(parentContextId) as IChildReference;
-            switch (contextBindingMap.type) {
-                case SerializedType.OBJECT:
-                case SerializedType.ARRAY:
-                    if (parentProperty) { 
-                        ref.propertyIndex.add(parentProperty);  // Collection of properties or indexes of object on parent
-                    }
-                    break;
-                case SerializedType.MAP:
-                    ref.refCount += isMapValue ? 1 : 0,   // the number of times the object is a value in the entries
-                    ref.isKey = isMapKey; // indicates the object is a key in the Map
-                    break;
-                default:
-                    break;
-            }
-            contextBindingMap.parents.set(parentContextId, ref); 
         }
     }
 
@@ -867,7 +943,7 @@ export class BindingEngine implements IBindingEngine {
                             }
                             break;
                         case SerializedType.MAP:
-                            ref.refCount += isMapValue ? 1 : 0,   // the number of times the object is a value in the entries
+                            ref.refCount = ref.refCount + (isMapValue ? 1 : 0),   // the number of times the object is a value in the entries
                             ref.isKey = isMapKey; // indicates the object is a key in the Map
                             break;
                         default:
@@ -885,7 +961,7 @@ export class BindingEngine implements IBindingEngine {
                             }
                             break;
                         case SerializedType.MAP:
-                            ref.refCount += isMapValue ? 1 : 0,   // the number of times the object is a value in the entries
+                            ref.refCount = ref.refCount + (isMapValue ? 1 : 0),   // the number of times the object is a value in the entries
                             ref.isKey = isMapKey; // indicates the object is a key in the Map
                             break;
                         default:
@@ -942,7 +1018,7 @@ export class BindingEngine implements IBindingEngine {
                     type: '',
                     childMetadata: [] 
                 };
-                this.observeObject(metadata, propertyValue, refIds, extensionId);
+                this.observeObject(metadata, propertyValue, refIds, extensionId, false, false);
                 return metadata;
             }
         }
@@ -1011,7 +1087,7 @@ export class BindingEngine implements IBindingEngine {
                                 type: SerializedType.PRIMITIVE,
                                 childMetadata: [] 
                             };
-                            this.observeObject(elementMetadata, element, refIds, extensionId);
+                            this.observeObject(elementMetadata, element, refIds, extensionId, false, metadata.type === SerializedType.MAP);
                             serializedArray[index] = elementMetadata;
                         }
                     }
@@ -1037,7 +1113,7 @@ export class BindingEngine implements IBindingEngine {
                                     keyMetadata.value = (key as Date).toISOString();
                                 }
                                 if (this._utilities.isObject(key) || this._utilities.isCollectionType(key)) {
-                                    this.observeObject(keyMetadata, key, refIds, extensionId);
+                                    this.observeObject(keyMetadata, key, refIds, extensionId, true, false);
                                 }
                                 mapKeyMetadata[index] = keyMetadata;
                             }
@@ -1056,10 +1132,20 @@ export class BindingEngine implements IBindingEngine {
      * When an observed property is changed and the new property is an Object, this is called
      * from ProxiedObservable to ensure the new Object is being observed before syncing the 
      * new value and also to create a serialized version of the object
+     * @param metadata 
      * @param context 
+     * @param refIds 
      * @param extensionId 
+     * @param isMapKey If the parent is a Map and the object is a map entry key, this should be true 
+     * @param isMapValue If the parent is a Map and the object is a map entry value, this should be true 
      */
-    public observeObject(metadata: ISerializedObject, context: object, refIds: Set<string>, extensionId: string): ISerializedObject {
+    public observeObject(
+        metadata: ISerializedObject, 
+        context: object, 
+        refIds: Set<string>, 
+        extensionId: string,
+        isMapKey: boolean = false,
+        isMapValue: boolean = false): ISerializedObject {
         if (this._utilities.isPrimitive(context)) {
             throw new Error('observeObject: context must be an object or collection type');
         }
@@ -1091,12 +1177,22 @@ export class BindingEngine implements IBindingEngine {
             if (existingContextId && refIds.has(existingContextId)) {
                 metadata.contextId = existingContextId;
                 metadata.type = this.getContextIdType(existingContextId);
+                // Still want to update the parent's bindingmap children references and 
+                // the parent's reference for this object's binding map, unless it's a 
+                // self-referencing object
+                if (metadata.parentId && metadata.parentId !== existingContextId) {
+                    this.addChildToParentBindingMap(existingContextId, metadata.parentId, metadata.property, isMapKey, isMapValue);
+                    const bindingMap = this._contextBindingMap.get(existingContextId);
+                    if (bindingMap !== void(0)) {
+                        this.addParentToChildBindingMap(bindingMap, metadata.parentId, metadata.property, isMapKey, isMapValue);
+                    }
+                }
             } else {
-                const propertyContextId = this.resolveId(context, existingContextId, metadata.parentId, metadata.property);
+                metadata.type = this.getContextType(context);
+                const propertyContextId = this.resolveId(context, existingContextId, metadata.parentId, metadata.property, isMapKey, isMapValue);
                 
                 refIds.add(propertyContextId);
                 metadata.contextId = propertyContextId;
-                metadata.type = this.getContextIdType(propertyContextId);
 
                 if (this._utilities.isCollectionType(context)) {
                     this.observeCollection(metadata as ISerializedObject, context as any[], refIds, extensionId);
@@ -1214,6 +1310,11 @@ export class BindingEngine implements IBindingEngine {
         return existingContextId === void(0) ? null : existingContextId;
     }
 
+    /**
+     * Dispose of all observers on the blade object and it's hierarchy
+     * and clean them out of the binding mappings if possible
+     * @param context The blade object
+     */
     public unobserveBlade(context: object): void {
         this.unobserve(context, '', '');
     }
@@ -1221,8 +1322,23 @@ export class BindingEngine implements IBindingEngine {
     /**
      * Unobserve a specific context.
      * @param context 
+     * @param parentContextId 
+     * @param parentProperty 
+     * @param contextId 
+     * @param [isMapKey=false] If the parent is a Map and the context being unobserved is a map entry key, this should be true 
+     * @param [isMapValue=false] If the parent is a Map and the context being unobserved is a map entry value, this should be true 
+     * @param [onlyDoChildren=false] If true, the passed context isn't unobserved, just any children objects on it
+     * @param [inRecursion=false]
      */
-    public unobserve(context: object, parentContextId: string, parentProperty: string, contextId: string = '', inRecursion: boolean = false): void {
+    public unobserve(
+        context: object, 
+        parentContextId: string, 
+        parentProperty: string, 
+        contextId: string = '',
+        isMapKey: boolean = false, 
+        isMapValue: boolean = false,
+        onlyDoChildren: boolean = false,
+        inRecursion: boolean = false): void {
         if (!contextId) {
             // get this context from the map
             const foundContextId = this.getIdByContext(context);
@@ -1233,74 +1349,259 @@ export class BindingEngine implements IBindingEngine {
             contextId = foundContextId;
         }
 
-        // if (!inRecursion){
-        //     this._seen = [];
-        // }
- 
-        // // Verify that the context isn't being referenced by other parent objects
-        // // before disposing of the observers
-        // let bindingMap = this.getBindingMap(contextId);
-        // if (!bindingMap){
-        //     console.warn(`Couldn't find binding map when unobserving context: ${contextId}`)
-        //     return;
-        // }
+        if (!inRecursion) {
+            this._seen = [];
+        }
 
-        // // If parent of the context (Note: contexts can have zero, one or more parents) doesn't exist
-        // // AND the context doesn't have any parent references (or has one parent reference, which we can
-        // // assume is for the current call), then it's safe to unobserve
-        // // OR
-        // // If there is a parent of the context and it matches the passed parent and it's the only parent reference, 
-        // // then it's safe to unobserve
-        // let parentPropertyKey = `${parentContextId},${parentProperty ? parentProperty : ''}`
-        // if ((!parentContextId && bindingMap.parents.size <= 1) ||
-        //     (parentContextId && bindingMap.parents.has(parentPropertyKey) && bindingMap.parents.size === 1))
-        // {
-        //     // Must be an object/collection, so add a temporary flag property to 
-        //     // it to prevent infinite loop from circular references
-        //     context[this._seenFlag] = true;
-        //     this._seen.push(context);
+        // Verify that the context isn't being referenced by other parent objects
+        // before disposing of the observer
+        const bindingMap = this.getBindingMap(contextId);
+        if (!bindingMap) {
+            console.warn(`Couldn't find binding map when unobserving context: ${contextId}`);
+            return;
+        }
 
-        //     // First recursively dispose of child objects/collections
-        //     // Search for child objects by finding all contexts 
-        //     // which have a parent reference to the current context
-        //     this._contextBindingMap.forEach((bindingMap: IObjectBindingMap, key: string) => {
-        //         if (bindingMap.parents.has(contextId)){
-        //             let childObject = this.getContextById(key);
-        //             // If the child object has already been checked, skip it to prevent infinite loops
-        //             if (childObject != null && !childObject.hasOwnProperty(this._seenFlag)){
-        //                 this.unobserve(childObject, contextId as string, key, true);
-        //             }
-        //         }
-        //     });
+        // Remove this object from the parent's collection of children objects
+        this.removeChildFromParentBindingMap(contextId, parentContextId, parentProperty, isMapKey, isMapValue);
 
-        //     ((bindingMap && bindingMap.observers) || []).forEach((proxiedObservable) => {
-        //         proxiedObservable.dispose();
-        //     });
+        // If the child object has already been checked, skip it to prevent infinite loops
+        if (context.hasOwnProperty(this._seenFlag)) {
+            return;
+        }
 
-        //     // remove the context from the map
-        //     this._contextIdMap.delete(context);
-        //     this._contextBindingMap.delete(contextId);
-        // }
+        let isOnlyParent: boolean = false;
+        // If passed parent context Id and parent property, verify that it's in the list of parent references 
+        // for the context and it's the only parent reference
+        // The object's collection of parent objects is also updated at this point
+        if (parentContextId && bindingMap.parents.has(parentContextId)) {
+            const parentReference = bindingMap.parents.get(parentContextId) as IChildReference;
+            const parentBindingMap = this.getBindingMap(parentContextId);
+            switch (parentReference.type){
+                case SerializedType.OBJECT:
+                case SerializedType.ARRAY:
+                    if (parentReference.propertyIndex.has(parentProperty)) {
+                        if (parentReference.propertyIndex.size === 1) {
+                            isOnlyParent = bindingMap.parents.size === 1;
+                            bindingMap.parents.delete(parentContextId);
+                        } else {
+                            parentReference.propertyIndex.delete(parentProperty);
+                        }
+                    } 
+                    break;
+                case SerializedType.SET:
+                    isOnlyParent = bindingMap.parents.size === 1;
+                    bindingMap.parents.delete(parentContextId);
+                    break;
+                case SerializedType.MAP:
+                    // unobserving keys and values on Maps is trickier because there 
+                    // is no property name or index to reference, so we just assume
+                    // any one map key could be the context and zero or more map values
+                    // could be the context, but it should be at least a key or value
+                    // to ever get to this point
+                    switch (true){
+                        case isMapKey && isMapValue:
+                            if (parentReference.isKey && parentReference.refCount > 0) {
+                                if (parentReference.refCount === 1) {
+                                    isOnlyParent = bindingMap.parents.size === 1;
+                                    bindingMap.parents.delete(parentContextId);
+                                } else {
+                                    parentReference.isKey = false;
+                                    parentReference.refCount = parentReference.refCount - 1;
+                                }
+                            } else {
+                                console.warn(`If isMapKey and isMapValue are both true, then the matching parent refernce must have isKey = true and refCount > 0 for context: ${contextId}`);
+                                return;
+                            }
+                            break;
+                        case isMapKey && !isMapValue:
+                            if (parentReference.isKey) {
+                                if (parentReference.refCount === 0) {
+                                    isOnlyParent = bindingMap.parents.size === 1;
+                                    bindingMap.parents.delete(parentContextId);
+                                } else {
+                                    parentReference.isKey = false;
+                                }
+                            } else {
+                                console.warn(`If isMapKey is true, then the matching parent refernce must have isKey = true for context: ${contextId}`);
+                                return;
+                            }
+                            break;
+                        case !isMapKey && isMapValue:
+                            if (parentReference.refCount > 0) {
+                                if (parentReference.refCount === 1 && !parentReference.isKey) {
+                                    isOnlyParent = bindingMap.parents.size === 1;
+                                    bindingMap.parents.delete(parentContextId);
+                                } else {
+                                    parentReference.refCount = parentReference.refCount - 1;
+                                }
+                            } else {
+                                console.warn(`If isMapKey is true, then the matching parent refernce must have isKey = true for context: ${contextId}`);
+                                return;
+                            }
+                            break;
+                        case !isMapKey && !isMapValue:
+                            console.warn(`Map content cannot be unobserved unless isMapKey or IsMapValue is true for context: ${contextId}`);
+                            return;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
 
-        // if (!inRecursion){
-        //     // Remove the temporary flags from the objects
-        //     this._seen.forEach((o) => {
-        //         delete o[this._seenFlag];
-        //     });
-        // }
+        // If this object doesn't have anymore parents, then it's safe to remove 
+        // from the binding mappings
+        if (bindingMap.parents.size === 0 && (inRecursion || !onlyDoChildren)) {
+            this._contextIdsToDelete.push(contextId);
+            this._contextsToDelete.push(context);
+        }
+
+        // If parent of the context (Note: contexts can have zero, one or more parents) doesn't exist
+        // AND the context doesn't have any parent references, then it's safe to dispose of observer 
+        // OR
+        // If there is a parent of the context and it matches the passed parent/property and it's the only parent reference, 
+        // then it's safe to dispose of observer 
+        if ((!parentContextId && bindingMap.parents.size === 0) || isOnlyParent || onlyDoChildren) {
+            // Must be an object/collection, so add a temporary flag property to 
+            // it to prevent infinite loop from circular references
+            context[this._seenFlag] = true;
+            this._seen.push(context);
+
+            // First recursively dispose of child objects and collections
+            bindingMap.children.forEach((child: IChildReference, childId: string, theMap: Map<string, IChildReference>) => {
+                const childContext = this.getContextById(childId);
+                if (childContext) {
+                    switch (bindingMap.type) {
+                        case SerializedType.OBJECT:
+                        case SerializedType.ARRAY:
+                            // If child object is referenced by multiple properties or indexes, try
+                            // to unobserve all of them.  Only last reference will actually dispose
+                            // of the child object and then only if no other parents reference it
+                            (child.propertyIndex || []).forEach((propertyIndex: string) => {
+                                this.unobserve(childContext, contextId, propertyIndex, childId, false, false, false, true);
+                            });
+                            break;
+                        case SerializedType.SET:
+                            this.unobserve(childContext, contextId, '', childId, false, false, false, true);
+                            break;
+                        case SerializedType.MAP:
+                            // Unobserve the child for every key and value that references it in the Map
+                            if (child.isKey) {
+                                this.unobserve(childContext, contextId, '', childId, true, false, false, true);
+                            }
+                            for (let i = 0; i < child.refCount; i++) {
+                                this.unobserve(childContext, contextId, '', childId, false, true, false, true);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    theMap.delete(childId);
+                }
+            });
+
+            // Dispose of all the observers for the context
+            if (inRecursion || !onlyDoChildren) {
+                ((bindingMap && bindingMap.observers) || []).forEach((proxiedObservable) => {
+                    proxiedObservable.dispose();
+                });
+                if (bindingMap.collectionObserver) {
+                    bindingMap.collectionObserver.dispose();
+                }
+            }
+        }
+
+        if (!inRecursion) {
+            // Remove the temporary flags from the objects
+            this._seen.forEach((o) => {
+                delete o[this._seenFlag];
+            });
+            // remove the context and bindingmap
+            (this._contextsToDelete || []).forEach((contextToDelete: any) => {
+                this._contextIdMap.delete(contextToDelete);
+            });
+            (this._contextIdsToDelete || []).forEach((contextIdToDelete: any) => {
+                this._contextBindingMap.delete(contextIdToDelete);
+            });
+            this._contextIdsToDelete = [];
+            this._contextsToDelete = [];
+        }
+    }
+
+
+
+    /**
+     * Update the children map on the parent binding map to remove the passed object info
+     * @param contextId 
+     * @param parentContextId 
+     * @param parentProperty  This is either:
+     *                          1) A property name if the parent is an object
+     *                          2) An index if the parent is an array
+     *                          3) not used if the parent is a Set or Map
+     * @param isMapKey If the parent is a Map and the object is a map entry key, this should be true 
+     * @param isMapValue If the parent is a Map and the object is a map entry value, this should be true 
+     */
+    private removeChildFromParentBindingMap(
+        contextId: string, 
+        parentContextId: string, 
+        parentProperty: string, 
+        isMapKey: boolean = false,
+        isMapValue: boolean = false) {
+
+        if (parentContextId) {
+            const parentBindingMap = this.getBindingMap(parentContextId);
+            if (parentBindingMap) {
+                if (parentBindingMap.children.has(contextId)) {
+                    // update existing reference or delete it if there are no more
+                    // references to the child on the object
+                    const ref = parentBindingMap.children.get(contextId) as IChildReference;
+                    switch (parentBindingMap.type) {
+                        case SerializedType.OBJECT:
+                        case SerializedType.ARRAY:
+                            if (parentProperty) { 
+                                if (ref.propertyIndex.has(parentProperty)) {
+                                    ref.propertyIndex.delete(parentProperty);
+                                    if (ref.propertyIndex.size === 0) {
+                                        parentBindingMap.children.delete(contextId);
+                                    }
+                                }
+                            }
+                            break;
+                        case SerializedType.MAP:
+                            if (isMapKey) {
+                                ref.isKey = false;
+                            }
+                            if (isMapValue) {
+                                ref.refCount = ref.refCount - 1;
+                            }
+                            if (!ref.isKey && ref.refCount === 0) {
+                                parentBindingMap.children.delete(contextId);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
     }
 
     /**
      * Unobserve all contexts.
+     * No need to worry about checking parent and children references, just dispose of all
+     * observers and clear out the mappings
      */
     public unobserveAll(): void {
         this._contextBindingMap.forEach((bindingMap, key) => {
-            if (bindingMap.observers) {
-                bindingMap.observers.forEach((proxiedObservable) => proxiedObservable.dispose());
+            (bindingMap.observers || []).forEach((proxiedObservable) => proxiedObservable.dispose());
+            if (bindingMap.collectionObserver) {
+                bindingMap.collectionObserver.dispose();
             }
         });
 
-        this._contextIdMap = new Map();
+        this._contextIdMap.clear();
         this._contextBindingMap.clear();
     }
 }

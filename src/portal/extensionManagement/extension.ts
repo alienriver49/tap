@@ -87,7 +87,7 @@ export class Extension {
             type: '',
             childMetadata: [] 
         };
-        this._tapFx.BindingEngine.observeObject(metadata, blade, new Set<string>(), this.id);
+        this._tapFx.BindingEngine.observeObject(metadata, blade, new Set<string>(), this.id, false, false);
     }
 
     private _unregisterBladeBindings(blade: PortalBlade): void {

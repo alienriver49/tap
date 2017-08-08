@@ -287,7 +287,7 @@ export class Extension extends BaseExtension {
             type: '',
             childMetadata: [] 
         };
-        const serializedBlade = this._bindingEngine.observeObject(metadata, blade, refIds, this._rpc.instanceId);
+        const serializedBlade = this._bindingEngine.observeObject(metadata, blade, refIds, this._rpc.instanceId, false, false);
 
         return {
             bladeId: serializedBlade.contextId,

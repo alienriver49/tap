@@ -16,7 +16,9 @@ export class Address {
     public address: Address;
 
     constructor(config?: IAddressConfig) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { 
+            config = {}; 
+        }
         this.line1 = config.line1 || '';
         this.line2 = config.line2 || '';
         this.town = config.town || '';

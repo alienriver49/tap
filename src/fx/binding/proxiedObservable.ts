@@ -56,12 +56,12 @@ export class ProxiedObservable {
             childMetadata: [] 
         };
 
-        if (this._utilities.isObject(oldValue)) {
+        if (this._utilities.isObject(oldValue) || this._utilities.isCollectionType(oldValue)) {
             const oldContextId = this._bindingEngine.getIdByContext(oldValue);
             // If oldValue is an object mapped in the BindingEngine, then
             // dispose of any observers on it
             if (oldContextId) {
-                this._bindingEngine.unobserve(oldValue, this._contextId, this._property, oldContextId);
+                this._bindingEngine.unobserve(oldValue, this._contextId, this._property, oldContextId, false, false, false, false);
             }
         }
 
@@ -85,17 +85,11 @@ export class ProxiedObservable {
             }
 
             // serializedValue.value is updated with the serialized object/array 
-            this._bindingEngine.observeObject(serializedValue, newValue, new Set<string>(), this._extensionId);
+            this._bindingEngine.observeObject(serializedValue, newValue, new Set<string>(), this._extensionId, false, false);
         }
 
         console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Property "${this._property}" has changed from: "${oldValue}" to: "${newValue}"`);
         this._rpc.publish('tapfx.propertyBindingSync', this._extensionId, serializedValue);
-
-        // if the property is an array, need to unsubscribe collectionObserver
-        // and resubscribe to new array (for locally initiated changes) 
-        // RPC initiated changes are handled in setValue 
-        // TODO update collection observer
-        //this._updateCollectionObserver(newValue);
 
         // check for a convention function for handling property changed events. note: Aurelia can do this but requires an @observable decorator on the variable (creates a getter / setter) and that currently doesn't work with our function serialization
         const propertyChangedHandler = `${this._property}Changed`;
@@ -131,15 +125,7 @@ export class ProxiedObservable {
             this._canObserveProperty = false;
         }
 
-        // if the property is an array, need to unsubscribe collectionObserver
-        // and resubscribe to new array (for changes via RPC) 
-        // Locally initiated changes are handled in _propertyChanged 
-        // TODO update collection observer
-        //let propertyWasUpdatedToArrayProxy = this._updateCollectionObserver(value);
-
-        //if (!propertyWasUpdatedToArrayProxy)
-            this._observer.setValue(value);
-        //}
+        this._observer.setValue(value);
 
         if (disableObservation) {
             // check for a convention function for handling property changed events. 

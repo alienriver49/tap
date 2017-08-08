@@ -15,7 +15,7 @@ import { Utilities } from '../utilities/utilities';
 export interface IArrayChangedSplice {
     addedCount: number;
     index: number;
-    removed: object[];
+    removed: Array<number|object>;
     added?: ISerializedObject[];
 }
 
@@ -103,9 +103,26 @@ export class ProxiedCollectionObservable {
             return;
         }
 
-        // TODO Add/remove observers from modified array contents if they're objects/arrays
+        // Add/remove observers from modified array contents if they're objects/arrays
         const refIds: Set<string> = new Set<string>();
         splices.forEach((splice: IArrayChangedSplice) => {
+            const removedIndexes: number[] = [];
+            let removedIndex = splice.index;
+            splice.removed.forEach((oldValue) => {
+                removedIndexes.push(removedIndex);
+                // If oldValue is an object mapped in the BindingEngine, then
+                // dispose of any observers on it
+                const oldValueObject: object = oldValue as object;
+                if (this._utilities.isObject(oldValue) || this._utilities.isCollectionType(oldValue)) {
+                    const oldContextId = this._bindingEngine.getIdByContext(oldValueObject);
+                    if (oldContextId) {
+                        this._bindingEngine.unobserve(oldValueObject, this._contextId, removedIndex.toString(), oldContextId, false, false, false, false);
+                    }
+                }
+                removedIndex++;
+            });
+            splice.removed = removedIndexes;
+
             if (splice.addedCount) {
                 const currentArray = this._collection as any[];
                 if (currentArray.length >= splice.index + splice.addedCount) {
@@ -131,7 +148,7 @@ export class ProxiedCollectionObservable {
                         // and pass appropriate metadata
                         if (this._utilities.isDateObjectCollectionType(element)) {
                             // serializedValue.value is updated with the serialized object/array 
-                            this._bindingEngine.observeObject(serializedValue, element, refIds, this._extensionId);
+                            this._bindingEngine.observeObject(serializedValue, element, refIds, this._extensionId, false, false);
                         }
                         
                         splice.added.push(serializedValue);
@@ -163,7 +180,11 @@ export class ProxiedCollectionObservable {
             if (!this._utilities.isPrimitive(change.value) && !this._utilities.isDateObjectCollectionType(change.value)) {
                 throw new Error(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Observed sets can only contain primitives, Dates, objects, arrays, sets and maps`);
             }
-            const resolvedChange: ISetChangeRecord = {type: change.type, value: change.value};
+            const resolvedChange: ISetChangeRecord = {
+                type: change.type, 
+                value: change.value,
+                contextId: ''
+            };
             if (change.type === 'add') {
                 const serializedValue: ISerializedObject =  {
                     property: '',
@@ -178,16 +199,30 @@ export class ProxiedCollectionObservable {
                 // and pass appropriate metadata
                 if (this._utilities.isDateObjectCollectionType(change.value)) {
                     // serializedValue.value is updated with the serialized object/array 
-                    this._bindingEngine.observeObject(serializedValue, change.value, refIds, this._extensionId);
+                    this._bindingEngine.observeObject(serializedValue, change.value, refIds, this._extensionId, false, false);
                     resolvedChange.value = serializedValue;
                     resolvedChange.contextId = serializedValue.contextId;
                 }
             }
             if (change.type === 'delete') {
-                if (this._utilities.isDateObjectCollectionType(change.value)) {
+                // If oldValue is an object mapped in the BindingEngine, then
+                // dispose of any observers on it
+                if (this._utilities.isObject(change.value) || this._utilities.isCollectionType(change.value)) {
                     resolvedChange.contextId = this._bindingEngine.getIdByContext(change.value) === undefined ? (this._bindingEngine.getIdByContext(change.value) as string) : undefined;
+                    const oldContextId = this._bindingEngine.getIdByContext(change.value);
+                    if (oldContextId) {
+                        resolvedChange.contextId = oldContextId;
+                        this._bindingEngine.unobserve(change.value, this._contextId, '', oldContextId, false, false, false, false);
+                    }
                 }
             }
+
+            if (change.type === 'clear') {
+                // Set has been cleared, clean up all observers on it
+                // Set onlyDoChildren parameter to true
+                this._bindingEngine.unobserve(this._collection, '', '', this._contextId, false, false, true, false);
+            }
+
             resolvedChanges.push(resolvedChange);
         });
 
@@ -227,6 +262,18 @@ export class ProxiedCollectionObservable {
 
             // value changed (or added)
             if (change.type === 'update' || change.type === 'add') {
+                if (change.type === 'update' && change.oldValue !== change.value) {
+                    // If oldValue is an object mapped in the BindingEngine, then
+                    // dispose of any observers on it
+                    if (this._utilities.isObject(change.oldValue) || this._utilities.isCollectionType(change.oldValue)) {
+                        const oldContextId = this._bindingEngine.getIdByContext(change.oldValue);
+                        if (oldContextId) {
+                            resolvedChange.oldValue = oldContextId;
+                            this._bindingEngine.unobserve(change.oldValue, this._contextId, '', oldContextId, false, true, false, false);
+                        }
+                    }
+                }
+
                 const serializedValue: ISerializedObject =  {
                     property: '',
                     contextId: '',
@@ -240,7 +287,7 @@ export class ProxiedCollectionObservable {
                 // and pass appropriate metadata, otherwise just get it's contextId
                 if (this._utilities.isDateObjectCollectionType(resolvedChange.value)) {
                     // serializedValue.value is updated with the serialized object/array 
-                    this._bindingEngine.observeObject(serializedValue, resolvedChange.value, refIds, this._extensionId);
+                    this._bindingEngine.observeObject(serializedValue, resolvedChange.value, refIds, this._extensionId, false, true);
                     resolvedChange.value = serializedValue;
                     resolvedChange.contextId = serializedValue.contextId;
                 }
@@ -262,17 +309,39 @@ export class ProxiedCollectionObservable {
                 // and pass appropriate metadata, otherwise just get it's contextId
                 if (this._utilities.isDateObjectCollectionType(change.key)) {
                     // serializedValue.value is updated with the serialized object/array 
-                    this._bindingEngine.observeObject(serializedKey, change.key, refIds, this._extensionId);
+                    this._bindingEngine.observeObject(serializedKey, change.key, refIds, this._extensionId, true, false);
                     resolvedChange.key = serializedKey;
                     resolvedChange.keyContextId = serializedKey.contextId;
                 }
             }
 
             if (change.type === 'delete') {
-                if (this._utilities.isDateObjectCollectionType(change.oldValue)) {
-                    resolvedChange.keyContextId = this._bindingEngine.getIdByContext(change.oldValue) === undefined ? (this._bindingEngine.getIdByContext(change.oldValue) as string) : undefined;
+                // If deleted key is an object mapped in the BindingEngine, then
+                // dispose of any observers on it
+                if (this._utilities.isObject(change.key) || this._utilities.isCollectionType(change.key)) {
+                    const oldKeyContextId = this._bindingEngine.getIdByContext(change.key);
+                    if (oldKeyContextId) {
+                        resolvedChange.keyContextId = oldKeyContextId;
+                        this._bindingEngine.unobserve(change.oldValue, this._contextId, '', oldKeyContextId, true, false, false, false);
+                    }
+                }
+                // If deleted value is an object mapped in the BindingEngine, then
+                // dispose of any observers on it
+                if (this._utilities.isObject(change.oldValue) || this._utilities.isCollectionType(change.oldValue)) {
+                    const oldContextId = this._bindingEngine.getIdByContext(change.oldValue);
+                    if (oldContextId) {
+                        resolvedChange.contextId = oldContextId;
+                        this._bindingEngine.unobserve(change.oldValue, this._contextId, '', oldContextId, false, true, false, false);
+                    }
                 }
             }
+
+            if (change.type === 'clear') {
+                // Map has been cleared, clean up all observers on it
+                // Set onlyDoChildren parameter to true
+                this._bindingEngine.unobserve(this._collection, '', '', this._contextId, false, false, true, false);
+            }
+
             resolvedChanges.push(resolvedChange);
         });
 

@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "description": "Binding module for TAP",
   "main": "tap-fx-binding.js",
-  "typings": "src/index.d.ts",
+  "typings": "typings/index.d.ts",
   "license": "MIT",
   "peerDependencies": {
     "aurelia-dependency-injection": "^1.3.1",
     "aurelia-binding": "^1.2.1",
-    "aurelia-task-queue": "1.2.0",
-    "tap-fx-rpc": "0.1.0",
-    "tap-fx-utilities": "0.1.0"
+    "moment": "^2.18.1",
+    "tap-fx-rpc": "^0.1.0",
+    "tap-fx-utilities": "^0.1.0",
+    "tap-fx-metadata": "^0.1.0"
   }
 }

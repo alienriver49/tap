@@ -68,7 +68,7 @@ export function compileTypeScript(rootDir: string, outputDir: string, fixupRelat
     moduleNames = getPackageDirectories(TAP_FX_ROOT).join('|');
   }
 
-  const importRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s["'])(?:\\.{1,2}\\/)[./]*?(?:fx\/)?(${moduleNames})\\/?(?:.*)(["'];?)(.*)$`, 'gm');
+  const importRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s*["'])(?:\\.{1,2}\\/)[./]*?(?:fx\/)?(${moduleNames})\\/(?:.*)(["'];?)(.*)$`, 'gm');
   let importTemplate: string = `$1${MODULE_PACKAGE_PREFIX}$2$3$4`;
 
   if (fixupPackage) {

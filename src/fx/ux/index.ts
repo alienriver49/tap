@@ -1,3 +1,5 @@
+export * from './attributes/disabled';
+
 export * from './components/baseElement';
 export * from './components/baseElementContainer';
 export * from './components/button';
@@ -19,9 +21,17 @@ export * from './components/tapTestComponent';
 export * from './components/text';
 export * from './components/textArea';
 
+export * from './metadata/attributeMetadata';
+export * from './metadata/eventMetadata';
+export * from './metadata/repeatMetadata';
+
+export * from './valueConverters/currencyFormat';
+export * from './valueConverters/dateFormat';
+
 export * from './viewModels/viewModels.baseBlade';
 export * from './viewModels/viewModels.browseBlade';
 export * from './viewModels/viewModels.formBlade';
 
 export * from './bladeParser';
 export * from './conventionEngine';
+export * from './conventionManager';

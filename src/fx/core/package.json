@@ -3,13 +3,18 @@
   "version": "0.1.0",
   "description": "Core module for TAP",
   "main": "tap-fx-core.js",
-  "typings": "src/index.d.ts",
+  "typings": "typings/index.d.ts",
   "license": "MIT",
-  "peerDependencies": {
+  "dependencies": {
     "aurelia-dependency-injection": "^1.3.1",
     "aurelia-fetch-client": "^1.1.2",
-    "aurelia-auth": "3.0.5",
-    "tap-fx-utilities": "0.1.0",
-    "tap-fx-ux": "0.1.0"
+    "aurelia-auth": "^3.0.5",
+    "aurelia-bootstrapper": "^2.1.1",
+    "tap-fx-utilities": "^0.1.0",
+    "tap-fx-rpc": "^0.1.0",
+    "tap-fx-binding": "^0.1.0",
+    "tap-fx-security": "^0.1.0",
+    "tap-fx-configuration": "^0.1.0",
+    "tap-fx-ux": "^0.1.0"
   }
 }

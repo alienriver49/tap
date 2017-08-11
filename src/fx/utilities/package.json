@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Utilities module for TAP",
   "main": "tap-fx-utilities.js",
-  "typings": "src/index.d.ts",
-  "license": "MIT"
+  "typings": "typings/index.d.ts",
+  "license": "MIT",
+  "dependencies": {
+    "tap-fx-metadata": "^0.1.0"
+  }
 }

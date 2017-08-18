@@ -3,6 +3,7 @@ export * from './attributes/disabled';
 export * from './components/baseElement';
 export * from './components/baseElementContainer';
 export * from './components/button';
+export * from './components/compose';
 export * from './components/content';
 export * from './components/dataTable';
 export * from './components/form';
@@ -29,9 +30,10 @@ export * from './valueConverters/currencyFormat';
 export * from './valueConverters/dateFormat';
 
 export * from './viewModels/viewModels.baseBlade';
+export * from './viewModels/viewModels.baseView';
 export * from './viewModels/viewModels.browseBlade';
 export * from './viewModels/viewModels.formBlade';
 
-export * from './bladeParser';
+export * from './viewParser';
 export * from './conventionEngine';
 export * from './conventionManager';

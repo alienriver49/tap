@@ -1,6 +1,6 @@
 import { LandingBlade } from './landingBlade';
 import { SecondBlade } from './secondBlade';
-import { BaseBlade } from './../../fx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
+import { BaseBlade } from '../../fx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
 import { getTapFx, BaseExtension } from 'tap-fx';
 
 export class Index extends BaseExtension {
@@ -17,7 +17,7 @@ export class Index extends BaseExtension {
     public init(): void {
         console.log('[EXT-1] Index.init');
         const blade = new LandingBlade();
-        this.addBlade(blade, 'landingBlade.html');
+        this.addBlade(blade);
     }
 
     public updateParams(params: any[], queryParams: object): void {
@@ -56,14 +56,14 @@ export class Index extends BaseExtension {
             this._blades.push(blade);
             // this timeout is to ensure blades are added in correct order. TODO: this should be built into the framework or shell
             setTimeout(() => {
-                this.addBlade(blade, 'secondBlade.html');
+                this.addBlade(blade);
             }, i * 100);
             i++;
         }
     }
 
-    public addBlade(blade: BaseBlade, viewName: string): void {
+    public addBlade(blade: BaseBlade): void {
         console.log('[EXT-1] Attempting to add blade.');
-        this._tapFx.Extension.addBlade(blade, viewName);
+        this._tapFx.Extension.addBlade(blade);
     }
 }

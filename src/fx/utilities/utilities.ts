@@ -1,6 +1,13 @@
 import * as tapm from '../metadata/metadata';
 
 export class Utilities {
+
+    private _genericObjectFuncs: string[];
+    constructor() {
+        const genericObjectProto = Object.getPrototypeOf({});
+        this._genericObjectFuncs = Object.getOwnPropertyNames(genericObjectProto);
+    }
+
     /**
      * Returns a new GUID.
      */
@@ -204,5 +211,29 @@ export class Utilities {
      */
     public static nameof(obj: object): string {
         return Object.keys(obj)[0];
+    }
+
+    /**
+     * Get all the functions on the passed object that also aren't on a generic object
+     * @param objectPrototype 
+     */
+    public getOwnObjectFunctions(objectPrototype: object): string[] {
+        const objectFuncs = Object.getOwnPropertyNames(objectPrototype);
+
+        const ownObjectFuncs: string[] = [];
+        objectFuncs.forEach((funcName) => {
+            if (this._genericObjectFuncs.indexOf(funcName) < 0) {
+                ownObjectFuncs.push(funcName);
+            }
+        });
+        return ownObjectFuncs;
+    }
+
+    /**
+     * Provides functionality that is equivalent to the C# String.IsNullOrWhitespace method.
+     * @param str The string to test
+     */
+    public isNullOrWhiteSpace(str): boolean {
+        return !str || str.length === 0 || /^\s*$/.test(str);
     }
 }

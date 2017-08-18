@@ -2,6 +2,8 @@ import * as tapc from '../../fx/ux/tapcModules';
 import { ITapDataTableColumnConfiguration } from '../../webComponents/dataTable/tap-data-table';
 import { School } from './school';
 import { Address } from './address';
+import { TestView1 } from './testView1';
+import { TestView2 } from './testView2';
 import { getTapFx, ViewModels } from 'tap-fx';
 
 export class LandingBlade extends ViewModels.BaseBlade {
@@ -34,8 +36,14 @@ export class LandingBlade extends ViewModels.BaseBlade {
     ]);
     public twoD: number[][] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
 
+    public testView1: TestView1 = new TestView1();
+    public testView2: TestView2 = new TestView2();
+    public composedView: string = 'testView1.html';
+    public composedViewModel: ViewModels.ComposedView = this.testView1; 
+
     constructor() {
         super();
+        this.viewName = 'landingBlade.html';
         this._tapFx = getTapFx();
         this._buildContent();
         this._changeDataSet();
@@ -73,46 +81,75 @@ export class LandingBlade extends ViewModels.BaseBlade {
                     ),
                     new tapc.TapTestComponent({display: '@display', clearText: '@clearText', raised: '@raised'})
                 ),
-                new tapc.Content().addText('Test Address1 child object'),
-                new tapc.Content().addText('@address.line1'),
-                new tapc.Content().addText('@address.town', ', ', '@address.state', ' ', '@address.zip'),
-                new tapc.Content().addText('Test Address2 child object (same object as Address1)'),
-                new tapc.Content().addText('@address2.line1'),
-                new tapc.Content().addText('@address2.town', ', ', '@address2.state', ' ', '@address2.zip'),
-                new tapc.Content().addToContainer(
-                    new tapc.Button({name: 'updateChildObject'}).addText('Update property on child object'),
-                    new tapc.Button({name: 'changeChildObject'}).addText('Change child object'),
+                new tapc.Content({hasBorder: true}).addText('Test changing objects on child objects').addToContainer(
+                    new tapc.Content().addText('Test Address1 child object'),
+                    new tapc.Content().addText('@address.line1'),
+                    new tapc.Content().addText('@address.town', ', ', '@address.state', ' ', '@address.zip'),
+                    new tapc.Content().addText('Test Address2 child object (same object as Address1)'),
+                    new tapc.Content().addText('@address2.line1'),
+                    new tapc.Content().addText('@address2.town', ', ', '@address2.state', ' ', '@address2.zip'),
+                    new tapc.Content().addToContainer(
+                        new tapc.Button({name: 'updateChildObject'}).addText('Update property on child object'),
+                        new tapc.Button({name: 'changeChildObject'}).addText('Change child object'),
+                    ),
                 ),
-                new tapc.Content().addText('Test syncing changing array contents and changing array ').addToContainer(
-                    new tapc.Button({name: 'addData'}).addText('Add row'),
-                    new tapc.Button({name: 'removeData'}).addText('Remove row'),
-                    new tapc.Button({name: 'changeData'}).addText('Change array'),
-                    new tapc.Button({name: 'test'}).addText('Test random array modification'),
-                    new tapc.Button({name: 'changeItemProp'}).addText('Change prop on array child object'),
+                new tapc.Content({hasBorder: true}).addText('Data table test').addToContainer(
+                    new tapc.Content().addText('Test syncing changing array contents and changing array ').addToContainer(
+                        new tapc.Button({name: 'addData'}).addText('Add row'),
+                        new tapc.Button({name: 'removeData'}).addText('Remove row'),
+                        new tapc.Button({name: 'changeData'}).addText('Change array'),
+                        new tapc.Button({name: 'test'}).addText('Test random array modification'),
+                        new tapc.Button({name: 'changeItemProp'}).addText('Change prop on array child object'),
+                    ),
+                    new tapc.Content({hasBorder: true}).addText('Data table test').addToContainer(
+                        new tapc.DataTable({id: 'test-table', data: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig'),
+                    ),
                 ),
-                new tapc.DataTable({id: 'test-table', data: '@data'}).setColumnConfiguration(this.columnConfig, '@columnConfig'),
-                new tapc.Content().addText('Repeat with Map ').addToContainer(
-                    new tapc.Button({name: 'addMapData'}).addText('Add element to map'),
-                    new tapc.Button({name: 'removeMapData'}).addText('Remove element from map'),
-                    new tapc.Button({name: 'changeMapDataValue'}).addText('Change element value in map'),
-                    new tapc.Button({name: 'changeMapData'}).addText('Change map object'),
-                    new tapc.Button({name: 'clearMapData'}).addText('Clear map'),
+                new tapc.Content({hasBorder: true}).addText('List with explicit items').addToContainer(
+                    new tapc.List({name: 'listTest'}).addToContainer(
+                        new tapc.ListItem().addText('fee'), 
+                        new tapc.ListItem().addText('fi'), 
+                        new tapc.ListItem().addText('fo'), 
+                        new tapc.ListItem().addText('fum'), 
+                    )
                 ),
-                new tapc.List({name: 'mapTest', repeat: '[key, value] of dict'}).addText('${key}: ${value.line1}'),
-                new tapc.Content().addText('Repeat with Set ').addToContainer(
-                    new tapc.Button({name: 'addSetData'}).addText('Add element to set'),
-                    new tapc.Button({name: 'removeSetData'}).addText('Remove element from set'),
-                    new tapc.Button({name: 'changeSetData'}).addText('Change set object'),
-                    new tapc.Button({name: 'clearSetData'}).addText('Clear set'),
+                new tapc.Content({hasBorder: true}).addText('List with repeat-for with Map source and interpolated list items').addToContainer(
+                    new tapc.Content().addToContainer(
+                        new tapc.Button({name: 'addMapData'}).addText('Add element to map'),
+                        new tapc.Button({name: 'removeMapData'}).addText('Remove element from map'),
+                        new tapc.Button({name: 'changeMapDataValue'}).addText('Change element value in map'),
+                        new tapc.Button({name: 'changeMapData'}).addText('Change map object'),
+                        new tapc.Button({name: 'clearMapData'}).addText('Clear map'),
+                    ),
+                    new tapc.List({name: 'mapTest', repeat: '[key, value] of dict'}).addText('${key}: ${value.line1}'),
                 ),
-                new tapc.List({name: 'setList', repeat: 'value of testSet'}).addText('${value.line1}, ${value.town}'),
-                new tapc.Content().addText('List with explicit items'),
-                new tapc.List({name: 'listTest'}).addToContainer(
-                    new tapc.ListItem().addText('fee'), 
-                    new tapc.ListItem().addText('fi'), 
-                    new tapc.ListItem().addText('fo'), 
-                    new tapc.ListItem().addText('fum'), 
-                )
+                new tapc.Content({hasBorder: true}).addText('List with repeat-for with Set source and interpolated list items').addToContainer(
+                    new tapc.Content().addToContainer(
+                        new tapc.Button({name: 'addSetData'}).addText('Add element to set'),
+                        new tapc.Button({name: 'removeSetData'}).addText('Remove element from set'),
+                        new tapc.Button({name: 'changeSetData'}).addText('Change set object'),
+                        new tapc.Button({name: 'clearSetData'}).addText('Clear set'),
+                    ),
+                    new tapc.List({name: 'setList', repeat: 'value of testSet'}).addText('${value.line1}, ${value.town}'),
+                ),
+                new tapc.Content({hasBorder: true}).addText('List with repeat-for and composed view list items').addToContainer(
+                    new tapc.Content().addText('Each list item is a separate view that is bound to a separate viewmodel from the source collection').addToContainer(
+                        new tapc.List({name: 'childEventTest', repeat: 'value of data'}).addToContainer(
+                            new tapc.Compose({viewName: 'schoolTemplate.html', viewModel: '@value'})
+                        ),
+                    )
+                ),
+                new tapc.Content({hasBorder: true}).addText('Composed View Test').addToContainer(
+                    new tapc.Content().addToContainer(
+                        new tapc.Button({name: 'setView1'}).addText('Set view 1'),
+                        new tapc.Button({name: 'setView2'}).addText('Set view 2'),
+                        new tapc.Button({name: 'setViewModel1'}).addText('Set viewmodel 1'),
+                        new tapc.Button({name: 'setViewModel2'}).addText('Set viewmodel 2'),
+                    ),
+                    new tapc.Content({hasBorder: true}).addToContainer(
+                        new tapc.Compose({viewName: '@composedView', viewModel: '@composedViewModel'})
+                    ),
+                ),
             )
         );
     }
@@ -343,5 +380,20 @@ export class LandingBlade extends ViewModels.BaseBlade {
         this._mapDataToggle = !this._mapDataToggle;
     }
 
+    public onSetView1Click(): void {
+        this.composedView = 'testView1.html';
+    }
+
+    public onSetView2Click(): void {
+        this.composedView = 'testView2.html';
+    }
+
+    public onSetViewModel1Click(): void {
+        this.composedViewModel = this.testView1;
+    }
+
+    public onSetViewModel2Click(): void {
+        this.composedViewModel = this.testView2;
+    }
 
 }

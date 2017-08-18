@@ -5,7 +5,8 @@ import { ITapFx } from '../../fx/core/bootstrap';
 import { ExtensionCommandResult, ExtensionCommandQueue } from './extensionCommandQueue';
 import { ExtensionLoaderEngine } from './extensionLoaderEngine';
 import { Extension } from './extension';
-import { PortalBlade, IPortalBladeConfig } from './viewModels.portalBlade';
+import { PortalBlade } from './viewModels.portalBlade';
+import { IAddBladeMessage } from '../../fx/core/extension/extension'; // TODO: add to tapFx object
 
 @inject(EventAggregator, ExtensionCommandQueue, ExtensionLoaderEngine, Factory.of(Extension), 'TapFx')
 export class ExtensionManager {
@@ -51,21 +52,13 @@ export class ExtensionManager {
      * Adds a blade for an extension.
      * @param data
      */
-    private _onAddBlade(data: any): void {
+    private _onAddBlade(data: IAddBladeMessage): void {
         console.log('[SHELL] Received addBlade message: ', data);
         const extensionId = data.extensionId;
         const extension = this._findExtension(extensionId);
         if (extension) {
             // add the blade to the extension
-            const bladeConfig: IPortalBladeConfig = {
-                bladeId: data.bladeId,
-                serializedBlade: data.serializedBlade,
-                viewName: data.viewName,
-                functions: data.functions,
-                serializedView: data.view
-            };
-            // add the blade to the extension
-            const blade = extension.addBlade(bladeConfig);
+            const blade = extension.addBlade(data);
 
             // since we know the current command is the extension load command, we will resolve this one. for now, this works since commands are sequential and we know to only call this when appropriate
             const defer = this._extensionCommandQueue.current.defer;

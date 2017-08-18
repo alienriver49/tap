@@ -3,11 +3,11 @@ import * as tapc from '../tapcModules';
 import { IButton } from '../components/button';
 import * as tapm from '../../metadata/metadata';
 import { Utilities } from '../../utilities/utilities';
+import { BaseView, IBaseView } from './viewModels.baseView';
 
-export interface IBaseBlade {
+export interface IBaseBlade extends IBaseView {
     title: string;
     subtitle: string;
-    content: IBaseElement[];
 
     canActivate?(): boolean | Promise<boolean>;
     activate?(): Promise<void> | void;
@@ -15,18 +15,14 @@ export interface IBaseBlade {
     deactivate?(): Promise<void> | void;
 
     addMenu(...munuItems: IButton[]);
-
-    // Name and Of are used together to simulate nameof functionality
-    // similar to C#
-    // EX: this.Name(this.Of(() => this.address.line1));
-    Name(fnString: string): string;
-    Of(fn: any): string;
 }
 
 
-// TODO: research extending BaseElementContainer, since we already have content: IBaseElement[] and we want the blade to be an actual element on the page anyway (like a div), it might add functionality. would want to research the integration with bladeParser
-export class BaseBlade implements IBaseBlade {
+// TODO: research extending BaseElementContainer, since we already have content: IBaseElement[] and we want the blade to be an actual element on the page anyway (like a div), it might add functionality. would want to research the integration with viewParser
+export class BaseBlade extends BaseView implements IBaseBlade {
     constructor() {
+        super();
+        this.isBlade = true;
         this.content.push(
             new tapc.Button({name: 'remove', class: 'removeBladeButton'}).addClass(tapc.ButtonClass.DANGER).addIcon('glyphicon-remove'),
             new tapc.Heading({name: 'title', importance: 2 }).addText('@title'),
@@ -34,15 +30,8 @@ export class BaseBlade implements IBaseBlade {
         );
     }
 
-    public Of = Utilities.Of;
-    public Name = Utilities.Name;
-
     public title: string;
     public subtitle: string;
-    // TODO: how can we make this limited to the developers?
-    // Use a getter/setter for this and check the RpcClient.InstanceId?
-    @tapm.NoObserve()
-    public content: IBaseElement[] = [];
 
     public canActivate?(): boolean | Promise<boolean>;
     public activate?(): Promise<void> | void;

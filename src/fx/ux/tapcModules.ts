@@ -16,3 +16,4 @@ export * from './components/textArea';
 export * from './components/mdcCheckbox';
 export * from './components/tapTestComponent';
 export * from './components/dataTable';
+export * from './components/compose';

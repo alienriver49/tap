@@ -3,7 +3,8 @@ import { ObserverLocator } from 'aurelia-binding';
 import { TaskQueue } from 'aurelia-task-queue';
 import { InternalPropertyObserver, InternalCollectionObserver } from 'aurelia-binding'; // type
 
-import { IBindingEngine, ISerializedObject } from './bindingEngine';
+import { IBindingEngine, SerializedType } from './bindingEngine';
+import { SerializedObject, ISerializedObjectConfig } from './serializedObject';
 
 import { RpcClient } from '../rpc/client';
 import { Utilities } from '../utilities/utilities';
@@ -16,7 +17,7 @@ export interface IArrayChangedSplice {
     addedCount: number;
     index: number;
     removed: Array<number|object>;
-    added?: ISerializedObject[];
+    added?: SerializedObject[];
 }
 
 /**
@@ -135,21 +136,18 @@ export class ProxiedCollectionObservable {
                             throw new Error(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Observed Arrays can only contain primitives, Dates, objects, arrays, sets and maps`);
                         }
 
-                        const serializedValue: ISerializedObject =  {
-                            property: i.toString(),
-                            contextId: '',
-                            parentId: this._contextId,
-                            value: currentArray[i],
-                            type: '',
-                            childMetadata: [] 
-                        };
+                        const serializedValue: SerializedObject = new SerializedObject();
+                        serializedValue.property = i.toString();
+                        serializedValue.parentId = this._contextId;
+                        serializedValue.value = currentArray[i];
+                        serializedValue.type = SerializedType.PRIMITIVE;
 
                         // If the new value is an object/array, we need to recursively observe it too
                         // and pass appropriate metadata
                         if (this._utilities.isDateObjectCollectionType(element)) {
                             // serializedValue.value is updated with the serialized object/array 
-                            this._bindingEngine.observeObject(serializedValue, element, refIds, this._extensionId, false, false);
-                        }
+                            this._bindingEngine.observeObject(serializedValue, element, refIds, this._extensionId, false, false, true);
+                        } 
                         
                         splice.added.push(serializedValue);
                     }
@@ -186,20 +184,16 @@ export class ProxiedCollectionObservable {
                 contextId: ''
             };
             if (change.type === 'add') {
-                const serializedValue: ISerializedObject =  {
-                    property: '',
-                    contextId: '',
-                    parentId: this._contextId,
-                    value: change.value,
-                    type: '',
-                    childMetadata: [] 
-                };
+                const serializedValue: SerializedObject = new SerializedObject();
+                serializedValue.parentId = this._contextId;
+                serializedValue.value = change.value;
+                serializedValue.type = SerializedType.PRIMITIVE;
 
                 // If the new value is an object/collection, we need to recursively observe it too
                 // and pass appropriate metadata
                 if (this._utilities.isDateObjectCollectionType(change.value)) {
                     // serializedValue.value is updated with the serialized object/array 
-                    this._bindingEngine.observeObject(serializedValue, change.value, refIds, this._extensionId, false, false);
+                    this._bindingEngine.observeObject(serializedValue, change.value, refIds, this._extensionId, false, false, true);
                     resolvedChange.value = serializedValue;
                     resolvedChange.contextId = serializedValue.contextId;
                 }
@@ -212,6 +206,7 @@ export class ProxiedCollectionObservable {
                     const oldContextId = this._bindingEngine.getIdByContext(change.value);
                     if (oldContextId) {
                         resolvedChange.contextId = oldContextId;
+                        resolvedChange.value = '';
                         this._bindingEngine.unobserve(change.value, this._contextId, '', oldContextId, false, false, false, false);
                     }
                 }
@@ -248,9 +243,9 @@ export class ProxiedCollectionObservable {
         changes.forEach((change: IMapChangeRecord) => {
             const resolvedChange: IMapChangeRecord = {
                 type: change.type, 
-                key: change.key, 
-                oldValue: change.oldValue, 
-                value: theMap.get(change.key),
+                key: '', 
+                oldValue: '', 
+                value: '',
                 contextId: '',
                 keyContextId: '' 
             };
@@ -262,7 +257,9 @@ export class ProxiedCollectionObservable {
 
             // value changed (or added)
             if (change.type === 'update' || change.type === 'add') {
+
                 if (change.type === 'update' && change.oldValue !== change.value) {
+                    resolvedChange.oldValue = change.oldValue;
                     // If oldValue is an object mapped in the BindingEngine, then
                     // dispose of any observers on it
                     if (this._utilities.isObject(change.oldValue) || this._utilities.isCollectionType(change.oldValue)) {
@@ -274,20 +271,17 @@ export class ProxiedCollectionObservable {
                     }
                 }
 
-                const serializedValue: ISerializedObject =  {
-                    property: '',
-                    contextId: '',
-                    parentId: this._contextId,
-                    value: resolvedChange.value,
-                    type: '',
-                    childMetadata: [] 
-                };
+                resolvedChange.value = theMap.get(change.key);
+                const serializedValue: SerializedObject = new SerializedObject();
+                serializedValue.parentId = this._contextId;
+                serializedValue.value = resolvedChange.value;
+                serializedValue.type = SerializedType.PRIMITIVE;
 
                 // If the new value is an object/collection, we need to recursively observe it too
                 // and pass appropriate metadata, otherwise just get it's contextId
                 if (this._utilities.isDateObjectCollectionType(resolvedChange.value)) {
                     // serializedValue.value is updated with the serialized object/array 
-                    this._bindingEngine.observeObject(serializedValue, resolvedChange.value, refIds, this._extensionId, false, true);
+                    this._bindingEngine.observeObject(serializedValue, resolvedChange.value, refIds, this._extensionId, false, true, true);
                     resolvedChange.value = serializedValue;
                     resolvedChange.contextId = serializedValue.contextId;
                 }
@@ -296,20 +290,17 @@ export class ProxiedCollectionObservable {
             // key and value added
             // value was already handled under the update case above, just just handle key here
             if (change.type === 'add') {
-                const serializedKey: ISerializedObject =  {
-                    property: '',
-                    contextId: '',
-                    parentId: this._contextId,
-                    value: change.key,
-                    type: '',
-                    childMetadata: [] 
-                };
+                resolvedChange.key = change.key;
+                const serializedKey: SerializedObject = new SerializedObject();
+                serializedKey.parentId = this._contextId;
+                serializedKey.value = change.key;
+                serializedKey.type = SerializedType.PRIMITIVE;
 
                 // If the new value is an object/collection, we need to recursively observe it too
                 // and pass appropriate metadata, otherwise just get it's contextId
                 if (this._utilities.isDateObjectCollectionType(change.key)) {
                     // serializedValue.value is updated with the serialized object/array 
-                    this._bindingEngine.observeObject(serializedKey, change.key, refIds, this._extensionId, true, false);
+                    this._bindingEngine.observeObject(serializedKey, change.key, refIds, this._extensionId, true, false, true);
                     resolvedChange.key = serializedKey;
                     resolvedChange.keyContextId = serializedKey.contextId;
                 }

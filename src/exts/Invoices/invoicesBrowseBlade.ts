@@ -1,7 +1,6 @@
 import { getTapFx, ViewModels, BaseBlade } from 'tap-fx';
-import * as tapc from './../../fx/ux/tapcModules';
-import { ITapDataTableColumnConfiguration } from './../../webComponents/dataTable/tap-data-table';
-import { InvoicesAddBlade } from './invoicesAddBlade';
+import * as tapc from '../../fx/ux/tapcModules';
+import { ITapDataTableColumnConfiguration } from '../../webComponents/dataTable/tap-data-table';
 
 interface IInvoiceBrowseDto {
     //Invoices: IInvoiceDto[];
@@ -40,6 +39,7 @@ export class InvoicesBrowseBlade extends ViewModels.BrowseBlade {
 
     constructor() {
         super();
+        this.viewName = 'invoicesBrowseBlade.html';
         this._tapFx = getTapFx();
         this._buildContent();
     }

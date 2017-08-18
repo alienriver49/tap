@@ -5,9 +5,11 @@ import { BaseExtension } from './baseExtension'; // type only
 
 import { Utilities } from '../../utilities/utilities';
 import { RpcClient, IRpcClientSubscription } from '../../rpc/client';
-import { BindingEngine, ISerializedObject } from '../../binding/bindingEngine';
+import { BindingEngine } from '../../binding/bindingEngine';
+import { SerializedObject } from '../../binding/serializedObject';
+import { SerializedView } from '../../binding/serializedView';
 import { DeferredPromise } from '../../core/deferredPromise';
-import { BladeParser } from '../../ux/bladeParser';
+import { ViewParser } from '../../ux/viewParser';
 import { BaseBlade } from '../../ux/viewModels/viewModels.baseBlade'; // type only
 
 /**
@@ -25,14 +27,25 @@ interface IBladeInfo {
     bladeId: string;
 }
 
-@inject(BladeEngine, Utilities, RpcClient, BindingEngine, BladeParser)
+/**
+ * The object that is sent to the shell when adding a blade
+ */
+export interface IAddBladeMessage {
+    extensionId: string;
+    bladeId: string;
+    viewName: string;
+    serializedBlade: SerializedObject;
+    serializedViews: SerializedView[];
+}
+
+@inject(BladeEngine, Utilities, RpcClient, BindingEngine, ViewParser)
 export class Extension extends BaseExtension {
     constructor(
         private _bladeEngine: BladeEngine,
         private _utilities: Utilities,
         private _rpc: RpcClient,
         private _bindingEngine: BindingEngine,
-        private _bladeParser: BladeParser
+        private _viewParser: ViewParser
     ) {
         super();
         let subscription = this._rpc.subscribe('tapfx.removeExtension', this._onRemoveExtension.bind(this));
@@ -40,6 +53,7 @@ export class Extension extends BaseExtension {
 
         subscription = this._rpc.subscribe('tapfx.updateExtensionParams', this._onUpdateExtensionParams.bind(this));
         this._rpcSubscriptions.push(subscription);
+
     }
 
     private _className: string = (this as object).constructor.name;
@@ -110,9 +124,8 @@ export class Extension extends BaseExtension {
     /**
      * Attempts to add a blade to an extension. Calls activation lifecycle hooks.
      * @param blade 
-     * @param viewName 
      */
-    public addBlade(blade: BaseBlade, viewName: string): void {
+    public addBlade(blade: BaseBlade): void {
         // create a journey promise which resolves to true
         let journeyPromise: Promise<boolean> = Promise.resolve(true);
         // if not journeying, we will want to remove the previous blade
@@ -131,7 +144,7 @@ export class Extension extends BaseExtension {
             if (canAdd) {
                 this._bladeEngine.performActivation(blade).then((canActivate) => {
                     if (canActivate) {
-                        this._performAddBlade(blade, viewName);
+                        this._performAddBlade(blade);
                     } else {
                         this._addBladeFailed();
                     }
@@ -145,28 +158,48 @@ export class Extension extends BaseExtension {
     /**
      * Function which performs the adding of a blade (since activation was successful). Publishes back to the shell that the blade was added.
      * @param blade 
-     * @param viewName 
      */
-    private _performAddBlade(blade: BaseBlade, viewName: string): void {
-        const bladeInfo = this._registerBladeBindings(blade);
+    private _performAddBlade(blade: BaseBlade): void {
+        if (this._utilities.isNullOrWhiteSpace(blade.viewName)) {
+            throw Error('All blades must have value for their viewName property');
+        }
+        const bladeInfo: IAddBladeMessage = this._registerBladeBindings(blade);
         // Get the extension Id from RPC and pass it to the shell
         bladeInfo.extensionId = this._rpc.instanceId;
-        bladeInfo.viewName = viewName;
-        bladeInfo.functions = this._registerBladeFunctions(blade, bladeInfo.bladeId);
-        bladeInfo.view = this._parseBladeForm(blade, bladeInfo.functions);
+        bladeInfo.viewName = blade.viewName;
+        this._subscribeBladeRemoval(blade, bladeInfo.bladeId);
         
         this._bladeInfoMap.set(blade, { bladeId: bladeInfo.bladeId } );
         this._rpc.publish('shell.addBlade', '', bladeInfo);
     }
 
-    private _parseBladeForm(blade: BaseBlade, bladeFunctions: string[]): string {
-        if (!blade.content || blade.content.length === 0) {
-            return '';
-        }
+    /**
+     * Register the blade's onRemoveClick function as subscription so that it
+     * can be called from the shell over the RPC.
+     * @param blade 
+     * @param bladeId 
+     */
+    private _subscribeBladeRemoval(blade: BaseBlade, bladeId: string): void {
+        const subscriptionArray: IRpcClientSubscription[] = [];
 
-        const viewHTML = this._bladeParser.parseBladeToHTML(blade, bladeFunctions);
-        
-        return viewHTML;
+        // function subscription is all handled in the BindingEngine
+        // Except for the onRemoveClick, which is subscribed here to know what blade is being removed
+        const functionName = 'onRemoveClick';
+        const subscriptionName = this._rpc.subscribe('tapfx.' + bladeId + '.' + functionName, (data) => {
+            // call the _removeBladeRange function as a manual removal
+            console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Received message from function: ` + functionName);
+            this._removeBladeRange(blade, true);
+
+            // publish a void result back to the shell so it doesn't keep listening
+            const result = undefined;
+            console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Publishing result from function: ` + functionName);
+            this._rpc.publish('shell.' + bladeId + '.' + functionName, '', result);
+        });
+
+        // set any subscriptions to the _bladeSubscriptions map mapped by the blade id
+        this._bladeSubscriptions.set(bladeId, [subscriptionName]);
+
+        return ;
     }
 
     /**
@@ -251,10 +284,11 @@ export class Extension extends BaseExtension {
      * @param manualRemoval 
      */
     private _performRemoveBlade(blade: BaseBlade, bladeId: string, manualRemoval: boolean) {
-        // unobserve this blade
+        // unobserve this blade (also unsubscribes from any blade events)
         this._bindingEngine.unobserveBlade(blade);
 
-        // unsubscribe from any blade events
+        // unsubscribe from blade OnRemoveClick event
+        // All other blade event unsubscription is handled in the binding Engine
         (this._bladeSubscriptions.get(bladeId) || []).forEach((subscription) => {
             subscription.unsubscribe();
         });
@@ -277,100 +311,18 @@ export class Extension extends BaseExtension {
     private _removeBladeFailed() {
     }
 
-    private _registerBladeBindings(blade: BaseBlade): any {
+    private _registerBladeBindings(blade: BaseBlade): IAddBladeMessage {
         const refIds: Set<string> = new Set<string>(); 
-        const metadata: ISerializedObject =  {
-            property: '',
-            contextId: '',
-            parentId: '',
-            value: null,
-            type: '',
-            childMetadata: [] 
-        };
-        const serializedBlade = this._bindingEngine.observeObject(metadata, blade, refIds, this._rpc.instanceId, false, false);
-
-        return {
+        const metadata: SerializedObject =  new SerializedObject();
+        const serializedBlade = this._bindingEngine.observeObject(metadata, blade, refIds, this._rpc.instanceId, false, false, true);
+        const result: IAddBladeMessage = {
+            extensionId: '',
             bladeId: serializedBlade.contextId,
-            serializedBlade
+            viewName: '',
+            serializedBlade,
+            serializedViews: this._bindingEngine.getNewParsedViews()
         };
-    }
-
-    /**
-     * Register the blade's functions as subscriptions so that they can be called from the shell over the RPC.
-     * @param blade 
-     * @param bladeId 
-     */
-    private _registerBladeFunctions(blade: BaseBlade, bladeId: string): string[] {
-        const subscriptionArray: IRpcClientSubscription[] = [];
-        const returnFuncs: string[] = [];
-
-        // get the functions from the blade prototype
-        const bladeFuncs = this._getBladeFunctions(blade);
-        for (const func of bladeFuncs) {
-            const funcName = func.funcName;
-            // add a subscription which will call the blade's original function with the passed function args
-            const subscription = this._rpc.subscribe('tapfx.' + bladeId + '.' + funcName, (data) => {
-                // call the function and get the result
-                console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Received message from function: ` + funcName);
-                const result = blade[funcName](...data.functionArgs);
-
-                // publish the result back to the shell
-                console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Publishing result from function: ` + funcName);
-                this._rpc.publish('shell.' + bladeId + '.' + funcName, '', result);
-            });
-            subscriptionArray.push(subscription);
-            returnFuncs.push(funcName);
-        }
-
-        // convention - add a subscription for the onRemoveClick which calls the _removeBladeRange function
-        const functionName = 'onRemoveClick';
-        const subscriptionName = this._rpc.subscribe('tapfx.' + bladeId + '.' + functionName, (data) => {
-            // call the _removeBladeRange function as a manual removal
-            console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Received message from function: ` + functionName);
-            this._removeBladeRange(blade, true);
-
-            // publish a void result back to the shell so it doesn't keep listening
-            const result = undefined;
-            console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Publishing result from function: ` + functionName);
-            this._rpc.publish('shell.' + bladeId + '.' + functionName, '', result);
-        });
-        subscriptionArray.push(subscriptionName);
-        returnFuncs.push(functionName);
-
-        // set any subscriptions to the _bladeSubscriptions map mapped by the blade id
-        this._bladeSubscriptions.set(bladeId, subscriptionArray);
-
-        return returnFuncs;
-    }
-
-    /**
-     * Get an array of function information for a blade.
-     * @param blade 
-     */
-    private _getBladeFunctions(blade: BaseBlade): IFunction[] {
-        // get the proto of the blade and then the functions from that
-        const bladeProto = Object.getPrototypeOf(blade);
-        const bladeFuncs = Object.getOwnPropertyNames(bladeProto);
-
-        // for now, don't sync the activation lifecycle functions over
-        const funcIgnoreArray = ['constructor', 'activate', 'canActivate', 'deactivate', 'canDeactivate'];
-
-        const funcs: IFunction[] = [];
-        // now lets map that to an array of function information
-        bladeFuncs.forEach((funcName: string) => {
-            const funcDesc: PropertyDescriptor = Object.getOwnPropertyDescriptor(bladeProto, funcName);
-
-            // ignore private functions beginning with _, similar to property observing
-            // for now, we will use a function ignore array to ignore functions we don't want to listen for (like 'constructor')
-            // TODO: determine how to attach get and set functions
-            if (funcName.charAt(0) !== '_' &&
-                funcIgnoreArray.indexOf(funcName) === -1/* &&
-                funcDesc.get === undefined*/) {
-                    funcs.push({ funcName, funcDesc});
-                }
-        });
-
-        return funcs;
+        return result;
     }
 
     /**

@@ -15,7 +15,7 @@ export class Admin extends BaseExtension {
     public init(): void {
         console.log('[Admin] Index.init');
         let blade = new AdminConfigBlade();
-        this.addBlade(blade, "landingBlade.html");
+        this.addBlade(blade);
     }
 
     public updateParams(params: any[], queryParams: Object): void {
@@ -23,8 +23,8 @@ export class Admin extends BaseExtension {
 
     }
 
-    public addBlade(blade: BaseBlade, viewName: string): void {
+    public addBlade(blade: BaseBlade): void {
         console.log('[Admin] Attempting to add blade.');
-        this._tapFx.Extension.addBlade(blade, viewName);
+        this._tapFx.Extension.addBlade(blade);
     }
 }

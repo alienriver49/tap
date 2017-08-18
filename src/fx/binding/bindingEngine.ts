@@ -3,51 +3,25 @@ import moment from 'moment';
 
 import { ProxiedObservable } from './proxiedObservable';
 import { ProxiedCollectionObservable, IArrayBindingSync, IArrayChangedSplice, ISetBindingSync, ISetChangeRecord, IMapBindingSync, IMapChangeRecord } from './proxiedCollectionObservable';
-import { IChildReference, BindingMap } from './bindingMap';
+import { BindingMap } from './bindingMap';
+import { ChildReference, IChildReferenceConfig } from './childReference';
+import { SerializedObject, ISerializedObjectConfig } from './serializedObject';
+import { SerializedView, ISerializedViewConfig } from './serializedView';
 
 import * as tapm from '../metadata/metadata';
+import { BaseView } from '../ux/viewModels/viewModels.baseView';
 import { Utilities } from '../utilities/utilities';
-import { RpcClient } from '../rpc/client';
-
-
-/**
- * This defines the format of objects being serialized between windows
- */
-export interface ISerializedObject {
-    // Name of property or index of this data on a parent object or collection
-    property: string;   
-    // The GUID that identifies this data in the binding maps (not used for primitives)
-    contextId: string;  
-    // The GUID that identifies the object or collection that this data lives on
-    parentId: string;   
-    // For primitives, the actual value of the data
-    // For dates, the ISO string value of the date
-    // For collections, the collection where each element may be a primitive or another ISerializedObject
-    // For objects, a plain object with all primitive properties, complex properties for the object are
-    //      defined in the childMetadata array
-    value: any;         
-    // Defines the type of this data (see SerializedType for possible values)
-    type: string;
-    // If the data is an object with non-primitive properties, they require their metadata and that
-    // is stored in this childMetadata array
-    childMetadata: ISerializedObject[];
-}
+import { ViewParser } from '../ux/viewParser';
+import { RpcClient, IRpcClientSubscription } from '../rpc/client';
+import { DeferredPromise } from '../../fx/core/deferredPromise'; // TODO: add to tapFx object
 
 /**
  * Reference to an object that could not be currently resolved
  */
-export interface IUnresolvedRef {
+interface IUnresolvedRef {
     context: object;
     property: string;
     refId: string;
-}
-
-
-export interface IBindingEngine {
-    getIdByContext(context: object): string | null;
-    resolveSerializedObject(obj: ISerializedObject, fixUnresolved?: boolean): object;
-    observeObject(metadata: ISerializedObject, context: object, refIds: Set<string>, extensionId: string, isMapKey?: boolean, isMapValue?: boolean): ISerializedObject;
-    unobserve(context: object, parentContextId: string, parentProperty: string, contextId?: string, isMapKey?: boolean, isMapValue?: boolean, onlyDoChildren?: boolean, inRecursion?: boolean ): void;
 }
 
 /**
@@ -62,14 +36,34 @@ export class SerializedType {
     public static readonly MAP: string = 'm';
 }
 
-@inject(Utilities, RpcClient, Factory.of(ProxiedObservable), Factory.of(ProxiedCollectionObservable))
+/**
+ * Interface defining a function. Includes the name and the property descriptor.
+ */
+interface IFunction {
+    funcName: string;
+    funcDesc: PropertyDescriptor;
+}
+
+/**
+ * Export the functions we want to make available to other parts of TAP-FX
+ */
+export interface IBindingEngine {
+    getIdByContext(context: object): string | null;
+    resolveSerializedObject(obj: SerializedObject, fixUnresolved?: boolean, extensionId?: string): object;
+    observeObject(metadata: SerializedObject, context: object, refIds: Set<string>, extensionId: string, isMapKey?: boolean, isMapValue?: boolean, doViewKeySnapshot?: boolean): SerializedObject;
+    unobserve(context: object, parentContextId: string, parentProperty: string, contextId?: string, isMapKey?: boolean, isMapValue?: boolean, onlyDoChildren?: boolean, inRecursion?: boolean ): void;
+}
+
+@inject(Utilities, RpcClient, ViewParser, Factory.of(ProxiedObservable), Factory.of(ProxiedCollectionObservable))
 export class BindingEngine implements IBindingEngine {
     constructor(
         private _utilities: Utilities,
         private _rpc: RpcClient,
+        private _viewParser: ViewParser,
         private _proxiedObservableFactory: (...args: any[]) => ProxiedObservable,
         private _proxiedCollectionObservableFactory: (...args: any[]) => ProxiedCollectionObservable
     ) {
+        // Setup all the subscriptions for RPC messages when bound values change
         _rpc.subscribe('tapfx.propertyBindingSync', this._onPropertyBindingSync.bind(this));
         _rpc.subscribe('tapfx.arrayBindingSync', this._onArrayBindingSync.bind(this));
         _rpc.subscribe('tapfx.setBindingSync', this._onSetBindingSync.bind(this));
@@ -84,13 +78,14 @@ export class BindingEngine implements IBindingEngine {
     private _unresolvedRefs: IUnresolvedRef[] = [];
     private _contextsToDelete: any[] = [];
     private _contextIdsToDelete: string[] = [];
+    private _viewMapKeysSnapshot: Set<string> = new Set<string>();
 
     /**
      * Handler for 'tapfx.propertyBindingSync' RPC messages 
      * 
      * @param data 
      */
-    private _onPropertyBindingSync(data: ISerializedObject): void {
+    private _onPropertyBindingSync(data: SerializedObject): void {
         console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Property binding sync.`, data);
 
         const bindingMap = this.getBindingMap(data.parentId);
@@ -100,9 +95,9 @@ export class BindingEngine implements IBindingEngine {
 
         if (observer) {
             // If the old value was an object, dispose of any observers
-            const context = this.getContextById(data.parentId);
-            if (context) { 
-                const oldValue = context[data.property];
+            const parentContext = this.getContextById(data.parentId);
+            if (parentContext) { 
+                const oldValue = parentContext[data.property];
                 // If oldValue is an object mapped in the BindingEngine, then
                 // dispose of any observers on it
                 if (oldValue && this._contextIdMap.has(oldValue)) {
@@ -111,32 +106,35 @@ export class BindingEngine implements IBindingEngine {
                 }
             }
 
-            // If the new value is an object or array, recursively register it for observation
-            let resolvedValue: any = data.value;
-            if (!this._utilities.isPrimitive(data.value)) {
-                // First check if it already exists in the context
-                const existingChildObject = this.getContextById(data.contextId);
-                if (existingChildObject) {
-                    // If so, we assume it's being observed and assign that to the parent object
-                    resolvedValue = existingChildObject;
-                } else {
-                    switch (data.type.toLowerCase()) {
-                        case SerializedType.OBJECT:
-                        case SerializedType.ARRAY:
-                        case SerializedType.SET:
-                        case SerializedType.MAP:
-                            this.resolveSerializedObject(data, true);
-                            // observeObject changes data.value to the serialized version, so save the resolved version now
-                            resolvedValue = data.value;
-                            this.observeObject(data, data.value, new Set<string>(), observer.extensionId, false, false);
-                            break;
-                        case SerializedType.DATE:
-                            // Deserialize ISO date string to Date object
-                            resolvedValue = moment(data.value).toDate();
-                            break;
-                        default:
-                            throw new Error('Invalid type supplied.');
-                    }
+            // First check if new value already exists in the context
+            // If so, we assume it's being observed and assign that to the parent object
+            let resolvedValue: any = this.getContextById(data.contextId);
+            if (!resolvedValue) {
+                // If the new value is an object or array, recursively register it for observation
+                switch (data.type.toLowerCase()) {
+                    case SerializedType.OBJECT:
+                    case SerializedType.ARRAY:
+                    case SerializedType.SET:
+                    case SerializedType.MAP:
+                        if (!this._contextBindingMap.has(data.contextId) && 
+                            !this._utilities.isObject(data.value) &&
+                            !this._utilities.isCollectionType(data.value)) {
+                            throw new Error('onPropertyBindingSync: change record new value does not already exist in binding engine and no new value was passed.');
+                        }
+                        this.resolveSerializedObject(data, true, observer.extensionId);
+                        // observeObject changes data.value to the serialized version, so save the resolved version now
+                        resolvedValue = data.value;
+                        this.observeObject(data, data.value, new Set<string>(), observer.extensionId, false, false);
+                        break;
+                    case SerializedType.DATE:
+                        // Deserialize ISO date string to Date object
+                        resolvedValue = moment(data.value).toDate();
+                        break;
+                    case SerializedType.PRIMITIVE:
+                        resolvedValue = data.value;
+                        break;
+                    default:
+                        throw new Error('Invalid type supplied.');
                 }
             }
 
@@ -157,7 +155,7 @@ export class BindingEngine implements IBindingEngine {
         }
 
         const observer: ProxiedCollectionObservable = bindingMap.collectionObserver; 
-        const addedMetadata: ISerializedObject[] = [];
+        const addedMetadata: SerializedObject[] = [];
 
         // splice changes into the array
         // This is broken into multiple steps to handle the possibility that 
@@ -193,33 +191,33 @@ export class BindingEngine implements IBindingEngine {
             if (splice.addedCount && splice.added) {
                 this._seen = [];
                 this._unresolvedRefs = [];
-                splice.added.forEach((element: any, index: number, addedArray: any[]) => {
+                splice.added.forEach((element: SerializedObject, index: number, addedArray: any[]) => {
                     addedMetadata.push(element);
-                    if (this._utilities.isPrimitive(element)) {
-                        addedArray[index] = element;
-                    } else {
-                        const serializedObject: ISerializedObject = element;
-                        // First check if it already exists in the context
-                        const existingChildObject = this.getContextById(serializedObject.contextId);
-
-                        if (existingChildObject) {
-                            // If so, we assume it's being observed and assign that to the parent object
-                            addedArray[index] = existingChildObject;
-                        } else {
-                            switch (serializedObject.type) {
-                                case SerializedType.OBJECT:
-                                case SerializedType.ARRAY:
-                                case SerializedType.SET:
-                                case SerializedType.MAP:
-                                    this.resolveSerializedObject(serializedObject, false);
-                                    addedArray[index] = serializedObject.value;
-                                    break;
-                                case SerializedType.DATE:
-                                    addedArray[index] = moment(serializedObject.value).toDate();
-                                    break;
-                                default:
-                                    throw new Error('Invalid serialized object type.');
-                            }
+                    // First check if it already exists in the context
+                    // If so, we assume it's being observed and assign that to the parent object
+                    addedArray[index] = this.getContextById(element.contextId);
+                    if (!addedArray[index]) {
+                        switch (element.type) {
+                            case SerializedType.OBJECT:
+                            case SerializedType.ARRAY:
+                            case SerializedType.SET:
+                            case SerializedType.MAP:
+                                if (!this._contextBindingMap.has(element.contextId) && 
+                                    !this._utilities.isObject(element.value) &&
+                                    !this._utilities.isCollectionType(element.value)) {
+                                    throw new Error('onArrayBindingSync: change record new value does not already exist in binding engine and no new value was passed.');
+                                }
+                                this.resolveSerializedObject(element, false, observer.extensionId);
+                                addedArray[index] = element.value;
+                                break;
+                            case SerializedType.DATE:
+                                addedArray[index] = moment(element.value).toDate();
+                                break;
+                            case SerializedType.PRIMITIVE:
+                                addedArray[index] = element.value;
+                                break;
+                            default:
+                                throw new Error('Invalid serialized object type.');
                         }
                     }
                 });
@@ -234,8 +232,8 @@ export class BindingEngine implements IBindingEngine {
         // Observe any new elements (if they're objects or collection)
         data.splices.forEach((splice: IArrayChangedSplice) => {
             if (splice.addedCount && splice.added) {
-                splice.added.forEach((element: any, index: number, theArray: any[]) => {
-                    if (!this._utilities.isPrimitive(element)) {
+                splice.added.forEach((element: SerializedObject, index: number, theArray: any[]) => {
+                    if (!this._utilities.isPrimitive(element.value)) {
                         const metadata = addedMetadata[index];
                         if ([SerializedType.OBJECT, SerializedType.ARRAY, SerializedType.SET, SerializedType.MAP].indexOf(metadata.type) >= 0) {
                             this.observeObject(metadata, element, new Set<string>(), observer.extensionId, false, false);
@@ -272,25 +270,33 @@ export class BindingEngine implements IBindingEngine {
         data.changes.forEach((change: ISetChangeRecord, index: number, theArray: ISetChangeRecord[]) => {
             // Resolve and reinstantiate any new elements
             if (change.type === 'add') {
-                let resolvedValue: any = change.value;
                 if (!this._utilities.isPrimitive(change.value)) {
-                    const serializedObject: ISerializedObject = change.value;
-                    const existingValueObject = this.getContextById(serializedObject.contextId);
+                    let resolvedValue: any = change.value;
+                    const existingValueObject = this.getContextById(change.contextId as string);
                     if (existingValueObject) {
                         resolvedValue = existingValueObject;
                     } else {
+                        const serializedObject = change.value as SerializedObject;
                         switch (serializedObject.type) {
                             case SerializedType.OBJECT:
                             case SerializedType.ARRAY:
                             case SerializedType.SET:
                             case SerializedType.MAP:
-                                this.resolveSerializedObject(serializedObject, true);
+                                if (!this._contextBindingMap.has(serializedObject.contextId as string) && 
+                                    !this._utilities.isObject(serializedObject.value) &&
+                                    !this._utilities.isCollectionType(serializedObject.value)) {
+                                    throw new Error('onSetBindingSync: change record new value does not already exist in binding engine and no new value was passed.');
+                                }
+                                this.resolveSerializedObject(serializedObject, true, observer.extensionId);
                                 // observeObject changes data.value to the serialized version, so save the resolved version now
                                 resolvedValue = serializedObject.value;
                                 this.observeObject(serializedObject, serializedObject.value, new Set<string>(), observer.extensionId, false, false);
                                 break;
                             case SerializedType.DATE:
                                 resolvedValue = moment(serializedObject.value).toDate();
+                                break;
+                            case SerializedType.PRIMITIVE:
+                                resolvedValue = serializedObject.value;
                                 break;
                             default:
                                 throw new Error('Invalid serialized object type.');
@@ -304,7 +310,7 @@ export class BindingEngine implements IBindingEngine {
                 if (change.contextId) {
                     const existingValueObject = this.getContextById(change.contextId);
                     if (existingValueObject) {
-                        change.value = existingValueObject;
+                        change.value = existingValueObject as any;
                         this.unobserve(existingValueObject, data.contextId, '', change.contextId, false, false, false, false);
                     }
                 } else {
@@ -362,7 +368,7 @@ export class BindingEngine implements IBindingEngine {
                 }
 
                 if (!this._utilities.isPrimitive(change.value)) {
-                    const serializedValue: ISerializedObject = change.value;
+                    const serializedValue: SerializedObject = change.value;
                     let resolvedValue: any = change.value;
                     const existingValueObject = this.getContextById(serializedValue.contextId);
                     if (existingValueObject) {
@@ -373,13 +379,21 @@ export class BindingEngine implements IBindingEngine {
                             case SerializedType.ARRAY:
                             case SerializedType.SET:
                             case SerializedType.MAP:
-                                this.resolveSerializedObject(serializedValue, true);
+                                if (!this._contextBindingMap.has(serializedValue.contextId as string) && 
+                                    !this._utilities.isObject(serializedValue.value) &&
+                                    !this._utilities.isCollectionType(serializedValue.value)) {
+                                    throw new Error('onMapBindingSync: change record new value does not already exist in binding engine and no new value was passed.');
+                                }
+                                this.resolveSerializedObject(serializedValue, true, observer.extensionId);
                                 // observeObject changes data.value to the serialized version, so save the resolved version now
                                 resolvedValue = serializedValue.value;
                                 this.observeObject(serializedValue, serializedValue.value, new Set<string>(), observer.extensionId, false, true);
                                 break;
                             case SerializedType.DATE:
                                 resolvedValue = moment(serializedValue.value).toDate();
+                                break;
+                            case SerializedType.PRIMITIVE:
+                                resolvedValue = serializedValue.value;
                                 break;
                             default:
                                 throw new Error('Invalid serialized value type.');
@@ -394,7 +408,7 @@ export class BindingEngine implements IBindingEngine {
             // handle new keys here
             if (change.type === 'add') {
                 if (!this._utilities.isPrimitive(change.key)) {
-                    const serializedKey: ISerializedObject = change.key;
+                    const serializedKey: SerializedObject = change.key;
                     let resolvedKey: any = change.key;
                     // First check if it already exists in the context
                     const existingKeyObject = this.getContextById(serializedKey.contextId);
@@ -407,13 +421,21 @@ export class BindingEngine implements IBindingEngine {
                             case SerializedType.ARRAY:
                             case SerializedType.SET:
                             case SerializedType.MAP:
-                                this.resolveSerializedObject(serializedKey, true);
+                                if (!this._contextBindingMap.has(serializedKey.contextId as string) && 
+                                    !this._utilities.isObject(serializedKey.value) &&
+                                    !this._utilities.isCollectionType(serializedKey.value)) {
+                                    throw new Error('onMapBindingSync: change record new key does not already exist in binding engine and no new value was passed.');
+                                }
+                                this.resolveSerializedObject(serializedKey, true, observer.extensionId);
                                 // observeObject changes data.value to the serialized version, so save the resolved version now
                                 resolvedKey = serializedKey.value;
                                 this.observeObject(serializedKey, serializedKey.value, new Set<string>(), observer.extensionId, true, false);
                                 break;
                             case SerializedType.DATE:
                                 change.key = moment(serializedKey.value).toDate();
+                                break;
+                            case SerializedType.PRIMITIVE:
+                                resolvedKey = serializedKey.value;
                                 break;
                             default:
                                 throw new Error('Invalid serialized key type.');
@@ -468,8 +490,9 @@ export class BindingEngine implements IBindingEngine {
      * 4) The unserialized object/collection is returned the obj.value property 
      * @param obj The object that should be resolved
      * @param fixUnresolved 
+     * @param extensionId 
      */
-    public resolveSerializedObject(obj: ISerializedObject, fixUnresolved: boolean = false): object {
+    public resolveSerializedObject(obj: SerializedObject, fixUnresolved: boolean = false, extensionId: string = ''): object {
         if (fixUnresolved) {
             this._seen = [];
             this._unresolvedRefs = [];
@@ -501,7 +524,7 @@ export class BindingEngine implements IBindingEngine {
                             case SerializedType.ARRAY:
                             case SerializedType.MAP:
                             case SerializedType.SET:
-                                this.resolveSerializedObject(metadata);
+                                this.resolveSerializedObject(metadata, false, extensionId);
                                 break;
                             case SerializedType.DATE:
                                 metadata.value = moment(metadata.value).toDate();
@@ -517,6 +540,11 @@ export class BindingEngine implements IBindingEngine {
                     }
                 }
             });
+            // If this is the portal, need to add serialized function proxies to the deserialized objects
+            if (this._rpc.instanceId === 'all' && extensionId) {
+                // Deserialized object should be obj.value
+                this._registerPortalFunctions(obj, extensionId);
+            }
         }
 
         // For Arrays, they're in the value collection
@@ -524,7 +552,7 @@ export class BindingEngine implements IBindingEngine {
             this.resolveId(obj.value, obj.contextId, obj.parentId, obj.property);
             (obj.value as any[]).forEach((element: any, index: any, theCollection: any[]) => {
                 if (!this._utilities.isPrimitive(element)) {
-                    const serializedElement = element as ISerializedObject;
+                    const serializedElement = element as SerializedObject;
                     // Check if there is already a mapped context with the passed Id
                     const existingChildObject = this.getContextById(serializedElement.contextId);
                     if (existingChildObject) {
@@ -537,7 +565,7 @@ export class BindingEngine implements IBindingEngine {
                                 case SerializedType.ARRAY:
                                 case SerializedType.MAP:
                                 case SerializedType.SET:
-                                    this.resolveSerializedObject(serializedElement);
+                                    this.resolveSerializedObject(serializedElement, false, extensionId);
                                     break;
                                 case SerializedType.DATE:
                                     serializedElement.value = moment(serializedElement.value).toDate();
@@ -564,7 +592,7 @@ export class BindingEngine implements IBindingEngine {
                 if (this._utilities.isPrimitive(element)) {
                     collection.add(element);
                 } else {
-                    const serializedElement = element as ISerializedObject;
+                    const serializedElement = element as SerializedObject;
                     // Check if there is already a mapped context with the passed Id
                     const existingChildObject = this.getContextById(serializedElement.contextId);
                     if (existingChildObject) {
@@ -577,7 +605,7 @@ export class BindingEngine implements IBindingEngine {
                                 case SerializedType.ARRAY:
                                 case SerializedType.MAP:
                                 case SerializedType.SET:
-                                    this.resolveSerializedObject(serializedElement);
+                                    this.resolveSerializedObject(serializedElement, false, extensionId);
                                     break;
                                 case SerializedType.DATE:
                                     serializedElement.value = moment(serializedElement.value).toDate();
@@ -613,7 +641,7 @@ export class BindingEngine implements IBindingEngine {
                 if (this._utilities.isPrimitive(obj.childMetadata[index])) {
                     resolvedKey = obj.childMetadata[index];
                 } else {
-                    const serializedKey = obj.childMetadata[index] as ISerializedObject;
+                    const serializedKey = obj.childMetadata[index] as SerializedObject;
                     // Check if there is already a mapped context with the passed Id
                     const existingKeyObject = this.getContextById(serializedKey.contextId);
                     if (existingKeyObject) {
@@ -626,7 +654,7 @@ export class BindingEngine implements IBindingEngine {
                                 case SerializedType.ARRAY:
                                 case SerializedType.MAP:
                                 case SerializedType.SET:
-                                    this.resolveSerializedObject(serializedKey);
+                                    this.resolveSerializedObject(serializedKey, false, extensionId);
                                     break;
                                 case SerializedType.DATE:
                                     serializedKey.value = moment(serializedKey.value).toDate();
@@ -649,7 +677,7 @@ export class BindingEngine implements IBindingEngine {
                 if (this._utilities.isPrimitive(element)) {
                     collection.set(resolvedKey, element);
                 } else {
-                    const serializedElement = element as ISerializedObject;
+                    const serializedElement = element as SerializedObject;
                     // Check if there is already a mapped context with the passed Id
                     const existingChildObject = this.getContextById(serializedElement.contextId);
                     if (existingChildObject) {
@@ -662,7 +690,7 @@ export class BindingEngine implements IBindingEngine {
                                 case SerializedType.ARRAY:
                                 case SerializedType.MAP:
                                 case SerializedType.SET:
-                                    this.resolveSerializedObject(serializedElement);
+                                    this.resolveSerializedObject(serializedElement, false, extensionId);
                                     break;
                                 case SerializedType.DATE:
                                     serializedElement.value = moment(serializedElement.value).toDate();
@@ -819,13 +847,8 @@ export class BindingEngine implements IBindingEngine {
                 contextId = this._utilities.newGuid();
             }
             this._contextIdMap.set(context, contextId);
-            bindingMap = new BindingMap(
-                this.getContextType(context),
-                [], 
-                undefined,
-                new Map<string, IChildReference>(),
-                new Map<string, IChildReference>()
-            );
+            bindingMap = new BindingMap();
+            bindingMap.type = this.getContextType(context);
             this._contextBindingMap.set(contextId, bindingMap);
         }
 
@@ -863,12 +886,8 @@ export class BindingEngine implements IBindingEngine {
         if (parentBindingMap) {
             if (!contextBindingMap.parents.has(parentContextId)) {
                 // No entry for the parent in the parents map, so add one
-                const ref: IChildReference = {
-                    type: this.getContextIdType(parentContextId),   // ISerializedType
-                    propertyIndex: new Set<string>(),   // Used for parent Objects and Arrays
-                    refCount: 0,   // Only used for parent Maps 
-                    isKey: false   // Only used for parent Maps 
-                };
+                const ref: ChildReference = new ChildReference();
+                ref.type = this.getContextTypeById(parentContextId);
                 switch (parentBindingMap.type) {
                     case SerializedType.OBJECT:
                     case SerializedType.ARRAY:
@@ -886,7 +905,7 @@ export class BindingEngine implements IBindingEngine {
                 contextBindingMap.parents.set(parentContextId, ref);
             }else {
                 // Otherwise update existing reference
-                const ref = contextBindingMap.parents.get(parentContextId) as IChildReference;
+                const ref = contextBindingMap.parents.get(parentContextId) as ChildReference;
                 switch (parentBindingMap.type) {
                     case SerializedType.OBJECT:
                     case SerializedType.ARRAY:
@@ -929,12 +948,8 @@ export class BindingEngine implements IBindingEngine {
             if (parentBindingMap) {
                 if (!parentBindingMap.children.has(contextId)) {
                     // No entry for the object in the children map, so add one
-                    const ref: IChildReference = {
-                        type: this.getContextIdType(contextId),   // ISerializedType
-                        propertyIndex: new Set<string>(),   // Used for parent Objects and Arrays
-                        refCount: 0,   // Only used for parent Maps 
-                        isKey: false   // Only used for parent Maps 
-                    };
+                    const ref: ChildReference = new ChildReference();
+                    ref.type = this.getContextTypeById(contextId);
                     switch (parentBindingMap.type) {
                         case SerializedType.OBJECT:
                         case SerializedType.ARRAY:
@@ -952,7 +967,7 @@ export class BindingEngine implements IBindingEngine {
                     parentBindingMap.children.set(contextId, ref);
                 }else {
                     // Otherwise update existing reference
-                    const ref = parentBindingMap.children.get(contextId) as IChildReference;
+                    const ref = parentBindingMap.children.get(contextId) as ChildReference;
                     switch (parentBindingMap.type) {
                         case SerializedType.OBJECT:
                         case SerializedType.ARRAY:
@@ -981,7 +996,7 @@ export class BindingEngine implements IBindingEngine {
      * @param extensionId 
      * @param parentContextId 
      */
-    public observeProperty(context: object, property: string, refIds: Set<string>, extensionId: string = '', parentContextId: string = ''): ISerializedObject | number | string | boolean | symbol | null | undefined {
+    public observeProperty(context: object, property: string, refIds: Set<string>, extensionId: string = '', parentContextId: string = ''): SerializedObject | number | string | boolean | symbol | null | undefined {
         // if it is the first property to be observed on the context, keep track of the context as being observed
         const contextId = this._contextIdMap.get(context);
         if (!contextId) {
@@ -1010,14 +1025,10 @@ export class BindingEngine implements IBindingEngine {
 
             // If the property itself is a Date, Object or collection, then recursively observe it
             if (this._utilities.isDateObjectCollectionType(propertyValue)) {
-                const metadata: ISerializedObject =  {
-                    property,
-                    contextId: '',
-                    parentId: contextId,
-                    value: null,
-                    type: '',
-                    childMetadata: [] 
-                };
+                const metadata: SerializedObject = new SerializedObject();
+                metadata.property = property;
+                metadata.parentId = contextId;
+                metadata.value = null;
                 this.observeObject(metadata, propertyValue, refIds, extensionId, false, false);
                 return metadata;
             }
@@ -1035,7 +1046,7 @@ export class BindingEngine implements IBindingEngine {
      * @param refIds Collection of context Ids that have been included in the current serialization/observation process
      * @param extensionId The Id of the extension this array belongs to
      */
-    public observeCollection(metadata: ISerializedObject, collection: any[], refIds: Set<string>, extensionId: string = ''): void {
+    public observeCollection(metadata: SerializedObject, collection: any[], refIds: Set<string>, extensionId: string = ''): void {
         if (!metadata || !metadata.contextId || !metadata.parentId) {
             throw new Error('observeCollection: metadata is invalid or missing contextId or parentId values');
         }
@@ -1079,14 +1090,11 @@ export class BindingEngine implements IBindingEngine {
                     } else {
                         // Only observe and serialize Date, Object and collection types
                         if (this._utilities.isDateObjectCollectionType(element)) {
-                            const elementMetadata: ISerializedObject =  {
-                                property: index.toString(),
-                                contextId: '',
-                                parentId: metadata.contextId,
-                                value: null,
-                                type: SerializedType.PRIMITIVE,
-                                childMetadata: [] 
-                            };
+                            const elementMetadata: SerializedObject = new SerializedObject();
+                            elementMetadata.property = index.toString();
+                            elementMetadata.parentId = metadata.contextId;
+                            elementMetadata.type = SerializedType.PRIMITIVE;
+                            elementMetadata.value = null;
                             this.observeObject(elementMetadata, element, refIds, extensionId, false, metadata.type === SerializedType.MAP);
                             serializedArray[index] = elementMetadata;
                         }
@@ -1100,14 +1108,11 @@ export class BindingEngine implements IBindingEngine {
                         } else {
                             // Only observe and serialize Date, Object and collection types
                             if (this._utilities.isDateObjectCollectionType(element)) {
-                                const keyMetadata: ISerializedObject =  {
-                                    property: index.toString(),
-                                    contextId: '',
-                                    parentId: metadata.contextId,
-                                    value: null,
-                                    type: SerializedType.PRIMITIVE,
-                                    childMetadata: [] 
-                                };
+                                const keyMetadata: SerializedObject = new SerializedObject();
+                                keyMetadata.property = index.toString();
+                                keyMetadata.parentId = metadata.contextId;
+                                keyMetadata.type = SerializedType.PRIMITIVE;
+                                keyMetadata.value = null;
                                 if (key instanceof Date) {
                                     keyMetadata.type = SerializedType.DATE;
                                     keyMetadata.value = (key as Date).toISOString();
@@ -1138,14 +1143,16 @@ export class BindingEngine implements IBindingEngine {
      * @param extensionId 
      * @param isMapKey If the parent is a Map and the object is a map entry key, this should be true 
      * @param isMapValue If the parent is a Map and the object is a map entry value, this should be true 
+     * @param doViewKeySnapshot If true, it clears the 
      */
     public observeObject(
-        metadata: ISerializedObject, 
+        metadata: SerializedObject, 
         context: object, 
         refIds: Set<string>, 
         extensionId: string,
         isMapKey: boolean = false,
-        isMapValue: boolean = false): ISerializedObject {
+        isMapValue: boolean = false,
+        doViewKeySnapshot: boolean = false): SerializedObject {
         if (this._utilities.isPrimitive(context)) {
             throw new Error('observeObject: context must be an object or collection type');
         }
@@ -1155,14 +1162,10 @@ export class BindingEngine implements IBindingEngine {
         }
 
         if (!metadata) {
-            metadata =  {
-                property: '',
-                contextId: '',
-                parentId: '',
-                value: null,
-                type: '',
-                childMetadata: [] 
-            };
+            metadata = new SerializedObject();
+        }
+        if (doViewKeySnapshot) {
+            this._viewMapKeysSnapshot = this._viewParser.getParsedViewNames();
         }
 
         if (context instanceof Date) {
@@ -1174,9 +1177,10 @@ export class BindingEngine implements IBindingEngine {
             // The other window will lookup the property object based on the passed contextId key
             // and the refIds set should ensure only one copy is passed
             const existingContextId = this._contextIdMap.get(context);
-            if (existingContextId && refIds.has(existingContextId)) {
+            if (existingContextId && (doViewKeySnapshot || refIds.has(existingContextId))) {
                 metadata.contextId = existingContextId;
-                metadata.type = this.getContextIdType(existingContextId);
+                metadata.value = '';
+                metadata.type = this.getContextTypeById(existingContextId);
                 // Still want to update the parent's bindingmap children references and 
                 // the parent's reference for this object's binding map, unless it's a 
                 // self-referencing object
@@ -1195,7 +1199,7 @@ export class BindingEngine implements IBindingEngine {
                 metadata.contextId = propertyContextId;
 
                 if (this._utilities.isCollectionType(context)) {
-                    this.observeCollection(metadata as ISerializedObject, context as any[], refIds, extensionId);
+                    this.observeCollection(metadata as SerializedObject, context as any[], refIds, extensionId);
                 }
 
                 if (this._utilities.isObject(context)) {
@@ -1217,7 +1221,7 @@ export class BindingEngine implements IBindingEngine {
      * @param refIds 
      * @param extensionId 
      */
-    private _recursiveObserveObject(metadata: ISerializedObject, context: object, refIds: Set<string>, extensionId: string = ''): void {
+    private _recursiveObserveObject(metadata: SerializedObject, context: object, refIds: Set<string>, extensionId: string = ''): void {
         if (!metadata || !metadata.contextId) {
             throw new Error('recursiveObserve: metadata is invalid or missing contextId value');
         }
@@ -1240,28 +1244,148 @@ export class BindingEngine implements IBindingEngine {
                 if (this._utilities.isPrimitive(childMetadata)) {
                     metadata.value[prop] = childMetadata;
                 } else {
-                    metadata.childMetadata.push(childMetadata as ISerializedObject);
+                    metadata.childMetadata.push(childMetadata as SerializedObject);
+                }
+            }
+        }
+
+        // If this is not the portal, then register the functions on the object and add them to the 
+        // serialized object functions collection to recreate in the shell
+        // Also, check if the context is a BaseView and parse the view content into HTML
+        if (this._rpc.instanceId !== 'all') {
+            this._registerExtensionFunctions(metadata,  context, extensionId);
+
+            if (context instanceof BaseView) {
+                const baseView = context as BaseView;
+
+                if (baseView.content.length > 0) {
+                    metadata.view = this._viewParser.parseViewToHTML(context, metadata.functions);
+                }
+
+                if (!this._utilities.isNullOrWhiteSpace(metadata.view)) {
+                    if (!baseView.viewName) {
+                        throw new Error('recursiveObserve: All BaseViews with a view must have a viewName defined');
+                    }
+                    metadata.viewName = baseView.viewName;
+                }
+            }
+        } 
+    }
+
+    /**
+     * Register serialized function proxies on a deserialized object in the portal
+     * @param obj 
+     * @param extensionId 
+     */
+    private _registerPortalFunctions(obj: SerializedObject, extensionId: string): void {
+        if (obj.functions && obj.functions.length > 0) { 
+            const bindingMap = this._contextBindingMap.get(obj.contextId);
+            if (bindingMap) {
+                console.log('[SHELL] Attaching blade functions: ', obj.functions);
+                // loop through all the passed functions and add them as a function to the serialized blade which will publish a message with the function data
+                for (const func of obj.functions) {
+                obj.value[func] = (): Promise<{}> => {
+                        // publish the function call to the extension
+                        console.log(`[SHELL] Publishing message from function: ${func}`);
+                        this._rpc.publish(`tapfx.${obj.contextId}.${func}`, extensionId, { functionArgs: Array.from(arguments)/*[...arguments]*/ });
+                        
+                        // set up a subscription for any result from the calling of the function in the extension
+                        const resultPromise = new DeferredPromise();
+                        const subscription = this._rpc.subscribe(`shell.${obj.contextId}.${func}`, (data) => {
+                            console.log(`[SHELL] Receiving result from function: ${func},  result: `, data);
+                            resultPromise.resolve(data);
+
+                            // unsubscribe from the result subscription
+                            subscription.unsubscribe();
+                        });
+
+                        return resultPromise.promise.then(result => result);
+                    };
                 }
             }
         }
     }
 
-    private getContextIdType(contextId: string): string {
+    /**
+     * Register an observed object's functions as subscriptions so that they can be called from the shell over the RPC.
+     * @param metadata 
+     * @param context 
+     * @param extensionId 
+     */
+    private _registerExtensionFunctions(metadata: SerializedObject, context: object, extensionId: string): void {
+        const bindingMap = this._contextBindingMap.get(metadata.contextId);
+        if (bindingMap) {
+            const subscriptionArray: IRpcClientSubscription[] = [];
+            const returnFuncs: string[] = [];
+
+            // get the serializable functions on the object 
+            const objectFuncs = this._getObjectFunctions(context);
+            for (const func of objectFuncs) {
+                const funcName = func.funcName;
+                // add a subscription which will call the object's original function with the passed function args
+                const subscription: IRpcClientSubscription = this._rpc.subscribe(`tapfx.${metadata.contextId}.${funcName}`, (data) => {
+                    // call the function and get the result
+                    console.log(`[TAP-FX][${this._rpc.instanceId}] Received message from context ${metadata.contextId} for function: ${funcName}`);
+                    let result: any = null;
+                    if (context[funcName]) {
+                        result = context[funcName](...data.functionArgs);
+                    } else {
+                        console.warn(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Could not find function ${funcName} on object with context Id ${metadata.contextId}`);
+                    }
+
+                    // publish the result back to the shell
+                    console.log(`[TAP-FX][${this._rpc.instanceId}] Publishing result from context ${metadata.contextId} from function: ${funcName}`);
+                    this._rpc.publish(`shell.${metadata.contextId}.${funcName}`, '', result);
+                });
+                bindingMap.functionSubscriptions.push(subscription);
+                metadata.functions.push(funcName);
+            }
+
+            if (!metadata.parentId) {
+                // convention - add a subscription for the onRemoveClick which calls the _removeBladeRange function
+                const funcName = 'onRemoveClick';
+                metadata.functions.push(funcName);
+            }
+        }
+    }
+
+    /**
+     * Get an array of function information for an object.
+     * @param blade 
+     */
+    private _getObjectFunctions(obj: object): IFunction[] {
+        // get the proto of the object and then the functions from that,
+        // but don't include functions inherited from the generic object
+        const objectProto = Object.getPrototypeOf(obj);
+        const objectFuncs = this._utilities.getOwnObjectFunctions(objectProto);
+
+        // for now, don't sync the activation lifecycle functions over
+        const funcIgnoreArray = ['constructor', 'activate', 'canActivate', 'deactivate', 'canDeactivate'];
+
+        const funcs: IFunction[] = [];
+        // now lets map that to an array of function information
+        objectFuncs.forEach((funcName: string) => {
+            const funcDesc: PropertyDescriptor = Object.getOwnPropertyDescriptor(objectProto, funcName);
+
+            // ignore private functions beginning with _, similar to property observing
+            // for now, we will use a function ignore array to ignore functions we don't want to listen for (like 'constructor')
+            // TODO: determine how to attach get and set functions
+            if (funcName.charAt(0) !== '_' &&
+                !tapm.HasNoSync(obj, funcName) &&  // don't include functions with NoSync decorator
+                funcIgnoreArray.indexOf(funcName) === -1/* &&
+                funcDesc.get === undefined*/) {
+                    funcs.push({ funcName, funcDesc});
+                }
+        });
+
+        return funcs;
+    }
+
+
+
+    private getContextTypeById(contextId: string): string {
         const context = this.getContextById(contextId);
-
-        if (context instanceof Set) {
-            return SerializedType.SET;
-        }
-
-        if (context instanceof Map) {
-            return SerializedType.MAP;
-        }
-
-        if (context instanceof Array) {
-            return SerializedType.ARRAY;
-        }
-
-        return SerializedType.OBJECT;
+        return this.getContextType(context);
     }
     private getContextType(context: any): string {
         if (context instanceof Set) {
@@ -1308,6 +1432,19 @@ export class BindingEngine implements IBindingEngine {
     public getIdByContext(context: object): string | null {
         const existingContextId = this._contextIdMap.get(context);
         return existingContextId === void(0) ? null : existingContextId;
+    }
+
+    /**
+     * Get the new parsed views (and viewnames) since this._viewMapKeysSnapshot was last set
+     */
+    public getNewParsedViews():  SerializedView[] {
+        const results: SerializedView[] = [];
+        this._viewParser.parsedViewMap.forEach((value: string, key: string) => {
+            if (!this._viewMapKeysSnapshot.has(key)) {
+                results.push(new SerializedView({viewName: key, view: value}));
+            }
+        });
+        return results;
     }
 
     /**
@@ -1374,7 +1511,7 @@ export class BindingEngine implements IBindingEngine {
         // for the context and it's the only parent reference
         // The object's collection of parent objects is also updated at this point
         if (parentContextId && bindingMap.parents.has(parentContextId)) {
-            const parentReference = bindingMap.parents.get(parentContextId) as IChildReference;
+            const parentReference = bindingMap.parents.get(parentContextId) as ChildReference;
             const parentBindingMap = this.getBindingMap(parentContextId);
             switch (parentReference.type){
                 case SerializedType.OBJECT:
@@ -1470,7 +1607,7 @@ export class BindingEngine implements IBindingEngine {
             this._seen.push(context);
 
             // First recursively dispose of child objects and collections
-            bindingMap.children.forEach((child: IChildReference, childId: string, theMap: Map<string, IChildReference>) => {
+            bindingMap.children.forEach((child: ChildReference, childId: string, theMap: Map<string, ChildReference>) => {
                 const childContext = this.getContextById(childId);
                 if (childContext) {
                     switch (bindingMap.type) {
@@ -1556,7 +1693,7 @@ export class BindingEngine implements IBindingEngine {
                 if (parentBindingMap.children.has(contextId)) {
                     // update existing reference or delete it if there are no more
                     // references to the child on the object
-                    const ref = parentBindingMap.children.get(contextId) as IChildReference;
+                    const ref = parentBindingMap.children.get(contextId) as ChildReference;
                     switch (parentBindingMap.type) {
                         case SerializedType.OBJECT:
                         case SerializedType.ARRAY:

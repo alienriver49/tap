@@ -1,5 +1,5 @@
 import { ViewModels } from 'tap-fx';
-import * as tapc from './../../fx/ux/tapcModules';
+import * as tapc from '../../fx/ux/tapcModules';
 
 export class SecondBlade extends ViewModels.FormBlade {
     public title: string;
@@ -10,6 +10,7 @@ export class SecondBlade extends ViewModels.FormBlade {
 
     constructor() {
         super();
+        this.viewName = 'secondBlade.html';
         this._buildContent();
     }
 

@@ -1,5 +1,5 @@
 import { getTapFx, ViewModels } from 'tap-fx';
-import * as tapc from './../../fx/ux/tapcModules';
+import * as tapc from '../../fx/ux/tapcModules';
 
 interface IInvoiceDto {
     InvoiceDate: Date;
@@ -26,6 +26,7 @@ export class InvoicesAddBlade extends ViewModels.FormBlade {
 
     constructor() {
         super();
+        this.viewName = 'invoicesAddBlade.html';
         this._tapFx = getTapFx();
         this._buildContent();
     }

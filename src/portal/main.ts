@@ -1,4 +1,6 @@
 ﻿import { Aurelia, PLATFORM, FrameworkConfiguration, LogManager } from 'aurelia-framework';
+import { DefaultLoader } from 'aurelia-loader-default';
+import { TemplateRegistryEntry, Loader } from 'aurelia-loader';
 import { ConsoleAppender } from 'aurelia-logging-console';
 import { AuthService } from 'aurelia-auth';
 
@@ -38,6 +40,23 @@ export function configure(aurelia: Aurelia) {
             .plugin(PLATFORM.moduleName('aurelia-auth'), (baseConfig) => {
                 baseConfig.configure(config);
             });
+
+        /**
+         * In order for the serialized composed views to work we need to customize the DefaultLoader.loadTemplate
+         * function and add some logic to pluck the composed views that we've manually added to the TemplateRegistry
+         * using just the name of the template and not prepending a baseUrl as it normally does via SystemJS
+         */
+
+        const originalLoadTemplate = DefaultLoader.prototype.loadTemplate.bind(aurelia.container.get(Loader));
+        DefaultLoader.prototype.loadTemplate = (url: string): Promise<TemplateRegistryEntry> => {
+            const pluginUrl = aurelia.container.get(Loader).applyPluginToUrl(url, 'template-registry-entry');
+            const entry = aurelia.container.get(Loader).getOrCreateTemplateRegistryEntry(pluginUrl);
+            if (entry && entry.templateIsLoaded) {
+                return Promise.resolve(entry);
+            } 
+            return originalLoadTemplate(url);
+            //return aurelia.container.get(Loader)._import(pluginUrl);
+        };
 
         const auth: AuthService = aurelia.container.get(AuthService);
         aurelia.start().then(() => {

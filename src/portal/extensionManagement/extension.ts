@@ -8,10 +8,11 @@ import { TemplatingBindingLanguage } from 'aurelia-templating-binding';
 
 import { ITapFx } from '../../fx/core/bootstrap';
 import { DeferredPromise } from '../../fx/core/deferredPromise'; // TODO: add to tapFx object
-import { ISerializedObject, IUnresolvedRef } from '../../fx/binding/bindingEngine'; // TODO: move these to typings
+import { IAddBladeMessage } from '../../fx/core/extension/extension'; // TODO: add to tapFx object
+import { SerializedObject } from '../../fx/binding/serializedObject'; // TODO: move these to typings
 import { Utilities } from '../../fx/utilities/utilities';
 
-import { PortalBlade, IPortalBladeConfig } from './viewModels.portalBlade';
+import { PortalBlade } from './viewModels.portalBlade';
 
 export interface IExtensionResources {
     container: Container;
@@ -71,22 +72,14 @@ export class Extension {
 
     private _seen: object[] = [];
     private _seenFlag: string = '$$__checked__$$';
-    private _unresolvedRefs: IUnresolvedRef[] = [];
 
-    private _registerBladeBindings(obj: ISerializedObject, blade: PortalBlade): void {
+    private _registerBladeBindings(obj: SerializedObject, blade: PortalBlade): void {
         // add primitive properties to blade and set it up
         Object.assign(blade, obj.value);
         obj.value = blade;
-        this._tapFx.BindingEngine.resolveSerializedObject(obj, true);
+        this._tapFx.BindingEngine.resolveSerializedObject(obj, true, this.id);
 
-        const metadata: ISerializedObject =  {
-            property: '',
-            contextId: '',
-            parentId: '',
-            value: null,
-            type: '',
-            childMetadata: [] 
-        };
+        const metadata = new SerializedObject();
         this._tapFx.BindingEngine.observeObject(metadata, blade, new Set<string>(), this.id, false, false);
     }
 
@@ -98,40 +91,14 @@ export class Extension {
         this._tapFx.BindingEngine.unobserveAll();
     }
 
-    private _registerBladeFunctions(bladeId: string, blade: PortalBlade, functions: string[]) {
-        console.log('[SHELL] Attaching blade functions: ', functions);
-        // loop through all the passed functions and add them as a function to the serialized blade which will publish a message with the function data
-        for (const func of functions) {
-            const extId = this.id;
-            blade[func] = function() {
-                // publish the function call to the extension
-                console.log('[SHELL] Publishing message from function: ' + func);
-                this._tapFx.Rpc.publish('tapfx.' + bladeId + '.' + func, extId, { functionArgs: Array.from(arguments)/*[...arguments]*/ });
-                
-                // set up a subscription for any result from the calling of the function in the extension
-                const resultPromise = new DeferredPromise();
-                const subscription = this._tapFx.Rpc.subscribe('shell.' + bladeId + '.' + func, (data) => {
-                    console.log('[SHELL] Receiving result from function: ' + func + ' result: ', data);
-                    resultPromise.resolve(data);
-
-                    // unsubscribe from the result subscription
-                    subscription.unsubscribe();
-                });
-
-                return resultPromise.promise.then(result => result);
-            };
-        }
-    }
-
     /**
      * Add a blade to an extension.
      * @param config
      */
-    public addBlade(config: IPortalBladeConfig): PortalBlade {
+    public addBlade(config: IAddBladeMessage): PortalBlade {
         const blade = this._portalBladeFactory(this, config);
-        // Should we move these functions to PortalBlade?
-        this._registerBladeBindings(config.serializedBlade as ISerializedObject, blade);
-        this._registerBladeFunctions(config.bladeId, blade, config.functions);
+        // Should we move this function to PortalBlade?
+        this._registerBladeBindings(config.serializedBlade, blade);
 
         // create and add the view for the blade
         blade.createAndAddView();

@@ -1,3 +1,4 @@
+import { IBaseElement } from './baseElement';
 import { BaseElementContainer, IBaseElementContainer, IBaseElementContainerConfig } from './baseElementContainer';
 import { IListItem } from './listItem';
 
@@ -6,7 +7,7 @@ export interface IListConfig extends IBaseElementContainerConfig {
 }
 
 export interface IList extends IBaseElementContainer {
-    content: IListItem[];
+    content: Array<IListItem|IBaseElement>;
     isOrdered: boolean;
 }
 
@@ -24,7 +25,7 @@ export class List extends BaseElementContainer implements IList {
         this.isOrdered = config.isOrdered !== void(0) ? config.isOrdered : false;
     }
 
-    public content: IListItem[];
+    public content: Array<IListItem|IBaseElement>;
 
     /**
      * Should it be an ordered or unordered list?
@@ -39,7 +40,7 @@ export class List extends BaseElementContainer implements IList {
      * @chainable
      * @override
      */
-    public addToContainer(...content: IListItem[]): this {
+    public addToContainer(...content: Array<IListItem|IBaseElement>): this {
         super.addToContainer(...content);
 
         return this;

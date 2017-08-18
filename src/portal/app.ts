@@ -2,7 +2,7 @@ import { inject } from 'aurelia-framework';
 import { FetchConfig } from 'aurelia-auth';
 
 import { Router } from './commanding/router';
-import { ExtensionManager } from './extensionManagement/extensionManager'; // imported and injected for use on the view
+import { ExtensionManager } from './extension-management/extensionManager'; // imported and injected for use on the view
 
 import 'bootstrap';
 import './app.css';

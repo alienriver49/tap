@@ -5,11 +5,11 @@ export * from './commanding/command';
 export * from './commanding/commandManager';
 export * from './commanding/router';
 
-export * from './extensionManagement/extension';
-export * from './extensionManagement/extensionCommandQueue';
-export * from './extensionManagement/extensionLoaderEngine';
-export * from './extensionManagement/extensionManager';
-export * from './extensionManagement/viewModels.portalBlade';
+export * from './extension-management/extension';
+export * from './extension-management/extensionCommandQueue';
+export * from './extension-management/extensionLoaderEngine';
+export * from './extension-management/extensionManager';
+export * from './extension-management/viewModels.portalBlade';
 
 export * from './extensionIframes';
 export * from './main';

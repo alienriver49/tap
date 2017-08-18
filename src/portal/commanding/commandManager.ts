@@ -1,7 +1,7 @@
 import { inject } from 'aurelia-framework';
 
 import { ITapFx } from '../../fx/core/bootstrap';
-import { ExtensionManager } from '../extensionManagement/extensionManager';
+import { ExtensionManager } from '../extension-management/extensionManager';
 import { Command } from './command';
 
 @inject(ExtensionManager, 'TapFx')

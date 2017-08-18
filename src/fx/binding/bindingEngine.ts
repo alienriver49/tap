@@ -9,7 +9,7 @@ import { SerializedObject, ISerializedObjectConfig } from './serializedObject';
 import { SerializedView, ISerializedViewConfig } from './serializedView';
 
 import * as tapm from '../metadata/metadata';
-import { BaseView } from '../ux/viewModels/viewModels.baseView';
+import { BaseView } from '../ux/view-models/viewModels.baseView';
 import { Utilities } from '../utilities/utilities';
 import { ViewParser } from '../ux/viewParser';
 import { RpcClient, IRpcClientSubscription } from '../rpc/client';

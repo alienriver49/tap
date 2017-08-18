@@ -31,7 +31,7 @@ System.config({
       "defaultJSExtensions": true,
       "defaultExtension": "ts"
     },
-    "src/webComponents": {
+    "src/web-components": {
       "defaultJSExtensions": true,
       "defaultExtension": "ts"
     }

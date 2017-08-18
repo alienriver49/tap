@@ -2,7 +2,7 @@ import { inject } from 'aurelia-framework';
 import * as tapc from './tapcModules';
 import { IBaseElement } from './components/baseElement';
 import { BaseElementContainer } from './components/baseElementContainer';
-import { BaseView } from './viewModels/viewModels.baseView';
+import { BaseView } from './view-models/viewModels.baseView';
 import { ConventionEngine } from './conventionEngine';
 import { Utilities } from '../utilities/utilities';
 

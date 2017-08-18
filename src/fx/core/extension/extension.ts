@@ -10,7 +10,7 @@ import { SerializedObject } from '../../binding/serializedObject';
 import { SerializedView } from '../../binding/serializedView';
 import { DeferredPromise } from '../../core/deferredPromise';
 import { ViewParser } from '../../ux/viewParser';
-import { BaseBlade } from '../../ux/viewModels/viewModels.baseBlade'; // type only
+import { BaseBlade } from '../../ux/view-models/viewModels.baseBlade'; // type only
 
 /**
  * Interface defining a function. Includes the name and the property descriptor.

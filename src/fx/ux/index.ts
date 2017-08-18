@@ -26,13 +26,13 @@ export * from './metadata/attributeMetadata';
 export * from './metadata/eventMetadata';
 export * from './metadata/repeatMetadata';
 
-export * from './valueConverters/currencyFormat';
-export * from './valueConverters/dateFormat';
+export * from './value-converters/currencyFormat';
+export * from './value-converters/dateFormat';
 
-export * from './viewModels/viewModels.baseBlade';
-export * from './viewModels/viewModels.baseView';
-export * from './viewModels/viewModels.browseBlade';
-export * from './viewModels/viewModels.formBlade';
+export * from './view-models/viewModels.baseBlade';
+export * from './view-models/viewModels.baseView';
+export * from './view-models/viewModels.browseBlade';
+export * from './view-models/viewModels.formBlade';
 
 export * from './viewParser';
 export * from './conventionEngine';

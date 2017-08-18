@@ -8,8 +8,8 @@ import { init } from '../fx/core/bootstrap';
 import { config } from '../fx/security/authConfig';
 
 import { CommandManager } from './commanding/commandManager';
-import { ExtensionManager } from './extensionManagement/extensionManager';
-import { ExtensionLoaderEngine } from './extensionManagement/extensionLoaderEngine';
+import { ExtensionManager } from './extension-management/extensionManager';
+import { ExtensionLoaderEngine } from './extension-management/extensionLoaderEngine';
 import { AuthorizationEngine } from './authorization/authorizationEngine';
 
 export function configure(aurelia: Aurelia) {
@@ -35,7 +35,7 @@ export function configure(aurelia: Aurelia) {
             .history()
             // Register the components globally so we don't need to
             // 'require' them in each html (useful when dynamically creating views)
-            .feature(PLATFORM.moduleName('src/webComponents/index'))
+            .feature(PLATFORM.moduleName('src/web-components/index'))
             .developmentLogging()
             .plugin(PLATFORM.moduleName('aurelia-auth'), (baseConfig) => {
                 baseConfig.configure(config);

@@ -1,6 +1,5 @@
 import { getTapFx, ViewModels, BaseBlade } from 'tap-fx';
-import * as tapc from './../../fx/ux/tapcModules';
-import { InvoicesAddBlade } from './invoicesAddBlade';
+import * as tapc from '../../fx/ux/tapcModules';
 
 interface IInvoiceBrowseDto {
     //Invoices: IInvoiceDto[];
@@ -39,6 +38,7 @@ export class InvoicesBrowseBlade extends ViewModels.BrowseBlade {
 
     constructor() {
         super();
+        this.viewName = 'invoicesBrowseBlade.html';
         this._tapFx = getTapFx();
         this._buildContent();
     }

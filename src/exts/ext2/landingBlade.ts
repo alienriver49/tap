@@ -25,6 +25,7 @@ export class LandingBlade extends ViewModels.FormBlade {
 
     constructor() {
         super();
+        this.viewName = 'landingBlade.html';
         this._tapFx = getTapFx();
         this._buildContent();
     }

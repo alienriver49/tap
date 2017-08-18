@@ -1,8 +1,10 @@
 import { BaseElement, IBaseElement, IBaseElementConfig } from './baseElement';
 import { Text } from './text';
+import { SpecialHandlingMetadata } from '../metadata/specialHandlingMetadata';
 
 export interface IBaseElementContainerConfig extends IBaseElementConfig {
     content?: IBaseElement[];
+    hasBorder?: boolean;
 }
 
 export interface IBaseElementContainer extends IBaseElement {
@@ -20,9 +22,13 @@ export class BaseElementContainer extends BaseElement implements IBaseElementCon
         
         super(config);
         this.content = config.content || [];
+        this.hasBorder = config.hasBorder !== void(0) ? config.hasBorder : false;
     }
 
     public content: IBaseElement[];
+    
+    @SpecialHandlingMetadata.set()
+    public hasBorder: boolean;
 
     /**
      * Chainable shortcut for adding text to a container.

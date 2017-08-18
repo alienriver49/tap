@@ -1,5 +1,5 @@
-import {getTapFx, ViewModels} from 'tap-fx'
-import * as tapc from './../../fx/ux/tapcModules'
+import {getTapFx, ViewModels} from 'tap-fx';
+import * as tapc from '../../fx/ux/tapcModules';
 
 export class AdminConfigBlade extends ViewModels.FormBlade {
     title: string;
@@ -12,6 +12,7 @@ export class AdminConfigBlade extends ViewModels.FormBlade {
 
     constructor() {
         super();
+        this.viewName = 'adminConfigBlade.html';
         this._tapFx = getTapFx();
         this._buildContent();
     }

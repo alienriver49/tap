@@ -14,15 +14,15 @@ export class Index extends BaseExtension {
     public init(): void {
         console.log('[EXT-2] Index.init');
         const blade = new LandingBlade();
-        this.addBlade(blade, 'landingBlade.html');
+        this.addBlade(blade);
     }
 
     public updateParams(params: any[], queryParams: object): void {
         console.log('[EXT-2] Updating extension parameters.');
     }
 
-    public addBlade(blade: BaseBlade, viewName: string): void {
+    public addBlade(blade: BaseBlade): void {
         console.log('[EXT-2] Attempting to add blade.');
-        this._tapFx.Extension.addBlade(blade, viewName);
+        this._tapFx.Extension.addBlade(blade);
     }
 }

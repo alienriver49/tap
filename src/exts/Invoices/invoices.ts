@@ -1,5 +1,5 @@
 import { InvoicesBrowseBlade } from './invoicesBrowseBlade';
-import { BaseBlade } from './../../fx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
+import { BaseBlade } from '../../fx/ux/viewModels/viewModels.baseBlade'; // TODO: remove this and use a typing
 import { getTapFx, BaseExtension } from 'tap-fx';
 import { InvoicesAddBlade } from './invoicesAddBlade';
 
@@ -17,7 +17,7 @@ export class Invoices extends BaseExtension {
     public init(): void {
         console.log('[Invoices] Index.init');
         const blade = new InvoicesBrowseBlade();
-        this.addBlade(blade, 'landingBlade.html');
+        this.addBlade(blade);
     }
 
     public updateParams(params: any[], queryParams: object): void {
@@ -25,13 +25,13 @@ export class Invoices extends BaseExtension {
 
         if (params[0] === 'AddInvoice') {
             this.addInvoiceBlade = new InvoicesAddBlade();
-            this.addBlade(this.addInvoiceBlade, '');
+            this.addBlade(this.addInvoiceBlade);
         }
 
     }
 
-    public addBlade(blade: BaseBlade, viewName: string): void {
+    public addBlade(blade: BaseBlade): void {
         console.log('[Invoices] Attempting to add blade.');
-        this._tapFx.Extension.addBlade(blade, viewName);
+        this._tapFx.Extension.addBlade(blade);
     }
 }

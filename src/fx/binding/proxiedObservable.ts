@@ -2,7 +2,8 @@ import { inject } from 'aurelia-dependency-injection';
 import { ObserverLocator, InternalPropertyObserver, InternalCollectionObserver } from 'aurelia-binding';
 import { TaskQueue } from 'aurelia-task-queue';
 
-import { IBindingEngine, ISerializedObject } from './bindingEngine';
+import { IBindingEngine, SerializedType } from './bindingEngine';
+import { SerializedObject, ISerializedObjectConfig } from './serializedObject';
 
 import { RpcClient } from '../rpc/client';
 import { Utilities } from '../utilities/utilities';
@@ -47,14 +48,11 @@ export class ProxiedObservable {
             return;
         }
 
-        const serializedValue: ISerializedObject =  {
-            property: this._property,
-            contextId: '',
-            parentId: this._contextId,
-            value: newValue,
-            type: '',
-            childMetadata: [] 
-        };
+        const serializedValue: SerializedObject = new SerializedObject();
+        serializedValue.property = this._property;
+        serializedValue.parentId = this._contextId;
+        serializedValue.value = newValue;
+        serializedValue.type = SerializedType.PRIMITIVE;
 
         if (this._utilities.isObject(oldValue) || this._utilities.isCollectionType(oldValue)) {
             const oldContextId = this._bindingEngine.getIdByContext(oldValue);
@@ -85,7 +83,7 @@ export class ProxiedObservable {
             }
 
             // serializedValue.value is updated with the serialized object/array 
-            this._bindingEngine.observeObject(serializedValue, newValue, new Set<string>(), this._extensionId, false, false);
+            this._bindingEngine.observeObject(serializedValue, newValue, new Set<string>(), this._extensionId, false, false, true);
         }
 
         console.log(`[TAP-FX][${this._className}][${this._rpc.instanceId}] Property "${this._property}" has changed from: "${oldValue}" to: "${newValue}"`);

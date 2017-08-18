@@ -9,6 +9,7 @@ import 'reflect-metadata';
 import { AttributeMetadata } from '../metadata/attributeMetadata';
 import { EventMetadata } from '../metadata/eventMetadata';
 import { RepeatMetadata } from '../metadata/repeatMetadata';
+import { SpecialHandlingMetadata } from '../metadata/specialHandlingMetadata';
 
 /**
  * Config interface for BaseElement creation.
@@ -37,6 +38,7 @@ export interface IBaseElement {
     getEventName(propertyName: string): string | undefined;
     getAttributeName(propertyName: string): string | undefined;
     isRepeatFor(propertyName: string): boolean;
+    hasSpecialHandling(propertyName: string): boolean;
 }
 
 /**
@@ -123,6 +125,15 @@ export class BaseElement implements IBaseElement {
      */
     public isRepeatFor(propertyName: string): boolean {
         const result = Reflect.hasMetadata(RepeatMetadata.key, this, propertyName);
+        return result ? true : false;
+    }
+
+    /**
+     * If the property has special handling, then it should have the SpecialHandlingMetadata.Set decorator to indicate that
+     * @param propertyName The propertyname to check
+     */
+    public hasSpecialHandling(propertyName: string): boolean {
+        const result = Reflect.hasMetadata(SpecialHandlingMetadata.key, this, propertyName);
         return result ? true : false;
     }
 }

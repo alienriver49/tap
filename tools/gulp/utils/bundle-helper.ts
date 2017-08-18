@@ -30,6 +30,7 @@ const ROLLUP_GLOBALS: any = {
     'aurelia-loader': 'aurelia-loader',
     'aurelia-loader-default': 'aurelia-loader-default',
     'aurelia-history': 'aurelia-history',
+    'aurelia-pal': 'aurelia-pal',
     'numeral': 'numeral',
     'moment': 'moment',
     'reflect-metadata': 'reflect-metadata',

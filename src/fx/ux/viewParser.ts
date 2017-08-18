@@ -2,7 +2,7 @@ import { inject } from 'aurelia-framework';
 import * as tapc from './tapcModules';
 import { IBaseElement } from './components/baseElement';
 import { BaseElementContainer } from './components/baseElementContainer';
-import { BaseBlade } from './viewModels/viewModels.baseBlade';
+import { BaseView } from './viewModels/viewModels.baseView';
 import { ConventionEngine } from './conventionEngine';
 import { Utilities } from '../utilities/utilities';
 
@@ -12,7 +12,7 @@ import { Utilities } from '../utilities/utilities';
 const bindRegExp = /^@(.*)/;
 
 @inject(ConventionEngine, Utilities)
-export class BladeParser {
+export class ViewParser {
     constructor(
         private _conventionEngine: ConventionEngine,
         private _utilities: Utilities
@@ -20,30 +20,49 @@ export class BladeParser {
 
     }
 
+    // A map of the viewnames and views that have already been parsed
+    public parsedViewMap: Map<string, string> = new Map<string, string>();
+
+    public getParsedViewNames(): Set<string> {
+        const viewMap = (this.parsedViewMap || new Map<string, string>());
+        return new Set<string>(Array.from(viewMap.keys()));
+    }
+
     /**
-     * Parse the passed blade into an HTML template.
-     * @param blade 
-     * @param bladeFunctions 
+     * Parse the passed view into an HTML template.
+     * @param view 
+     * @param viewFunctions 
      */
-    public parseBladeToHTML(blade: BaseBlade, bladeFunctions: string[]): string {
+    public parseViewToHTML(view: BaseView, viewFunctions: string[]): string {
+        if (!view.content || view.content.length === 0) {
+            return '';
+        }
+
+        // If view has already been parsed, return empty string
+        if (this.parsedViewMap.has(view.viewName)) {
+            return '';
+        }
+
         // Can't get innerHtml or outerHtml property from template element,
-        // so use a div element as the parent with the 'blade' class added
+        // so use a div element as the parent
         const parent: HTMLDivElement = document.createElement('div');
-        parent.classList.add('blade');
 
-        // POC: Could render different types of blades differently
-        /*if (blade instanceof FormBlade) {
+        if (view.isBlade) {
+            // Add blade class for blade views
+            parent.classList.add('blade');
+        }
 
-        }*/
-        const bladeContent = blade.content;
-        for (const baseElement of bladeContent) {
+        const viewContent = view.content;
+        for (const baseElement of viewContent) {
             this.parseNode(parent, baseElement);
         }
 
         // use the convention engine to attach click handlers
-        this._conventionEngine.attachConventions(parent, blade, bladeFunctions);
+        this._conventionEngine.attachConventions(parent, view, viewFunctions);
 
-        return `<template>${parent.outerHTML}</template>`;
+        const result = `<template>${parent.outerHTML}</template>`;
+        this.parsedViewMap.set(view.viewName, result);
+        return result;
     }
 
     /**
@@ -54,6 +73,7 @@ export class BladeParser {
     public parseNode(parent: Element, node: IBaseElement): void {
         let bindMatch: RegExpExecArray | null;
         let el: HTMLElement | null = null; 
+        const skipAttributeAssignment: boolean = false;
 
         if (node instanceof tapc.Heading) {
             el = document.createElement('h' + node.importance);
@@ -77,7 +97,7 @@ export class BladeParser {
 
             // Special handling for repeats
             if (list.attributeRepeat) {
-                if (list.content && list.content.length !== 1) {
+                if (!list.content || list.content.length !== 1) {
                     throw new Error(`When using repeat with a List, the list must contain 1 child element`);
                 }
                 // repeat-for goes on the <li> node
@@ -143,7 +163,15 @@ export class BladeParser {
         if (node instanceof tapc.MdcCheckbox) {
             el = document.createElement('mdc-checkbox');
         }
-        if (el) {
+        if (node instanceof tapc.Compose) {
+            const compose = node as tapc.Compose;
+            if (this._utilities.isNullOrWhiteSpace(compose.attributeViewName) ||
+                this._utilities.isNullOrWhiteSpace(compose.attributeViewModel)) {
+                throw new Error(`All Compose components must have a ViewName and ViewModel value`);
+            }
+            el = document.createElement('compose');
+        }
+        if (el && !skipAttributeAssignment) {
             // Add attribute and event handlers
             for (const prop in node) {
                 if (node.hasOwnProperty(prop)) {
@@ -168,6 +196,7 @@ export class BladeParser {
                     this.parseNode(el, baseElement);
                 }
             }
+
         }
 
         if (el) {
@@ -209,6 +238,13 @@ export class BladeParser {
         
         if (value && match && match !== void(0)) {
             el.setAttribute(`${match}.delegate`, value);
+        }
+
+        if (node.hasSpecialHandling(prop)) {
+            // TODO: temorary way to add a quick border around a container
+            if (prop === 'hasBorder' && node[prop] === true) {
+                el.classList.add('dmf-border');
+            }
         }
     }
 }

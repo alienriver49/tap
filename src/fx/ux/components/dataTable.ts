@@ -1,5 +1,4 @@
 import { BaseElement, IBaseElement, IBaseElementConfig } from './baseElement';
-import { ITapDataTableColumnConfiguration } from '../../../webComponents/dataTable/tap-data-table';
 import { AttributeMetadata } from '../metadata/attributeMetadata';
 
 export interface IDataTableConfig extends IBaseElementConfig {
@@ -13,7 +12,7 @@ export interface IDataTable extends IBaseElement {
     attributeTotalItems: string;
     attributeData: string;
     attributeColumnConfiguration: string;
-    setColumnConfiguration(columnConfig: ITapDataTableColumnConfiguration[], bindingName: string): this;
+    setColumnConfiguration(columnConfig: any[], bindingName: string): this;
 }
 
 /**
@@ -48,7 +47,7 @@ export class DataTable extends BaseElement implements IDataTable {
      * @param columnConfig 
      * @param bindingName 
      */
-    public setColumnConfiguration(columnConfig: ITapDataTableColumnConfiguration[], bindingName: string): this {
+    public setColumnConfiguration(columnConfig: any[], bindingName: string): this {
         if (!columnConfig) {
             throw new Error('tapcDataTable: columnConfiguration is not valid');
         }

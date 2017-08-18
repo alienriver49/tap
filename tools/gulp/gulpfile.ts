@@ -23,7 +23,6 @@ task('build:all', (done: TaskFunction) => {
 task('lint:ts:all', () => {
     return runSequence(
         'lint:ts:tap-fx',
-        'lint:ts:tap-portal',
-        'lint:ts:tap-web-components'
+        'lint:ts:tap-portal'
     );
 });

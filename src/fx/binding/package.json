@@ -2,7 +2,8 @@
   "name": "tap-fx-binding",
   "version": "0.1.0",
   "description": "Binding module for TAP",
-  "main": "tap-fx-binding.js",
+  "main": "dist/tap-fx-binding.cjs.js",
+  "module": "dist/tap-fx-binding.js",
   "typings": "typings/index.d.ts",
   "license": "MIT",
   "peerDependencies": {

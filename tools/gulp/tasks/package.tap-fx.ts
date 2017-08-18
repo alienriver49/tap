@@ -9,8 +9,10 @@ import { copyFiles } from '../utils/file-utils';
 import { 
     TAP_FX_ROOT, 
     TAP_FX_ES2015_BUNDLE_NAME,
+    TAP_FX_COMMONJS_BUNDLE_NAME,
     TAP_FX_PACKAGE_JSON_PATH,
     RELEASE_TAP_FX_ROOT,
+    RELEASE_TAP_FX_DIST_ROOT,
     RELEASE_TAP_FX_BUILD_ROOT
  } from '../constants';
 import { compileTypeScript, transpileFile } from '../utils/ts-helper';
@@ -21,7 +23,8 @@ task('build:tap-fx', (done) => {
         'lint:ts:tap-fx',
         'clean:release:tap-fx',
         'compile:tap-fx',
-        'bundle:tap-fx',
+        'bundle:tap-fx:es',
+        'bundle:tap-fx:cjs',
         'clean:tap-fx:javascript',
         'copy:package:tap-fx',
         done
@@ -34,17 +37,27 @@ task('lint:ts:tap-fx', () => {
 });
 
 task('compile:tap-fx', () => {
-    //const tsconfigPath = join(TAP_FX_ROOT, 'tsconfig.json');
     return compileTypeScript(TAP_FX_ROOT, RELEASE_TAP_FX_BUILD_ROOT);
 });
 
 /** Creates the tap-fx bundle */
-task('bundle:tap-fx', () => {
+task('bundle:tap-fx:es', () => {
     return createModuleBundle({
         moduleName: 'tap-fx',
         entry: join(RELEASE_TAP_FX_BUILD_ROOT, 'index.js'),
-        dest: join(RELEASE_TAP_FX_ROOT, TAP_FX_ES2015_BUNDLE_NAME),
+        dest: join(RELEASE_TAP_FX_DIST_ROOT, TAP_FX_ES2015_BUNDLE_NAME),
         format: 'es',
+        version: require(`${TAP_FX_ROOT}/package.json`).version
+    });
+});
+
+/** Creates the tap-fx CommonJS bundle */
+task('bundle:tap-fx:cjs', () => {
+    return createModuleBundle({
+        moduleName: 'tap-fx',
+        entry: join(RELEASE_TAP_FX_BUILD_ROOT, 'index.js'),
+        dest: join(RELEASE_TAP_FX_DIST_ROOT, TAP_FX_COMMONJS_BUNDLE_NAME),
+        format: 'cjs',
         version: require(`${TAP_FX_ROOT}/package.json`).version
     });
 });

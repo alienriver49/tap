@@ -2,7 +2,8 @@
   "name": "tap-fx-rpc",
   "version": "0.1.0",
   "description": "RPC module for TAP",
-  "main": "tap-fx-rpc.js",
+  "main": "dist/tap-fx-rpc.cjs.js",
+  "module": "dist/tap-fx-rpc.js",
   "typings": "typings/index.d.ts",
   "license": "MIT",
   "dependencies": {

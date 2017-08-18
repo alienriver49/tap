@@ -1,6 +1,5 @@
 import { getTapFx, ViewModels, BaseBlade } from 'tap-fx';
 import * as tapc from './../../fx/ux/tapcModules';
-import { ITapDataTableColumnConfiguration } from './../../webComponents/dataTable/tap-data-table';
 import { InvoicesAddBlade } from './invoicesAddBlade';
 
 interface IInvoiceBrowseDto {
@@ -32,7 +31,7 @@ export class InvoicesBrowseBlade extends ViewModels.BrowseBlade {
         Take: 10,
         Total: 100
     };
-    public columnConfig: ITapDataTableColumnConfiguration[] = [
+    public columnConfig: any[] = [
         {header: 'Date', property: 'Date', filter: 'date'},
         {header: 'Description', property: 'Description'},
         {header: 'Amount', headerClass: 'text-right', property: 'Amount', filter: 'currency', columnClass: 'text-right'}

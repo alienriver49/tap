@@ -2,7 +2,8 @@
   "name": "tap-portal",
   "version": "0.1.0",
   "description": "The Titanium Application Portal.",
-  "main": "tap-portal.js",
+  "main": "dist/tap-portal.cjs.js",
+  "module": "dist/tap-portal.js",
   "typings": "typings/index.d.ts",
   "license": "MIT",
   "dependencies": {

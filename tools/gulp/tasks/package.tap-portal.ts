@@ -9,8 +9,10 @@ import { copyFiles } from '../utils/file-utils';
 import { 
     TAP_PORTAL_ROOT,
     TAP_PORTAL_ES2015_BUNDLE_NAME,
+    TAP_PORTAL_COMMONJS_BUNDLE_NAME,
     TAP_PORTAL_PACKAGE_JSON_PATH,
     RELEASE_TAP_PORTAL_ROOT,
+    RELEASE_TAP_PORTAL_DIST_ROOT,
     RELEASE_TAP_PORTAL_BUILD_ROOT
  } from '../constants';
 import { compileTypeScript, transpileFile } from '../utils/ts-helper';
@@ -22,7 +24,8 @@ task('build:tap-portal', (done) => {
         'lint:ts:tap-portal',
         'clean:release:tap-portal',
         'compile:tap-portal',
-        'bundle:tap-portal',
+        'bundle:tap-portal:es',
+        'bundle:tap-portal:cjs',
         'clean:tap-portal:javascript',
         'copy:package:tap-portal',
         done
@@ -40,12 +43,23 @@ task('compile:tap-portal', () => {
 });
 
 /** Creates the tap-portal bundle */
-task('bundle:tap-portal', () => {    
+task('bundle:tap-portal:es', () => {
     return createModuleBundle({
         moduleName: 'tap-portal',
         entry: join(RELEASE_TAP_PORTAL_BUILD_ROOT, 'index.js'),
-        dest: join(RELEASE_TAP_PORTAL_ROOT, TAP_PORTAL_ES2015_BUNDLE_NAME),
+        dest: join(RELEASE_TAP_PORTAL_DIST_ROOT, TAP_PORTAL_ES2015_BUNDLE_NAME),
         format: 'es',
+        version: require(`${TAP_PORTAL_ROOT}/package.json`).version
+    });
+});
+
+/** Creates the tap-portal CommonJS bundle */
+task('bundle:tap-portal:cjs', () => {
+    return createModuleBundle({
+        moduleName: 'tap-fx',
+        entry: join(RELEASE_TAP_PORTAL_BUILD_ROOT, 'index.js'),
+        dest: join(RELEASE_TAP_PORTAL_DIST_ROOT, TAP_PORTAL_COMMONJS_BUNDLE_NAME),
+        format: 'cjs',
         version: require(`${TAP_PORTAL_ROOT}/package.json`).version
     });
 });

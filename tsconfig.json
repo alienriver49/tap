@@ -16,16 +16,7 @@
     "traceResolution": true,
     "baseUrl": ".",
     "paths": {
-          "tap-fx": ["src/fx/index"],
-          "tap-fx-binding": ["src/fx/binding/index"],
-          "tap-fx-core": ["src/fx/core/index"],
-          "tap-fx-metadata": ["src/fx/metadata/index"],
-          "tap-fx-rpc": ["src/fx/rpc/index"],
-          "tap-fx-security": ["src/fx/security/index"],
-          "tap-fx-utilities": ["src/fx/utilities/index"],
-          "tap-fx-ux": ["src/fx/ux/index"],
-          "tap-web-portal": ["src/portal"],
-          "tap-web-components": ["src/webComponents"]
+      "tap-fx": ["src/fx/index"]
     },
     "types": [
       "jasmine",

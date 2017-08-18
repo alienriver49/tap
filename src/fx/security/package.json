@@ -2,7 +2,8 @@
   "name": "tap-fx-security",
   "version": "0.1.0",
   "description": "Security module for TAP",
-  "main": "tap-fx-security.js",
+  "main": "dist/tap-fx-security.cjs.js",
+  "module": "dist/tap-fx-security.js",
   "typings": "typings/index.d.ts",
   "license": "MIT",
   "dependencies": {

@@ -1,5 +1,4 @@
 import * as tapc from '../../fx/ux/tapcModules';
-import { ITapDataTableColumnConfiguration } from '../../webComponents/dataTable/tap-data-table';
 import { School } from './school';
 import { Address } from './address';
 import { getTapFx, ViewModels } from 'tap-fx';
@@ -15,7 +14,7 @@ export class LandingBlade extends ViewModels.BaseBlade {
     public clearText: boolean = false;
     public address: Address;
     public address2: Address;
-    public columnConfig: ITapDataTableColumnConfiguration[] = [
+    public columnConfig: any[] = [
         {header: 'School', property: 'name'},
         {header: 'Grades', property: 'grades'},
         {header: 'Has Pool', property: 'hasPool'}

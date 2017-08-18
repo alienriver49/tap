@@ -2,7 +2,8 @@
   "name": "tap-fx-core",
   "version": "0.1.0",
   "description": "Core module for TAP",
-  "main": "tap-fx-core.js",
+  "main": "dist/tap-fx-core.cjs.js",
+  "module": "dist/tap-fx-core.js",
   "typings": "typings/index.d.ts",
   "license": "MIT",
   "dependencies": {

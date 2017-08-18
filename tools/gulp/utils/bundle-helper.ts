@@ -2,15 +2,16 @@ import { join } from 'path';
 import * as rollup from 'rollup';
 
 const rollupNodeResolve = require('rollup-plugin-node-resolve');
+const rollupBabel = require('rollup-plugin-babel');
 
 import { getPackageDirectories } from './directory-utils';
-import { kebabCase } from './string-utils';
+import { dashCase } from './string-utils';
 import { TAP_FX_ROOT, MODULE_PACKAGE_PREFIX, DEFAULT_COMPILER_OPTIONS } from '../constants';
 
 export interface IRollupBundleConfig {
     entry: string;
     moduleName: string;
-    format: 'es' | 'umd';
+    format: 'es' | 'cjs';
     dest: string;
     version: string;
 }
@@ -38,7 +39,7 @@ const ROLLUP_GLOBALS: any = {
 // Add the TAP packages to the rollup globals
 const moduleNames = getPackageDirectories(TAP_FX_ROOT);
 moduleNames.forEach(name => {
-    const fullPackageName = MODULE_PACKAGE_PREFIX + kebabCase(name);
+    const fullPackageName = MODULE_PACKAGE_PREFIX + dashCase(name);
     ROLLUP_GLOBALS[fullPackageName] = fullPackageName;
 });
 
@@ -55,6 +56,16 @@ export function createModuleBundle(config: IRollupBundleConfig): Promise<void> {
             rollupNodeResolve()
         ]
     };
+
+    if (config.format === 'cjs') {
+        bundleOptions.plugins.push(rollupBabel({
+            exclude: 'node_modules/**',
+            presets: [
+                ['es2015', { modules: false }]
+            ],
+            plugins: ['external-helpers']
+        }));
+    }
 
     const banner = `/**
     * @license Titanium Application Portal v${config.version}

@@ -2,7 +2,8 @@
   "name": "tap-fx-utilities",
   "version": "0.1.0",
   "description": "Utilities module for TAP",
-  "main": "tap-fx-utilities.js",
+  "main": "dist/tap-fx-utilities.cjs.js",
+  "module": "dist/tap-fx-utilities.js",
   "typings": "typings/index.d.ts",
   "license": "MIT",
   "dependencies": {

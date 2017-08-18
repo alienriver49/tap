@@ -2,7 +2,8 @@
   "name": "tap-fx",
   "version": "0.1.0",
   "description": "The Titanium Application Portal framework.",
-  "main": "tap-fx.js",
+  "main": "dist/tap-fx.cjs.js",
+  "module": "dist/tap-fx.js",
   "typings": "typings/index.d.ts",
   "license": "MIT",
   "dependencies": {

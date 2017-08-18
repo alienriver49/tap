@@ -64,11 +64,11 @@ export function compileTypeScript(rootDir: string, outputDir: string, fixupRelat
                   .pipe(gulpTypeScript(DEFAULT_COMPILER_OPTIONS));
 
   if (fixupRelativePaths) {
-    moduleNames = moduleNames.concat(...TAP_MODULES);
-    moduleNames = getPackageDirectories(TAP_FX_ROOT).join('|');
+    moduleNames = moduleNames.concat(TAP_MODULES.join('|'));
+    moduleNames = getPackageDirectories(TAP_FX_ROOT).concat(moduleNames).join('|');
   }
 
-  const importRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s*["'])(?:\\.{1,2}\\/)[./]*?(?:fx\/)?(${moduleNames})\\/(?:.*)(["'];?)(.*)$`, 'gm');
+  const importRegEx: RegExp = new RegExp(`^(import(?:["'\\s]*(?:[\\w*{}\\n, ]*)from)?\\s*["'])(?:\\.{1,2}\\/)[.\\/]*?(?:fx\/)?(${moduleNames})\\/(?:.*)(["'];?)(.*)$`, 'gm');
   let importTemplate: string = `$1${MODULE_PACKAGE_PREFIX}$2$3$4`;
 
   if (fixupPackage) {
